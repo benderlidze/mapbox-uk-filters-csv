@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Add multiple geometries from one GeoJSON source</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        #filters {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background-color: white;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="filters">
+        <button onclick="setFilter()">Set GB Filter 6000 and 9000 </button>
+
+        <div>
+            <input type="text" id="shop" placeholder="shop name"/><button onclick="filterByShopName()">Filter</button>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+
+
+    <script>
+        const shopName = document.getElementById("shop");
+
+        mapboxgl.accessToken = 'pk.eyJ1Ijoic2VyZ2JlciIsImEiOiJja3dwOWgzeGQwYWdyMm9xb2pkMDFvYmNuIn0.H9AJ_NLmDNYMed6dvu_Q0A';
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/outdoors-v11',
+            center: { lng: -5.38319371390287, lat: 54.328587368249714 },
+            zoom: 5
+        });
+
+        map.on('load', () => {
+
+            d3.csv("data/Store Location data.csv")
+                .then(data => {
+                    console.log('Store', data);
+                    const pins = data.map(pin => {
+                        const { property_latitude, property_longitude } = pin
+                        return {
+                            "type": "Feature", "properties": { ...pin, },
+                            "geometry": {
+                                "type": "Point", "coordinates": [+property_longitude, +property_latitude]
+                            }
+                        }
+                    })
+                    const featureCollection = turf.featureCollection(pins)
+                    map.getSource("store").setData(featureCollection)
+                })
+
+            d3.csv("data/gb.csv")
+                .then(data => {
+                    console.log('gb', data);
+                    const pins = data.map(pin => {
+
+                        const { lat, lng } = pin
+                        return {
+                            "type": "Feature", "properties": { ...pin, population: +pin.population },
+                            "geometry": {
+                                "type": "Point", "coordinates": [+lng, +lat]
+                            }
+                        }
+                    })
+                    const featureCollection = turf.featureCollection(pins)
+                    map.getSource("gb").setData(featureCollection)
+                })
+
+
+            map.addSource('gb', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                }
+            });
+            map.addLayer({
+                'id': 'gb',
+                'type': 'circle',
+                'source': 'gb',
+                'paint': {
+                    'circle-radius': 6,
+                    'circle-color': '#B42222'
+                },
+            });
+
+
+
+            map.addSource('store', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                }
+            });
+            map.addLayer({
+                'id': 'store',
+                'type': 'circle',
+                'source': 'store',
+                'paint': {
+                    'circle-radius': 4,
+                    'circle-color': 'orange'
+                },
+            });
+            // map.addLayer({
+            //     'id': 'park-boundary',
+            //     'type': 'fill',
+            //     'source': 'gb',
+            //     'paint': {
+            //         'fill-color': '#888888',
+            //         'fill-opacity': 0.4
+            //     },
+            //     'filter': ['==', '$type', 'Polygon']
+            // });
+            map.on('click', 'store', (e) => {
+                console.log('e', e);
+                // Copy coordinates array.
+                const description = e.features[0].properties.company_name;
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(description)
+                    .addTo(map);
+            });
+
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'store', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'store', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+        });
+
+        function filterByShopName() {
+            const name = shopName.value;
+            map.setFilter('store', ['==', 'company_name', name]);
+        }
+
+        function setFilter() {
+            map.setFilter('gb', ['all', ['>', 'population', 6000], ['<', 'population', 9000]]);
+        }
+        //map.setFilter('gb',['none'])
+    </script>
+
+</body>
+
+</html>
