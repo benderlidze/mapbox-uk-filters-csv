@@ -111,21 +111,21 @@
                     filterByShopNameS(selectedShops)
                 })
 
-            d3.csv("data/gb.csv")
-                .then(data => {
-                    console.log('gb', data);
-                    const pins = data.map(pin => {
-                        const { lat, lng } = pin
-                        return {
-                            "type": "Feature", "properties": { ...pin, population: +pin.population },
-                            "geometry": {
-                                "type": "Point", "coordinates": [+lng, +lat]
-                            }
-                        }
-                    })
-                    const featureCollection = turf.featureCollection(pins)
-                    map.getSource("gb").setData(featureCollection)
-                })
+            // d3.csv("data/gb.csv")
+            //     .then(data => {
+            //         console.log('gb', data);
+            //         const pins = data.map(pin => {
+            //             const { lat, lng } = pin
+            //             return {
+            //                 "type": "Feature", "properties": { ...pin, population: +pin.population },
+            //                 "geometry": {
+            //                     "type": "Point", "coordinates": [+lng, +lat]
+            //                 }
+            //             }
+            //         })
+            //         const featureCollection = turf.featureCollection(pins)
+            //         map.getSource("gb").setData(featureCollection)
+            //     })
 
             map.addSource('shapes', {
                 'type': 'geojson',
@@ -297,7 +297,7 @@
         function setAreaFilter() {
             map.setFilter('polygons', ['all', ['>', 'area', 1], ['<', 'area', 3]]);
         }
-        
+
         function setFilter() {
             map.setFilter('gb', ['all', ['>', 'population', 6000], ['<', 'population', 9000]]);
         }
