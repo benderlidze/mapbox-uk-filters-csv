@@ -69,17 +69,17 @@
         map.on('load', () => {
 
 
-            fetch("data/bristol.zip")
-                .then(text => text.arrayBuffer())
-                .then((myshape) => shp(myshape))
-                .then((data) => {
-                    //geo.addData(data)
-                    console.log('Bristol', data);
-                    data.features.filter(i => i.geometry !== null).forEach(poly => {
-                        poly.properties.area = turf.area(poly) / 4046;
-                    })
-                    map.getSource("polygons").setData(data)
-                }).catch(e => console.log('error', e));
+            // fetch("data/bristol.zip")
+            //     .then(text => text.arrayBuffer())
+            //     .then((myshape) => shp(myshape))
+            //     .then((data) => {
+            //         //geo.addData(data)
+            //         console.log('Bristol', data);
+            //         data.features.filter(i => i.geometry !== null).forEach(poly => {
+            //             poly.properties.area = turf.area(poly) / 4046;
+            //         })
+            //         map.getSource("polygons").setData(data)
+            //     }).catch(e => console.log('error', e));
 
 
             fetch("data/Built-up_Areas_(December_2011)_Boundaries_V2.zip")
