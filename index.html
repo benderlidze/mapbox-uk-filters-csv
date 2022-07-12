@@ -39,6 +39,7 @@
 <body>
 
     <div id="filters">
+        <button onclick="setAreaFilter()">1 to 3 acres </button>
         <button onclick="setFilter()">Set GB Filter 6000 and 9000 </button>
 
         <div>
@@ -75,7 +76,7 @@
                     //geo.addData(data)
                     console.log('Bristol', data);
                     data.features.filter(i => i.geometry !== null).forEach(poly => {
-                        poly.properties.area = turf.area(poly);
+                        poly.properties.area = turf.area(poly) / 4046;
                     })
                     map.getSource("polygons").setData(data)
                 }).catch(e => console.log('error', e));
@@ -293,6 +294,10 @@
             map.setFilter('store', filterArr);
         }
 
+        function setAreaFilter() {
+            map.setFilter('polygons', ['all', ['>', 'area', 1], ['<', 'area', 3]]);
+        }
+        
         function setFilter() {
             map.setFilter('gb', ['all', ['>', 'population', 6000], ['<', 'population', 9000]]);
         }
