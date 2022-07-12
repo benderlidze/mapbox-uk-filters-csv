@@ -92,7 +92,7 @@
                 }).catch(e => console.log('error', e));
 
 
-            d3.csv("data/Store Location data.csv")
+            d3.csv("data/supermarket store location data - Sheet2.csv")
                 .then(data => {
                     console.log('Store', data);
                     const pins = data.map(pin => {
@@ -194,21 +194,34 @@
                 'source': 'store',
                 'paint': {
                     'circle-radius': 4,
-                    'circle-color': 'orange'
+                    // 'circle-color': [
+                    //     'Aldi', 'Asda', 'Budgens', 'Farmfoods', 'Iceland', 'KILLARNEY', 'Lidl', 'Londis', 'Marks & Spencers', 'McColls', 'Morrisons', 'Nisa Local', 'SPAR', 'Sainsburys', 'Tesco'
+                    // ],
+
+                    'circle-color': [
+                        'match',
+                        ['get', 'company_name'],
+                        'Aldi', '#fbb03b',
+                        'Asda', '#223b53',
+                        'Budgens', '#e55e5e',
+                        'Farmfoods', '#3bb2d0',
+                        'Iceland', 'red',
+                        'KILLARNEY', 'green',
+                        'Lidl', 'blue',
+                        'Londis', 'orange',
+                        'Marks & Spencers', 'yellow',
+                        'McColls', 'pink',
+                        'Morrisons', '#FF1493',
+                        'Nisa Local', '#FF00FF',
+                        'SPAR', '#1E90FF',
+                        'Sainsburys', '#DAA520',
+                        'Tesco', '#ADFF2F',
+                        /* other */ '#ccc'
+                    ]
+
                 },
             });
 
-
-
-            map.on('click', 'polygons', (e) => {
-                console.log('e', e);
-                // Copy coordinates array.
-                const description = e.features[0].properties.area;
-                new mapboxgl.Popup()
-                    .setLngLat(e.lngLat)
-                    .setHTML(description)
-                    .addTo(map);
-            });
 
             map.on('click', 'store', (e) => {
                 console.log('e', e);
@@ -218,6 +231,8 @@
                     .setLngLat(e.lngLat)
                     .setHTML(description)
                     .addTo(map);
+
+                e.originalEvent.cancelBubble = true;
             });
 
             // Change the cursor to a pointer when the mouse is over the places layer.
@@ -229,6 +244,32 @@
             map.on('mouseleave', 'store', () => {
                 map.getCanvas().style.cursor = '';
             });
+
+
+            map.on('click', 'shapes', (e) => {
+
+                if (e.originalEvent.cancelBubble) {
+                    return;
+                }
+                console.log('e', e);
+                // Copy coordinates array.
+                const description = e.features[0].properties.bua11nm;
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(description)
+                    .addTo(map);
+            });
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'shapes', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'shapes', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+
 
         });
 
