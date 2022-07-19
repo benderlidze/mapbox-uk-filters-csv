@@ -35,11 +35,23 @@
             left: 20px;
             z-index: 10;
             background-color: white;
-            padding: 10px;
+            padding: 20px;
         }
 
         .slider {
-            padding: 20px;
+            padding: 10px 0px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+
+
+        .slider input {
+            width: 50px;
+        }
+
+        .slider input {
+            width: 50px;
         }
     </style>
 </head>
@@ -49,9 +61,17 @@
     <div id="filters">
 
         <div class="slider">
-
-            <div id="acresSlider"></div>
+            <div id="acresSlider" style="width:100%"></div>
         </div>
+
+        <div class="slider">
+            <div><input type="text" id="gbSlider-min"></div>
+            <div>
+                <div id="gbSlider" style="width:200px;margin:0px 20px;"></div>
+            </div>
+            <div><input type="text" id="gbSlider-max"></div>
+        </div>
+
 
         <!-- <button onclick="setAreaFilter()">1 to 3 acres </button> -->
         <button onclick="setFilter()">Set GB Filter 6000 and 9000 </button>
@@ -67,6 +87,9 @@
 
 
     <script>
+        const gbSliderMin = document.getElementById('gbSlider-min');
+        const gbSliderMax = document.getElementById('gbSlider-max');
+
         const acresSlider = document.getElementById('acresSlider');
         const selectedShops = ["Tesco", "Coop"];
         const shopName = document.getElementById("shop");
@@ -81,7 +104,7 @@
         });
 
         noUiSlider.create(acresSlider, {
-            start: [1, 10],
+            start: [1, 8],
             connect: true,
             range: {
                 'min': 0,
@@ -102,13 +125,34 @@
             }
         });
 
-        acresSlider.noUiSlider.on('change', function (d) {
-            setAreaFilter(d[0], d[1])
+        noUiSlider.create(gbSlider, {
+            start: [1000, 50000],
+            connect: true,
+            range: {
+                'min': 0,
+                'max': 200000
+            },
         });
+
+        gbSlider.noUiSlider.on('change', function (d) {
+            setGBFilter(d[0], d[1])
+        });
+        gbSlider.noUiSlider.on('update', function (d) {
+            gbSliderMin.value = parseInt(d[0])
+            gbSliderMax.value = parseInt(d[1])
+        });
+        gbSliderMin.addEventListener('change', function () {
+            gbSlider.noUiSlider.set([this.value, null]);
+        });
+        gbSliderMax.addEventListener('change', function () {
+            gbSlider.noUiSlider.set([null, this.value]);
+        });
+
+
 
         map.on('load', () => {
 
-            
+
             fetch("data/bristol.zip")
                 .then(text => text.arrayBuffer())
                 .then((myshape) => shp(myshape))
@@ -150,24 +194,29 @@
                     buildStoreFilters(data)
                     filterByShopNameS(selectedShops)
                 })
+
+
+            d3.csv("data/gb.csv")
+                .then(data => {
+                    console.log('gb', data);
+                    const pins = data.map(pin => {
+                        const { lat, lng } = pin
+                        return {
+                            "type": "Feature", "properties": {
+                                ...pin,
+                                population: +pin.population,
+                                cityandpop: pin.city + ' / ' + pin.population
+                            },
+                            "geometry": {
+                                "type": "Point", "coordinates": [+lng, +lat]
+                            }
+                        }
+                    })
+                    const featureCollection = turf.featureCollection(pins)
+                    map.getSource("gb").setData(featureCollection)
+                })
+
             //*/
-
-
-            // d3.csv("data/gb.csv")
-            //     .then(data => {
-            //         console.log('gb', data);
-            //         const pins = data.map(pin => {
-            //             const { lat, lng } = pin
-            //             return {
-            //                 "type": "Feature", "properties": { ...pin, population: +pin.population },
-            //                 "geometry": {
-            //                     "type": "Point", "coordinates": [+lng, +lat]
-            //                 }
-            //             }
-            //         })
-            //         const featureCollection = turf.featureCollection(pins)
-            //         map.getSource("gb").setData(featureCollection)
-            //     })
 
             map.addSource('shapes', {
                 'type': 'geojson',
@@ -219,6 +268,24 @@
                 'paint': {
                     'circle-radius': 6,
                     'circle-color': '#B42222'
+                },
+            });
+            map.addLayer({
+                'id': 'GBtext',
+                'type': 'symbol',
+                'source': 'gb',
+                'layout': {
+                    'text-field': ['get', 'cityandpop'],
+                    'text-size': 10,
+                    'text-transform': 'uppercase',
+                    'text-allow-overlap': true,
+                    'icon-allow-overlap': true,
+                    'text-offset': [0, 1],
+                },
+                'paint': {
+                    'text-color': '#202',
+                    "text-halo-color": "#fff",
+                    "text-halo-width": 2
                 },
             });
 
@@ -381,8 +448,10 @@
             map.setFilter('polygons', ['all', ['>', 'area', min], ['<', 'area', max]]);
         }
 
-        function setFilter() {
-            map.setFilter('gb', ['all', ['>', 'population', 6000], ['<', 'population', 9000]]);
+        function setGBFilter(min, max) {
+            console.log('min,max', min, max);
+            map.setFilter('gb', ['all', ['>', 'population', parseInt(min)], ['<', 'population', parseInt(max)]]);
+            map.setFilter('GBtext', ['all', ['>', 'population', parseInt(min)], ['<', 'population', parseInt(max)]]);
         }
         //map.setFilter('gb',['none'])
     </script>
