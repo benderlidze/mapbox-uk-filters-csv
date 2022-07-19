@@ -133,22 +133,30 @@
                 'max': 200000
             },
         });
-
         gbSlider.noUiSlider.on('change', function (d) {
+            console.log('change',);
             setGBFilter(d[0], d[1])
         });
         gbSlider.noUiSlider.on('update', function (d) {
+            console.log('update',);
             gbSliderMin.value = parseInt(d[0])
             gbSliderMax.value = parseInt(d[1])
         });
         gbSliderMin.addEventListener('change', function () {
             gbSlider.noUiSlider.set([this.value, null]);
+            updateGBFilters()
         });
         gbSliderMax.addEventListener('change', function () {
             gbSlider.noUiSlider.set([null, this.value]);
+            updateGBFilters()
         });
 
-
+        function updateGBFilters() {
+            console.log('update1111',);
+            const min = gbSliderMin.value
+            const max = gbSliderMax.value
+            setGBFilter(min, max)
+        }
 
         map.on('load', () => {
 
