@@ -12,6 +12,10 @@
 
     <script src="js/shp.js"></script>
 
+    // Alternatively, you can include both files:
+    <link href="js/nouislider.min.css" rel="stylesheet">
+    <script src="js/nouislider.min.js"></script>
+
     <style>
         body {
             margin: 0;
@@ -33,13 +37,23 @@
             background-color: white;
             padding: 10px;
         }
+
+        .slider {
+            padding: 20px;
+        }
     </style>
 </head>
 
 <body>
 
     <div id="filters">
-        <button onclick="setAreaFilter()">1 to 3 acres </button>
+
+        <div class="slider">
+
+            <div id="acresSlider"></div>
+        </div>
+
+        <!-- <button onclick="setAreaFilter()">1 to 3 acres </button> -->
         <button onclick="setFilter()">Set GB Filter 6000 and 9000 </button>
 
         <div>
@@ -53,8 +67,8 @@
 
 
     <script>
+        const acresSlider = document.getElementById('acresSlider');
         const selectedShops = ["Tesco", "Coop"];
-
         const shopName = document.getElementById("shop");
         const shopList = document.getElementById("shop-list");
 
@@ -66,20 +80,46 @@
             zoom: 5
         });
 
+        noUiSlider.create(acresSlider, {
+            start: [1, 10],
+            connect: true,
+            range: {
+                'min': 0,
+                'max': 10
+            }, tooltips: {
+                // tooltips are output only, so only a "to" is needed
+                to: function (numericValue) {
+                    return parseInt(numericValue)
+                }
+            },
+            format: {
+                from: function (value) {
+                    return parseInt(value);
+                },
+                to: function (value) {
+                    return parseInt(value);
+                }
+            }
+        });
+
+        acresSlider.noUiSlider.on('change', function (d) {
+            setAreaFilter(d[0], d[1])
+        });
+
         map.on('load', () => {
 
-
-            // fetch("data/bristol.zip")
-            //     .then(text => text.arrayBuffer())
-            //     .then((myshape) => shp(myshape))
-            //     .then((data) => {
-            //         //geo.addData(data)
-            //         console.log('Bristol', data);
-            //         data.features.filter(i => i.geometry !== null).forEach(poly => {
-            //             poly.properties.area = turf.area(poly) / 4046;
-            //         })
-            //         map.getSource("polygons").setData(data)
-            //     }).catch(e => console.log('error', e));
+            
+            fetch("data/bristol.zip")
+                .then(text => text.arrayBuffer())
+                .then((myshape) => shp(myshape))
+                .then((data) => {
+                    //geo.addData(data)
+                    console.log('Bristol', data);
+                    data.features.filter(i => i.geometry !== null).forEach(poly => {
+                        poly.properties.area = turf.area(poly) / 4046;
+                    })
+                    map.getSource("polygons").setData(data)
+                }).catch(e => console.log('error', e));
 
 
             fetch("data/Built-up_Areas_(December_2011)_Boundaries_V2.zip")
@@ -110,6 +150,8 @@
                     buildStoreFilters(data)
                     filterByShopNameS(selectedShops)
                 })
+            //*/
+
 
             // d3.csv("data/gb.csv")
             //     .then(data => {
@@ -335,8 +377,8 @@
             map.setFilter('store', filterArr);
         }
 
-        function setAreaFilter() {
-            map.setFilter('polygons', ['all', ['>', 'area', 1], ['<', 'area', 3]]);
+        function setAreaFilter(min, max) {
+            map.setFilter('polygons', ['all', ['>', 'area', min], ['<', 'area', max]]);
         }
 
         function setFilter() {
