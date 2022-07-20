@@ -56,6 +56,10 @@
         .switches {
             margin: 20px 0px;
         }
+
+        .switches>label {
+            display: block;
+        }
     </style>
 </head>
 
@@ -76,6 +80,7 @@
         </div>
         <div class="switches">
             <label for="gbOnOff"><input type="checkbox" id="gbOnOff" checked>Population on/off</label>
+            <label for="buildUpOnOff"><input type="checkbox" id="buildUpOnOff" checked>Built up Areas on/off</label>
         </div>
         <div>
             <div id="shop-list"></div>
@@ -90,6 +95,7 @@
         const gbSliderMin = document.getElementById('gbSlider-min');
         const gbSliderMax = document.getElementById('gbSlider-max');
         const gbOnOff = document.getElementById('gbOnOff');
+        const buildUpOnOff = document.getElementById('buildUpOnOff');
 
         const acresSlider = document.getElementById('acresSlider');
         const selectedShops = ["Tesco", "Coop"];
@@ -125,9 +131,8 @@
                 }
             }
         });
-
         noUiSlider.create(gbSlider, {
-            start: [1000, 50000],
+            start: [1000, 5550000],
             connect: true,
             range: {
                 'min': 0,
@@ -156,6 +161,12 @@
             map.setLayoutProperty('GBcircle', 'visibility', visible);
             map.setLayoutProperty('GBtext', 'visibility', visible);
         })
+
+        buildUpOnOff.addEventListener("change", () => {
+            const visible = buildUpOnOff.checked ? 'visible' : 'none'
+            map.setLayoutProperty('shapes', 'visibility', visible);
+        })
+
         function updateGBFilters() {
             console.log('update1111',);
             const min = gbSliderMin.value
