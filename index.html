@@ -44,8 +44,6 @@
             flex-direction: row;
             align-items: center;
         }
-
-
         .slider input {
             width: 50px;
         }
@@ -79,7 +77,6 @@
             <label for="gbOnOff"><input type="checkbox" id="gbOnOff" checked>Population on/off</label>
         </div>
         <div>
-            <!-- <input type="text" id="shop" placeholder="shop name" /><button onclick="filterByShopName()">Filter</button> -->
             <div id="shop-list"></div>
         </div>
     </div>
@@ -167,7 +164,7 @@
 
         map.on('load', () => {
 
-            /*
+            
             fetch("data/bristol.zip")
                 .then(text => text.arrayBuffer())
                 .then((myshape) => shp(myshape))
@@ -189,7 +186,7 @@
                     console.log('data', data);
                     map.getSource("shapes").setData(data)
                 }).catch(e => console.log('error', e));
-*/
+
 
             d3.csv("data/supermarket store location data - Sheet2.csv")
                 .then(data => {
