@@ -81,6 +81,7 @@
         <div class="switches">
             <label for="gbOnOff"><input type="checkbox" id="gbOnOff" checked>Population on/off</label>
             <label for="buildUpOnOff"><input type="checkbox" id="buildUpOnOff" checked>Built up Areas on/off</label>
+            <label for="polyUpOnOff"><input type="checkbox" id="polyUpOnOff" checked>Bristol Areas on/off</label>
         </div>
         <div>
             <div id="shop-list"></div>
@@ -167,8 +168,12 @@
             map.setLayoutProperty('shapes', 'visibility', visible);
         })
 
+        polyUpOnOff.addEventListener("change", () => {
+            const visible = polyUpOnOff.checked ? 'visible' : 'none'
+            map.setLayoutProperty('polygons', 'visibility', visible);
+        })
+
         function updateGBFilters() {
-            console.log('update1111',);
             const min = gbSliderMin.value
             const max = gbSliderMax.value
             setGBFilter(min, max)
@@ -265,6 +270,9 @@
                 'paint': {
                     'fill-color': 'red',
                     'fill-opacity': 0.4
+                },
+                'layout': {
+                    'visibility': 'visible'
                 },
             });
 
