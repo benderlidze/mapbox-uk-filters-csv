@@ -60,6 +60,11 @@
         .switches>label {
             display: block;
         }
+
+        fieldset {
+            border: 1px solid #cdcdcd;
+            border-radius: 4px;
+        }
     </style>
 </head>
 
@@ -67,17 +72,31 @@
 
     <div id="filters">
 
-        <div class="slider">
+        <!-- <div class="slider">
             <div id="acresSlider" style="width:100%"></div>
-        </div>
-
-        <div class="slider">
-            <div><input type="text" id="gbSlider-min"></div>
-            <div>
-                <div id="gbSlider" style="width:200px;margin:0px 20px;"></div>
+        </div> -->
+        <fieldset>
+            <legend>Acres</legend>
+            <div class="slider">
+                <div><input type="text" id="acresSlider-min"></div>
+                <div>
+                    <div id="acresSlider" style="width:200px;margin:0px 20px;"></div>
+                </div>
+                <div><input type="text" id="acresSlider-max"></div>
             </div>
-            <div><input type="text" id="gbSlider-max"></div>
-        </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>GB</legend>
+            <div class="slider">
+                <div><input type="text" id="gbSlider-min"></div>
+                <div>
+                    <div id="gbSlider" style="width:200px;margin:0px 20px;"></div>
+                </div>
+                <div><input type="text" id="gbSlider-max"></div>
+            </div>
+        </fieldset>
+
         <div class="switches">
             <label for="gbOnOff"><input type="checkbox" id="gbOnOff" checked>Population on/off</label>
             <label for="buildUpOnOff"><input type="checkbox" id="buildUpOnOff" checked>Built up Areas on/off</label>
@@ -98,8 +117,7 @@
         const gbOnOff = document.getElementById('gbOnOff');
         const buildUpOnOff = document.getElementById('buildUpOnOff');
 
-        const acresSlider = document.getElementById('acresSlider');
-        const selectedShops = ["Tesco", "Coop"];
+        const selectedShops = ["Tesco"];
         const shopName = document.getElementById("shop");
         const shopList = document.getElementById("shop-list");
 
@@ -111,58 +129,6 @@
             zoom: 5
         });
 
-        noUiSlider.create(acresSlider, {
-            start: [1, 8],
-            connect: true,
-            range: {
-                'min': 0,
-                'max': 10
-            }, tooltips: {
-                // tooltips are output only, so only a "to" is needed
-                to: function (numericValue) {
-                    return parseInt(numericValue)
-                }
-            },
-            format: {
-                from: function (value) {
-                    return parseInt(value);
-                },
-                to: function (value) {
-                    return parseInt(value);
-                }
-            }
-        });
-        noUiSlider.create(gbSlider, {
-            start: [1000, 5550000],
-            connect: true,
-            range: {
-                'min': 0,
-                'max': 11000000
-            },
-        });
-        gbSlider.noUiSlider.on('change', function (d) {
-            console.log('change',);
-            setGBFilter(d[0], d[1])
-        });
-        gbSlider.noUiSlider.on('update', function (d) {
-            console.log('update',);
-            gbSliderMin.value = parseInt(d[0])
-            gbSliderMax.value = parseInt(d[1])
-        });
-        gbSliderMin.addEventListener('change', function () {
-            gbSlider.noUiSlider.set([this.value, null]);
-            updateGBFilters()
-        });
-        gbSliderMax.addEventListener('change', function () {
-            gbSlider.noUiSlider.set([null, this.value]);
-            updateGBFilters()
-        });
-        gbOnOff.addEventListener("change", () => {
-            const visible = gbOnOff.checked ? 'visible' : 'none'
-            map.setLayoutProperty('GBcircle', 'visibility', visible);
-            map.setLayoutProperty('GBtext', 'visibility', visible);
-        })
-
         buildUpOnOff.addEventListener("change", () => {
             const visible = buildUpOnOff.checked ? 'visible' : 'none'
             map.setLayoutProperty('shapes', 'visibility', visible);
@@ -173,10 +139,61 @@
             map.setLayoutProperty('polygons', 'visibility', visible);
         })
 
-        function updateGBFilters() {
-            const min = gbSliderMin.value
-            const max = gbSliderMax.value
-            setGBFilter(min, max)
+        gbOnOff.addEventListener("change", () => {
+            const visible = gbOnOff.checked ? 'visible' : 'none'
+            map.setLayoutProperty('GBcircle', 'visibility', visible);
+            map.setLayoutProperty('GBtext', 'visibility', visible);
+        })
+
+        buildSlider("acresSlider", 0, 8, setAreaFilter)
+        buildSlider("gbSlider", 0, 11000000, setGBFilter)
+
+        function buildSlider(sliderName, min, max, filterFunction) {
+            const SLIDER = document.getElementById(sliderName);
+            const SLIDER_MIN = document.getElementById(sliderName + "-min");
+            const SLIDER_MAX = document.getElementById(sliderName + "-max");
+            noUiSlider.create(SLIDER, {
+                start: [min, max],
+                connect: true,
+                range: {
+                    'min': min,
+                    'max': max
+                },
+            });
+            SLIDER.noUiSlider.on('change', function (d) {
+                console.log('change',);
+                const min = parseInt(d[0])
+                const max = parseInt(d[1])
+                filterFunction(min, max)
+            });
+            SLIDER.noUiSlider.on('update', function (d) {
+                console.log('update',);
+                SLIDER_MIN.value = parseInt(d[0])
+                SLIDER_MAX.value = parseInt(d[1])
+            });
+            SLIDER_MIN.addEventListener('change', function () {
+                SLIDER.noUiSlider.set([this.value, null]);
+                const min = SLIDER_MIN.value
+                const max = SLIDER_MAX.value
+                filterFunction(min, max)
+            });
+            SLIDER_MAX.addEventListener('change', function () {
+                SLIDER.noUiSlider.set([null, this.value]);
+                const min = SLIDER_MIN.value
+                const max = SLIDER_MAX.value
+                filterFunction(min, max)
+            });
+        }
+
+        function setAreaFilter(min, max) {
+            console.log('setAreaFilter', min, max);
+            map.setFilter('polygons', ['all', ['>', 'area', min], ['<', 'area', max]]);
+        }
+
+        function setGBFilter(min, max) {
+            console.log('setGBFilter', min, max);
+            map.setFilter('GBcircle', ['all', ['>', 'population', parseInt(min)], ['<', 'population', parseInt(max)]]);
+            map.setFilter('GBtext', ['all', ['>', 'population', parseInt(min)], ['<', 'population', parseInt(max)]]);
         }
 
         map.on('load', () => {
@@ -505,15 +522,6 @@
             map.setFilter('storeLogo', filterArr);
         }
 
-        function setAreaFilter(min, max) {
-            map.setFilter('polygons', ['all', ['>', 'area', min], ['<', 'area', max]]);
-        }
-
-        function setGBFilter(min, max) {
-            console.log('min,max', min, max);
-            map.setFilter('GBcircle', ['all', ['>', 'population', parseInt(min)], ['<', 'population', parseInt(max)]]);
-            map.setFilter('GBtext', ['all', ['>', 'population', parseInt(min)], ['<', 'population', parseInt(max)]]);
-        }
         //map.setFilter('gb',['none'])
     </script>
 
