@@ -44,6 +44,7 @@
             flex-direction: row;
             align-items: center;
         }
+
         .slider input {
             width: 50px;
         }
@@ -164,7 +165,7 @@
 
         map.on('load', () => {
 
-            
+            /*
             fetch("data/bristol.zip")
                 .then(text => text.arrayBuffer())
                 .then((myshape) => shp(myshape))
@@ -187,48 +188,38 @@
                     map.getSource("shapes").setData(data)
                 }).catch(e => console.log('error', e));
 
-
+                */
             d3.csv("data/supermarket store location data - Sheet2.csv")
                 .then(data => {
                     console.log('Store', data);
-                    const pins = data.map(pin => {
-                        const { property_latitude, property_longitude } = pin
-                        return {
-                            "type": "Feature", "properties": { ...pin, },
-                            "geometry": {
-                                "type": "Point", "coordinates": [+property_longitude, +property_latitude]
-                            }
-                        }
-                    })
-                    const featureCollection = turf.featureCollection(pins)
-                    map.getSource("store").setData(featureCollection)
 
+                    uploadPhotosBuildLayer(data)
                     buildStoreFilters(data)
                     filterByShopNameS(selectedShops)
                 })
 
-
-            d3.csv("data/gb.csv")
-                .then(data => {
-                    console.log('gb', data);
-                    const pins = data.map(pin => {
-                        const { lat, lng } = pin
-                        return {
-                            "type": "Feature", "properties": {
-                                ...pin,
-                                population: +pin.population,
-                                cityandpop: pin.city + ' / ' + pin.population
-                            },
-                            "geometry": {
-                                "type": "Point", "coordinates": [+lng, +lat]
-                            }
+            /*
+        d3.csv("data/gb.csv")
+            .then(data => {
+                console.log('gb', data);
+                const pins = data.map(pin => {
+                    const { lat, lng } = pin
+                    return {
+                        "type": "Feature", "properties": {
+                            ...pin,
+                            population: +pin.population,
+                            cityandpop: pin.city + ' / ' + pin.population
+                        },
+                        "geometry": {
+                            "type": "Point", "coordinates": [+lng, +lat]
                         }
-                    })
-                    const featureCollection = turf.featureCollection(pins)
-                    map.getSource("gb").setData(featureCollection)
+                    }
                 })
+                const featureCollection = turf.featureCollection(pins)
+                map.getSource("gb").setData(featureCollection)
+            })
 
-            //*/
+        //*/
 
             map.addSource('shapes', {
                 'type': 'geojson',
@@ -313,16 +304,25 @@
                     'features': []
                 }
             });
+
+            // Add a layer to use the image to represent the data.
+            map.addLayer({
+                'id': 'storeLogo',
+                'type': 'symbol',
+                'source': 'store', // reference the data source
+                'layout': {
+                    'icon-image': ['get', 'company_name'], // reference the image
+                    'icon-size': 0.15,
+                    'icon-allow-overlap': true
+                }
+            });
+
             map.addLayer({
                 'id': 'store',
                 'type': 'circle',
                 'source': 'store',
                 'paint': {
                     'circle-radius': 4,
-                    // 'circle-color': [
-                    //     'Aldi', 'Asda', 'Budgens', 'Farmfoods', 'Iceland', 'KILLARNEY', 'Lidl', 'Londis', 'Marks & Spencers', 'McColls', 'Morrisons', 'Nisa Local', 'SPAR', 'Sainsburys', 'Tesco'
-                    // ],
-
                     'circle-color': [
                         'match',
                         ['get', 'company_name'],
@@ -396,15 +396,37 @@
                 map.getCanvas().style.cursor = '';
             });
 
-
-
         });
+
+        function uploadPhotosBuildLayer(data) {
+            const names = [...new Set(data.map(store => store.company_name).sort())]
+            names.forEach(name => {
+                map.loadImage(`logos/${name}.png`, (error, image) => {
+                    if (error) throw error;
+                    map.addImage(name, image);
+                });
+            })
+
+
+            const pins = data.map(pin => {
+                const { property_latitude, property_longitude } = pin
+                return {
+                    "type": "Feature", "properties": { ...pin, },
+                    "geometry": {
+                        "type": "Point", "coordinates": [+property_longitude, +property_latitude]
+                    }
+                }
+            })
+            const featureCollection = turf.featureCollection(pins)
+            map.getSource("store").setData(featureCollection)
+
+        }
+
 
         function buildStoreFilters(data) {
 
             const names = [...new Set(data.map(store => store.company_name).sort())]
             console.log('names', names);
-
             names.forEach(name => {
 
                 const checkbox = buildCheckBox(name, selectedShops.includes(name), e => {
@@ -422,6 +444,13 @@
                     filterByShopNameS(selectedShops)
                 })
                 shopList.appendChild(checkbox)
+
+                map.loadImage(`logos/${name}.png`, (error, image) => {
+                    if (error) throw error;
+                    map.addImage(name, image);
+                });
+
+
             })
         }
 
@@ -450,6 +479,7 @@
         function filterByShopName() {
             const name = shopName.value;
             map.setFilter('store', ['==', 'company_name', name]);
+            map.setFilter('storeLogo', ['==', 'company_name', name]);
         }
 
         function filterByShopNameS(shopNameArray) {
@@ -460,6 +490,7 @@
             const filterArr = ['any', ...filter];
             console.log('filterArr', filterArr);
             map.setFilter('store', filterArr);
+            map.setFilter('storeLogo', filterArr);
         }
 
         function setAreaFilter(min, max) {
