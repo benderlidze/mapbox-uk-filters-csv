@@ -53,6 +53,10 @@
         .slider input {
             width: 50px;
         }
+
+        .switches {
+            margin: 20px 0px;
+        }
     </style>
 </head>
 
@@ -71,8 +75,8 @@
             </div>
             <div><input type="text" id="gbSlider-max"></div>
         </div>
-        <div>
-            <label for="gbOnOff"><input type="checkbox" id="gbOnOff" checked>Population</label>
+        <div class="switches">
+            <label for="gbOnOff"><input type="checkbox" id="gbOnOff" checked>Population on/off</label>
         </div>
         <div>
             <!-- <input type="text" id="shop" placeholder="shop name" /><button onclick="filterByShopName()">Filter</button> -->
@@ -163,7 +167,7 @@
 
         map.on('load', () => {
 
-            
+            /*
             fetch("data/bristol.zip")
                 .then(text => text.arrayBuffer())
                 .then((myshape) => shp(myshape))
@@ -185,7 +189,7 @@
                     console.log('data', data);
                     map.getSource("shapes").setData(data)
                 }).catch(e => console.log('error', e));
-
+*/
 
             d3.csv("data/supermarket store location data - Sheet2.csv")
                 .then(data => {
@@ -206,7 +210,6 @@
                     filterByShopNameS(selectedShops)
                 })
 
-                //*/
 
             d3.csv("data/gb.csv")
                 .then(data => {
@@ -228,6 +231,7 @@
                     map.getSource("gb").setData(featureCollection)
                 })
 
+            //*/
 
             map.addSource('shapes', {
                 'type': 'geojson',
@@ -350,7 +354,9 @@
             map.on('click', 'store', (e) => {
                 console.log('e', e);
                 // Copy coordinates array.
-                const description = e.features[0].properties.company_name;
+                const name = e.features[0].properties.company_name;
+                const addr = e.features[0].properties.property_address;
+                const description = `<h2>${name}</h2>${addr}`
                 new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
                     .setHTML(description)
