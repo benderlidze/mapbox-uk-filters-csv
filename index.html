@@ -71,11 +71,9 @@
             </div>
             <div><input type="text" id="gbSlider-max"></div>
         </div>
-
-
-        <!-- <button onclick="setAreaFilter()">1 to 3 acres </button> -->
-        <button onclick="setFilter()">Set GB Filter 6000 and 9000 </button>
-
+        <div>
+            <label for="gbOnOff"><input type="checkbox" id="gbOnOff" checked>Population</label>
+        </div>
         <div>
             <!-- <input type="text" id="shop" placeholder="shop name" /><button onclick="filterByShopName()">Filter</button> -->
             <div id="shop-list"></div>
@@ -89,6 +87,7 @@
     <script>
         const gbSliderMin = document.getElementById('gbSlider-min');
         const gbSliderMax = document.getElementById('gbSlider-max');
+        const gbOnOff = document.getElementById('gbOnOff');
 
         const acresSlider = document.getElementById('acresSlider');
         const selectedShops = ["Tesco", "Coop"];
@@ -150,7 +149,11 @@
             gbSlider.noUiSlider.set([null, this.value]);
             updateGBFilters()
         });
-
+        gbOnOff.addEventListener("change", () => {
+            const visible = gbOnOff.checked ? 'visible' : 'none'
+            map.setLayoutProperty('GBcircle', 'visibility', visible);
+            map.setLayoutProperty('GBtext', 'visibility', visible);
+        })
         function updateGBFilters() {
             console.log('update1111',);
             const min = gbSliderMin.value
@@ -160,7 +163,7 @@
 
         map.on('load', () => {
 
-
+            /*
             fetch("data/bristol.zip")
                 .then(text => text.arrayBuffer())
                 .then((myshape) => shp(myshape))
@@ -203,6 +206,7 @@
                     filterByShopNameS(selectedShops)
                 })
 
+                //*/
 
             d3.csv("data/gb.csv")
                 .then(data => {
@@ -224,7 +228,6 @@
                     map.getSource("gb").setData(featureCollection)
                 })
 
-            //*/
 
             map.addSource('shapes', {
                 'type': 'geojson',
@@ -270,12 +273,15 @@
                 }
             });
             map.addLayer({
-                'id': 'gb',
+                'id': 'GBcircle',
                 'type': 'circle',
                 'source': 'gb',
                 'paint': {
                     'circle-radius': 6,
                     'circle-color': '#B42222'
+                },
+                'layout': {
+                    'visibility': 'visible'
                 },
             });
             map.addLayer({
@@ -289,6 +295,7 @@
                     'text-allow-overlap': true,
                     'icon-allow-overlap': true,
                     'text-offset': [0, 1],
+                    'visibility': 'visible'
                 },
                 'paint': {
                     'text-color': '#202',
@@ -458,7 +465,7 @@
 
         function setGBFilter(min, max) {
             console.log('min,max', min, max);
-            map.setFilter('gb', ['all', ['>', 'population', parseInt(min)], ['<', 'population', parseInt(max)]]);
+            map.setFilter('GBcircle', ['all', ['>', 'population', parseInt(min)], ['<', 'population', parseInt(max)]]);
             map.setFilter('GBtext', ['all', ['>', 'population', parseInt(min)], ['<', 'population', parseInt(max)]]);
         }
         //map.setFilter('gb',['none'])
