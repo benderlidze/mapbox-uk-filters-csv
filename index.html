@@ -165,7 +165,7 @@
 
         map.on('load', () => {
 
-            /*
+
             fetch("data/bristol.zip")
                 .then(text => text.arrayBuffer())
                 .then((myshape) => shp(myshape))
@@ -188,7 +188,7 @@
                     map.getSource("shapes").setData(data)
                 }).catch(e => console.log('error', e));
 
-                */
+
             d3.csv("data/supermarket store location data - Sheet2.csv")
                 .then(data => {
                     console.log('Store', data);
@@ -198,28 +198,28 @@
                     filterByShopNameS(selectedShops)
                 })
 
-            /*
-        d3.csv("data/gb.csv")
-            .then(data => {
-                console.log('gb', data);
-                const pins = data.map(pin => {
-                    const { lat, lng } = pin
-                    return {
-                        "type": "Feature", "properties": {
-                            ...pin,
-                            population: +pin.population,
-                            cityandpop: pin.city + ' / ' + pin.population
-                        },
-                        "geometry": {
-                            "type": "Point", "coordinates": [+lng, +lat]
-                        }
-                    }
-                })
-                const featureCollection = turf.featureCollection(pins)
-                map.getSource("gb").setData(featureCollection)
-            })
 
-        //*/
+            d3.csv("data/gb.csv")
+                .then(data => {
+                    console.log('gb', data);
+                    const pins = data.map(pin => {
+                        const { lat, lng } = pin
+                        return {
+                            "type": "Feature", "properties": {
+                                ...pin,
+                                population: +pin.population,
+                                cityandpop: pin.city + ' / ' + pin.population
+                            },
+                            "geometry": {
+                                "type": "Point", "coordinates": [+lng, +lat]
+                            }
+                        }
+                    })
+                    const featureCollection = turf.featureCollection(pins)
+                    map.getSource("gb").setData(featureCollection)
+                })
+
+            //*/
 
             map.addSource('shapes', {
                 'type': 'geojson',
