@@ -162,14 +162,14 @@
             });
             SLIDER.noUiSlider.on('change', function (d) {
                 console.log('change',);
-                const min = parseInt(d[0])
-                const max = parseInt(d[1])
+                const min = d[0]
+                const max = d[1]
                 filterFunction(min, max)
             });
             SLIDER.noUiSlider.on('update', function (d) {
                 console.log('update',);
-                SLIDER_MIN.value = parseInt(d[0])
-                SLIDER_MAX.value = parseInt(d[1])
+                SLIDER_MIN.value = d[0]
+                SLIDER_MAX.value = d[1]
             });
             SLIDER_MIN.addEventListener('change', function () {
                 SLIDER.noUiSlider.set([this.value, null]);
@@ -187,7 +187,8 @@
 
         function setAreaFilter(min, max) {
             console.log('setAreaFilter', min, max);
-            map.setFilter('polygons', ['all', ['>', 'area', min], ['<', 'area', max]]);
+            console.log('setAreaFilter', parseFloat(min), parseFloat(max));
+            map.setFilter('polygons', ['all', ['>', 'area', parseFloat(min)], ['<', 'area', parseFloat(max)]]);
         }
 
         function setGBFilter(min, max) {
