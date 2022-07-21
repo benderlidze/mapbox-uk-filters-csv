@@ -225,7 +225,7 @@
         }
 
         map.on('load', () => {
-            /*
+            
             d3.csv("data/dft_reduced.csv")
                 .then(data => {
                     console.log('Store', data);
@@ -321,7 +321,7 @@
                     const featureCollection = turf.featureCollection(pins)
                     map.getSource("gb").setData(featureCollection)
                 })
-                */
+                
             d3.csv("data/supermarket store location data - Sheet2.csv")
                 .then(data => {
                     shopData.push(...data)
@@ -330,9 +330,6 @@
                     buildStoreFilters(data)
                     //filterByShopNameS(selectedShops)
                 })
-
-
-
 
             //*/
 
