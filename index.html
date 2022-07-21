@@ -97,10 +97,22 @@
             </div>
         </fieldset>
 
+        <fieldset>
+            <legend>Traffic</legend>
+            <div class="slider">
+                <div><input type="text" id="trafficSlider-min"></div>
+                <div>
+                    <div id="trafficSlider" style="width:200px;margin:0px 20px;"></div>
+                </div>
+                <div><input type="text" id="trafficSlider-max"></div>
+            </div>
+        </fieldset>
+
         <div class="switches">
-            <label for="gbOnOff"><input type="checkbox" id="gbOnOff" checked>Population on/off</label>
-            <label for="buildUpOnOff"><input type="checkbox" id="buildUpOnOff" checked>Built up Areas on/off</label>
-            <label for="polyUpOnOff"><input type="checkbox" id="polyUpOnOff" checked>Bristol Areas on/off</label>
+            <label for="trafficOnOff"><input type="checkbox" id="trafficOnOff">Traffic on/off</label>
+            <label for="gbOnOff"><input type="checkbox" id="gbOnOff">Population on/off</label>
+            <label for="buildUpOnOff"><input type="checkbox" id="buildUpOnOff">Built up Areas on/off</label>
+            <label for="polyUpOnOff"><input type="checkbox" id="polyUpOnOff">Bristol Areas on/off</label>
         </div>
         <div>
             <div id="shop-list"></div>
@@ -116,8 +128,9 @@
         const gbSliderMax = document.getElementById('gbSlider-max');
         const gbOnOff = document.getElementById('gbOnOff');
         const buildUpOnOff = document.getElementById('buildUpOnOff');
+        const trafficOnOff = document.getElementById('trafficOnOff');
 
-        const selectedShops = ["Tesco"];
+        const selectedShops = []; //no shops at load
         const shopName = document.getElementById("shop");
         const shopList = document.getElementById("shop-list");
 
@@ -145,8 +158,15 @@
             map.setLayoutProperty('GBtext', 'visibility', visible);
         })
 
+        trafficOnOff.addEventListener("change", () => {
+            const visible = trafficOnOff.checked ? 'visible' : 'none'
+            map.setLayoutProperty('traffic', 'visibility', visible);
+            map.setLayoutProperty('trafficText', 'visibility', visible);
+        })
+
         buildSlider("acresSlider", 0, 8, setAreaFilter)
         buildSlider("gbSlider", 0, 11000000, setGBFilter)
+        buildSlider("trafficSlider", 0, 100000, setTrafficFilter)
 
         function buildSlider(sliderName, min, max, filterFunction) {
             const SLIDER = document.getElementById(sliderName);
@@ -196,8 +216,66 @@
             map.setFilter('GBcircle', ['all', ['>', 'population', parseInt(min)], ['<', 'population', parseInt(max)]]);
             map.setFilter('GBtext', ['all', ['>', 'population', parseInt(min)], ['<', 'population', parseInt(max)]]);
         }
+        function setTrafficFilter(min, max) {
+            console.log('setTrafficFilter', min, max);
+            map.setFilter('traffic', ['all', ['>', 'all_motor_vehicles', parseInt(min)], ['<', 'all_motor_vehicles', parseInt(max)]]);
+            map.setFilter('trafficText', ['all', ['>', 'all_motor_vehicles', parseInt(min)], ['<', 'all_motor_vehicles', parseInt(max)]]);
+        }
 
         map.on('load', () => {
+
+            d3.csv("data/dft_reduced.csv")
+                .then(data => {
+                    console.log('Store', data);
+
+                    //get unique
+                    const reduced = data
+                        .filter(i => +i.all_motor_vehicles > 4999)
+                        .map(i => {
+                            return { lat: +i.latitude, lon: +i.longitude, year: +i.year, all: +i.all_motor_vehicles, road_name: i.road_name }
+                        })
+
+                    const f = new Map()
+
+                    reduced.map(i => {
+                        const key = `${i.lat}-${i.lon}`;
+                        const d = f.get(key);
+                        if (!d) {//get only latest year [2009,2010,2011] => 2011
+                            f.set(key, { lat: i.lat, lon: i.lon, year: i.year, all: i.all, road_name: i.road_name })
+                        } else {
+                            if (+i.year > +d.year) {
+                                f.set(key, { lat: i.lat, lon: i.lon, year: i.year, all: i.all, road_name: i.road_name })
+                            }
+                        }
+                    })
+
+                    const _positions = new Map();
+                    const fixLables = Array.from(f).map(i => {
+                        const { lat, lon, all } = i[1]
+                        const coords = `${lat.toFixed(4)}-${lon.toFixed(4)}`
+                        let position = [1, -1]
+                        if (_positions.has(coords)) {
+                            position = [-1, 1]
+                        } else {
+                            _positions.set(coords)
+                        }
+                        return { ...i[1], position }
+                    })
+
+                    const pins = fixLables
+                        //.sort((a, b) => a.lat - b.lat)
+                        .map(pin => {
+                            const { lat, lon, all } = pin
+                            return {
+                                "type": "Feature", "properties": { 'all_motor_vehicles': all, ...pin },
+                                "geometry": {
+                                    "type": "Point", "coordinates": [+lon, +lat]
+                                }
+                            }
+                        })
+                    const featureCollection = turf.featureCollection(pins)
+                    map.getSource("traffic").setData(featureCollection)
+                })
 
 
             fetch("data/bristol.zip")
@@ -271,6 +349,9 @@
                     'fill-color': 'blue',
                     'fill-opacity': 0.8
                 },
+                'layout': {
+                    'visibility': 'none'
+                },
             });
 
             map.addSource('polygons', {
@@ -290,7 +371,7 @@
                     'fill-opacity': 0.4
                 },
                 'layout': {
-                    'visibility': 'visible'
+                    'visibility': 'none'
                 },
             });
 
@@ -310,7 +391,7 @@
                     'circle-color': '#B42222'
                 },
                 'layout': {
-                    'visibility': 'visible'
+                    'visibility': 'none'
                 },
             });
             map.addLayer({
@@ -324,7 +405,7 @@
                     'text-allow-overlap': true,
                     'icon-allow-overlap': true,
                     'text-offset': [0, 1],
-                    'visibility': 'visible'
+                    'visibility': 'none'
                 },
                 'paint': {
                     'text-color': '#202',
@@ -350,7 +431,7 @@
                 'layout': {
                     'icon-image': ['get', 'company_name'], // reference the image
                     'icon-size': 0.15,
-                    'icon-allow-overlap': true
+                    'icon-allow-overlap': true,
                 }
             });
 
@@ -380,9 +461,73 @@
                         'Tesco', '#ADFF2F',
                         /* other */ '#ccc'
                     ]
+                },
+                layout: {
+                    'visibility': 'none'
+                }
+            });
+
+
+            map.addSource('traffic', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                }
+            });
+            map.addLayer({
+                'id': 'traffic',
+                'type': 'circle',
+                'source': 'traffic',
+                'paint': {
+                    'circle-radius': 4,
+                    'circle-color': 'red'
+                },
+                'layout': {
+                    'visibility': 'none'
+                },
+            });
+
+            map.addLayer({
+                'id': 'trafficText',
+                'type': 'symbol',
+                'source': 'traffic',
+                'layout': {
+                    'text-field': ['get', 'all_motor_vehicles'],
+                    'text-size': 10,
+                    'text-transform': 'uppercase',
+                    'text-offset': ['get', 'position'],
+                    'text-allow-overlap': true,
+                    'icon-allow-overlap': true,
+                    // 'text-justify': ['get', 'all_motor_vehicles']
+                    'visibility': 'none'
+                },
+                'paint': {
+                    'text-color': '#202',
 
                 },
             });
+            map.on('click', 'traffic', (e) => {
+                console.log('e', e);
+                // Copy coordinates array.
+                const description = e.features[0].properties.road_name;
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(description)
+                    .addTo(map);
+
+                e.originalEvent.cancelBubble = true;
+            });
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'traffic', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'traffic', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+
 
 
             map.on('click', 'store', (e) => {

@@ -84,7 +84,7 @@
                     reduced.map(i => {
                         const key = `${i.lat}-${i.lon}`;
                         const d = f.get(key);
-                        if (!d) {
+                        if (!d) {//get only latest year [2009,2010,2011] => 2011
                             f.set(key, { lat: i.lat, lon: i.lon, year: i.year, all: i.all, road_name: i.road_name })
                         } else {
                             if (+i.year > +d.year) {
@@ -122,13 +122,13 @@
                             }
                         })
                     const featureCollection = turf.featureCollection(pins)
-                    map.getSource("store").setData(featureCollection)
+                    map.getSource("traffic").setData(featureCollection)
                     console.log('featureCollection', featureCollection);
                 })
 
 
 
-            map.addSource('store', {
+            map.addSource('traffic', {
                 'type': 'geojson',
                 'data': {
                     'type': 'FeatureCollection',
@@ -136,9 +136,9 @@
                 }
             });
             map.addLayer({
-                'id': 'store',
+                'id': 'traffic',
                 'type': 'circle',
-                'source': 'store',
+                'source': 'traffic',
                 'paint': {
                     'circle-radius': 4,
                     'circle-color': 'red'
@@ -146,9 +146,9 @@
             });
 
             map.addLayer({
-                'id': 'text',
+                'id': 'trafficText',
                 'type': 'symbol',
-                'source': 'store',
+                'source': 'traffic',
                 'layout': {
                     'text-field': ['get', 'all_motor_vehicles'],
                     'text-size': 10,
@@ -165,7 +165,7 @@
             });
 
 
-            map.on('click', 'store', (e) => {
+            map.on('click', 'traffic', (e) => {
                 console.log('e', e);
                 // Copy coordinates array.
                 const description = e.features[0].properties.road_name;
@@ -178,12 +178,12 @@
             });
 
             // Change the cursor to a pointer when the mouse is over the places layer.
-            map.on('mouseenter', 'store', () => {
+            map.on('mouseenter', 'traffic', () => {
                 map.getCanvas().style.cursor = 'pointer';
             });
 
             // Change it back to a pointer when it leaves.
-            map.on('mouseleave', 'store', () => {
+            map.on('mouseleave', 'traffic', () => {
                 map.getCanvas().style.cursor = '';
             });
 
