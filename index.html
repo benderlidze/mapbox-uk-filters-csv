@@ -134,6 +134,8 @@
         const shopName = document.getElementById("shop");
         const shopList = document.getElementById("shop-list");
 
+        const shopData = [];
+
         mapboxgl.accessToken = 'pk.eyJ1Ijoic3VqYW5jaGFrcmFib3J0eSIsImEiOiJja2Q5MzBuc3owenplMnBzY2I0eDYwdDhvIn0.imItePLDlYNF2BGVde_mkw';
         const map = new mapboxgl.Map({
             container: 'map',
@@ -223,7 +225,7 @@
         }
 
         map.on('load', () => {
-
+            /*
             d3.csv("data/dft_reduced.csv")
                 .then(data => {
                     console.log('Store', data);
@@ -300,17 +302,6 @@
                     map.getSource("shapes").setData(data)
                 }).catch(e => console.log('error', e));
 
-
-            d3.csv("data/supermarket store location data - Sheet2.csv")
-                .then(data => {
-                    console.log('Store', data);
-
-                    uploadPhotosBuildLayer(data)
-                    buildStoreFilters(data)
-                    filterByShopNameS(selectedShops)
-                })
-
-
             d3.csv("data/gb.csv")
                 .then(data => {
                     console.log('gb', data);
@@ -330,6 +321,18 @@
                     const featureCollection = turf.featureCollection(pins)
                     map.getSource("gb").setData(featureCollection)
                 })
+                */
+            d3.csv("data/supermarket store location data - Sheet2.csv")
+                .then(data => {
+                    shopData.push(...data)
+                    console.log('Store', data);
+                    uploadPhotosBuildLayer(data)
+                    buildStoreFilters(data)
+                    //filterByShopNameS(selectedShops)
+                })
+
+
+
 
             //*/
 
@@ -420,14 +423,56 @@
                 'data': {
                     'type': 'FeatureCollection',
                     'features': []
+                },
+                cluster: true,
+                clusterMaxZoom: 14, // Max zoom to cluster points on
+                clusterRadius: 50 // Radius of each cluster when clustering points 
+            });
+
+            map.addLayer({
+                id: 'store-clusters',
+                type: 'circle',
+                source: 'store',
+                filter: ['has', 'point_count'],
+                paint: {
+                    'circle-color': [
+                        'step',
+                        ['get', 'point_count'],
+                        '#51bbd6',
+                        100,
+                        '#f1f075',
+                        750,
+                        '#f28cb1'
+                    ],
+                    'circle-radius': [
+                        'step',
+                        ['get', 'point_count'],
+                        20,
+                        100,
+                        30,
+                        750,
+                        40
+                    ]
                 }
             });
 
-            // Add a layer to use the image to represent the data.
             map.addLayer({
-                'id': 'storeLogo',
+                id: 'store-cluster-count',
+                type: 'symbol',
+                source: 'store',
+                filter: ['has', 'point_count'],
+                layout: {
+                    'text-field': '{point_count_abbreviated}',
+                    'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                    'text-size': 12
+                }
+            });
+
+            map.addLayer({
+                id: 'storeLogo',
                 'type': 'symbol',
-                'source': 'store', // reference the data source
+                source: 'store',
+                filter: ['!', ['has', 'point_count']],
                 'layout': {
                     'icon-image': ['get', 'company_name'], // reference the image
                     'icon-size': 0.15,
@@ -435,37 +480,50 @@
                 }
             });
 
-            map.addLayer({
-                'id': 'store',
-                'type': 'circle',
-                'source': 'store',
-                'paint': {
-                    'circle-radius': 4,
-                    'circle-color': [
-                        'match',
-                        ['get', 'company_name'],
-                        'Aldi', '#fbb03b',
-                        'Asda', '#223b53',
-                        'Budgens', '#e55e5e',
-                        'Farmfoods', '#3bb2d0',
-                        'Iceland', 'red',
-                        'KILLARNEY', 'green',
-                        'Lidl', 'blue',
-                        'Londis', 'orange',
-                        'Marks & Spencers', 'yellow',
-                        'McColls', 'pink',
-                        'Morrisons', '#FF1493',
-                        'Nisa Local', '#FF00FF',
-                        'SPAR', '#1E90FF',
-                        'Sainsburys', '#DAA520',
-                        'Tesco', '#ADFF2F',
-                        /* other */ '#ccc'
-                    ]
-                },
-                layout: {
-                    'visibility': 'none'
-                }
-            });
+
+
+
+            // Add a layer to use the image to represent the data.
+            // map.addLayer({
+            //     'id': 'storeLogo',
+            //     'type': 'symbol',
+            //     'source': 'store', // reference the data source
+            //     'layout': {
+            //         'icon-image': ['get', 'company_name'], // reference the image
+            //         'icon-size': 0.15,
+            //         'icon-allow-overlap': true,
+            //     }
+            // });
+
+            // map.addLayer({
+            //     'id': 'store',
+            //     'type': 'circle',
+            //     'source': 'store',
+            //     'paint': {
+            //         'circle-radius': 4,
+            //         'circle-color': [
+            //             'match',
+            //             ['get', 'company_name'],
+            //             'Aldi', '#fbb03b',
+            //             'Asda', '#223b53',
+            //             'Budgens', '#e55e5e',
+            //             'Farmfoods', '#3bb2d0',
+            //             'Iceland', 'red',
+            //             'KILLARNEY', 'green',
+            //             'Lidl', 'blue',
+            //             'Londis', 'orange',
+            //             'Marks & Spencers', 'yellow',
+            //             'McColls', 'pink',
+            //             'Morrisons', '#FF1493',
+            //             'Nisa Local', '#FF00FF',
+            //             'SPAR', '#1E90FF',
+            //             'Sainsburys', '#DAA520',
+            //             'Tesco', '#ADFF2F',
+            //             /* other */ '#ccc'
+            //         ]
+            //     },
+            //     filter: ['!', ['has', 'point_count']],
+            // });
 
 
             map.addSource('traffic', {
@@ -582,25 +640,31 @@
 
         function uploadPhotosBuildLayer(data) {
             const names = [...new Set(data.map(store => store.company_name).sort())]
+
             names.forEach(name => {
                 map.loadImage(`logos/${name}.png`, (error, image) => {
-                    if (error) throw error;
+                    if (error) {
+                        map.loadImage(`logos/default.png`, (error, image) => {
+                            console.log('name', name);
+                            map.addImage(name, image);
+                        });
+                        throw error;
+                    }
                     map.addImage(name, image);
                 });
             })
 
-
-            const pins = data.map(pin => {
-                const { property_latitude, property_longitude } = pin
-                return {
-                    "type": "Feature", "properties": { ...pin, },
-                    "geometry": {
-                        "type": "Point", "coordinates": [+property_longitude, +property_latitude]
-                    }
-                }
-            })
-            const featureCollection = turf.featureCollection(pins)
-            map.getSource("store").setData(featureCollection)
+            // const pins = data.map(pin => {
+            //     const { property_latitude, property_longitude } = pin
+            //     return {
+            //         "type": "Feature", "properties": { ...pin, },
+            //         "geometry": {
+            //             "type": "Point", "coordinates": [+property_longitude, +property_latitude]
+            //         }
+            //     }
+            // })
+            // const featureCollection = turf.featureCollection(pins)
+            // map.getSource("store").setData(featureCollection)
 
         }
 
@@ -664,8 +728,27 @@
             })
             const filterArr = ['any', ...filter];
             console.log('filterArr', filterArr);
-            map.setFilter('store', filterArr);
-            map.setFilter('storeLogo', filterArr);
+            // map.setFilter('store', filterArr);
+            // map.setFilter('storeLogo', filterArr);
+
+            // map.setFilter('store-cluster-count', filterArr);
+            // map.setFilter('store-clusters', filterArr);
+            // map.setFilter('store', filterArr);
+            // map.setFilter('storeLogo', filterArr);
+
+            const pins = shopData
+                .filter(pin => shopNameArray.includes(pin.company_name))
+                .map(pin => {
+                    const { property_latitude, property_longitude } = pin
+                    return {
+                        "type": "Feature", "properties": { ...pin, },
+                        "geometry": {
+                            "type": "Point", "coordinates": [+property_longitude, +property_latitude]
+                        }
+                    }
+                })
+            const featureCollection = turf.featureCollection(pins)
+            map.getSource("store").setData(featureCollection)
         }
 
         //map.setFilter('gb',['none'])
