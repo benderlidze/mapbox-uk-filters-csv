@@ -167,10 +167,10 @@
         })
 
         buildSlider("acresSlider", 0, 8, setAreaFilter)
-        buildSlider("gbSlider", 0, 11000000, setGBFilter)
-        buildSlider("trafficSlider", 0, 100000, setTrafficFilter)
+        buildSlider("gbSlider", 2400, 11000000, setGBFilter, true)
+        buildSlider("trafficSlider", 5000, 100000, setTrafficFilter, true)
 
-        function buildSlider(sliderName, min, max, filterFunction) {
+        function buildSlider(sliderName, min, max, filterFunction, integer = false) {
             const SLIDER = document.getElementById(sliderName);
             const SLIDER_MIN = document.getElementById(sliderName + "-min");
             const SLIDER_MAX = document.getElementById(sliderName + "-max");
@@ -184,14 +184,16 @@
             });
             SLIDER.noUiSlider.on('change', function (d) {
                 console.log('change',);
-                const min = d[0]
-                const max = d[1]
+                const min = integer ? parseInt(d[0]) : d[0]
+                const max = integer ? parseInt(d[1]) : d[1]
                 filterFunction(min, max)
             });
             SLIDER.noUiSlider.on('update', function (d) {
                 console.log('update',);
-                SLIDER_MIN.value = d[0]
-                SLIDER_MAX.value = d[1]
+                const min = integer ? parseInt(d[0]) : d[0]
+                const max = integer ? parseInt(d[1]) : d[1]
+                SLIDER_MIN.value = min
+                SLIDER_MAX.value = max
             });
             SLIDER_MIN.addEventListener('change', function () {
                 SLIDER.noUiSlider.set([this.value, null]);
@@ -225,7 +227,7 @@
         }
 
         map.on('load', () => {
-            
+
             d3.csv("data/dft_reduced.csv")
                 .then(data => {
                     console.log('Store', data);
@@ -321,7 +323,7 @@
                     const featureCollection = turf.featureCollection(pins)
                     map.getSource("gb").setData(featureCollection)
                 })
-                
+
             d3.csv("data/supermarket store location data - Sheet2.csv")
                 .then(data => {
                     shopData.push(...data)
