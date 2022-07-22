@@ -65,6 +65,13 @@
             border: 1px solid #cdcdcd;
             border-radius: 4px;
         }
+
+        #shop-list {
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            max-height: 600px;
+        }
     </style>
 </head>
 
@@ -324,7 +331,8 @@
                     map.getSource("gb").setData(featureCollection)
                 })
 
-            d3.csv("data/supermarket store location data - Sheet2.csv")
+            //d3.csv("data/supermarket store location data - Sheet2.csv")
+            d3.csv("data/Store Location data - elle.csv")
                 .then(data => {
                     shopData.push(...data)
                     console.log('Store', data);
