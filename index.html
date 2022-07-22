@@ -649,7 +649,7 @@
             const names = [...new Set(data.map(store => store.company_name).sort())]
 
             names.forEach(name => {
-                map.loadImage(`logos/${name}.png`, (error, image) => {
+                map.loadImage(`logos/${name.toLowerCase()}.png`, (error, image) => {
                     if (error) {
                         map.loadImage(`logos/default.png`, (error, image) => {
                             console.log('name', name);
