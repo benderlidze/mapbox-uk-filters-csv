@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Add multiple geometries from one GeoJSON source</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+    <script src="js/shp.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        #filters {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background-color: white;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="filters">
+        <button onclick="setAreaFilter()">1 to 3 acres </button>
+        <button onclick="setFilter()">Set GB Filter 6000 and 9000 </button>
+
+        <div>
+            <!-- <input type="text" id="shop" placeholder="shop name" /><button onclick="filterByShopName()">Filter</button> -->
+            <div id="shop-list"></div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+
+
+    <script>
+        const selectedShops = ["Tesco", "Coop"];
+
+        const shopName = document.getElementById("shop");
+        const shopList = document.getElementById("shop-list");
+
+        mapboxgl.accessToken = 'pk.eyJ1Ijoic3VqYW5jaGFrcmFib3J0eSIsImEiOiJja2Q5MzBuc3owenplMnBzY2I0eDYwdDhvIn0.imItePLDlYNF2BGVde_mkw';
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/light-v10',
+            center: { lng: -2.774533172216252, lat: 54.12181638598531 },
+            zoom: 7
+        });
+
+        map.on('load', () => {
+
+            d3.csv("data/dft_reduced.csv")
+                .then(data => {
+                    console.log('Store', data);
+
+                    //get unique
+                    const reduced = data
+                        .filter(i => +i.all_motor_vehicles > 4999)
+                        .map(i => {
+                            return { lat: +i.latitude, lon: +i.longitude, year: +i.year, all: +i.all_motor_vehicles, road_name: i.road_name }
+                        })
+
+                    const f = new Map()
+
+                    reduced.map(i => {
+                        const key = `${i.lat}-${i.lon}`;
+                        const d = f.get(key);
+                        if (!d) {//get only latest year [2009,2010,2011] => 2011
+                            f.set(key, { lat: i.lat, lon: i.lon, year: i.year, all: i.all, road_name: i.road_name })
+                        } else {
+                            if (+i.year > +d.year) {
+                                f.set(key, { lat: i.lat, lon: i.lon, year: i.year, all: i.all, road_name: i.road_name })
+                            }
+                        }
+                    })
+
+                    console.log('reduced', reduced);
+                    console.log('f', f);
+
+
+                    const _positions = new Map();
+                    const fixLables = Array.from(f).map(i => {
+                        const { lat, lon, all } = i[1]
+                        const coords = `${lat.toFixed(4)}-${lon.toFixed(4)}`
+                        let position = [1, -1]
+                        if (_positions.has(coords)) {
+                            position = [-1, 1]
+                        } else {
+                            _positions.set(coords)
+                        }
+                        return { ...i[1], position }
+                    })
+
+                    const pins = fixLables
+                        //.sort((a, b) => a.lat - b.lat)
+                        .map(pin => {
+                            const { lat, lon, all } = pin
+                            return {
+                                "type": "Feature", "properties": { 'all_motor_vehicles': all, ...pin },
+                                "geometry": {
+                                    "type": "Point", "coordinates": [+lon, +lat]
+                                }
+                            }
+                        })
+                    const featureCollection = turf.featureCollection(pins)
+                    map.getSource("traffic").setData(featureCollection)
+                    console.log('featureCollection', featureCollection);
+                })
+
+
+
+            map.addSource('traffic', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                }
+            });
+            map.addLayer({
+                'id': 'traffic',
+                'type': 'circle',
+                'source': 'traffic',
+                'paint': {
+                    'circle-radius': 4,
+                    'circle-color': 'red'
+                },
+            });
+
+            map.addLayer({
+                'id': 'trafficText',
+                'type': 'symbol',
+                'source': 'traffic',
+                'layout': {
+                    'text-field': ['get', 'all_motor_vehicles'],
+                    'text-size': 10,
+                    'text-transform': 'uppercase',
+                    'text-offset': ['get', 'position'],
+                    'text-allow-overlap': true,
+                    'icon-allow-overlap': true,
+                    // 'text-justify': ['get', 'all_motor_vehicles']
+                },
+                'paint': {
+                    'text-color': '#202',
+
+                },
+            });
+
+
+            map.on('click', 'traffic', (e) => {
+                console.log('e', e);
+                // Copy coordinates array.
+                const description = e.features[0].properties.road_name;
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(description)
+                    .addTo(map);
+
+                e.originalEvent.cancelBubble = true;
+            });
+
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'traffic', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'traffic', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+        });
+
+
+        const convertToCsv = (arr) => {
+            const keys = Object.keys(arr[0]);
+            const replacer = (_key, value) => value === null ? '' : value;
+            const processRow = row => keys.map(key => JSON.stringify(row[key], replacer)).join(',');
+            return [keys.join(','), ...arr.map(processRow)].join('\r\n');
+        };
+        const downloadFile = (fileName, data) => {
+            var link = document.createElement('a');
+            link.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
+            link.setAttribute('download', fileName);
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        //map.setFilter('gb',['none'])
+    </script>
+
+</body>
+
+</html>
