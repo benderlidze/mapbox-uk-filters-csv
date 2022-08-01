@@ -35,7 +35,7 @@
             z-index: 10;
             background-color: white;
             padding: 20px;
-            min-width: 400px;
+            min-width: 480px;
             ;
         }
 
@@ -71,7 +71,7 @@
             display: flex;
             flex-direction: column;
             flex-wrap: wrap;
-            max-height: 600px;
+            max-height: 800px;
         }
 
         .sectors {
@@ -154,7 +154,7 @@
 
 
 
-            d3.csv("data/Store Location data - elle.csv")
+            d3.csv("data/NEW SHOP DATA.csv")
                 .then(data => {
 
                     data.forEach(shop => {
@@ -216,7 +216,7 @@
                         40
                     ]
                 }
-            }); 
+            });
 
             map.addLayer({
                 id: 'store-cluster-count',
@@ -340,7 +340,7 @@
             names.forEach(name => {
                 map.loadImage(`logos/small/${name.toLowerCase()}.png`, (error, image) => {
                     if (error) {
-                        map.loadImage(`logos/default.png`, (error, image) => {
+                        map.loadImage(`logos/small/default.png`, (error, image) => {
                             console.log('name', name);
                             map.addImage(name, image);
                         });

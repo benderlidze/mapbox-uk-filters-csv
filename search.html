@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Add multiple geometries from one GeoJSON source</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+    <script src="js/shp.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        #filters {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background-color: white;
+            padding: 10px;
+        }
+
+        /*the container must be positioned relative:*/
+        .autocomplete {
+            position: relative;
+            display: flex;
+            z-index: 10;
+            flex: 1;
+            margin: 0px 30px;
+            justify-content: center;
+        }
+
+        input {
+            border: 2px solid gray;
+            background-color: #f1f1f1;
+            padding: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        input[type=text] {
+            background-color: #f1f1f1;
+            width: 100%;
+        }
+
+        input[type=submit] {
+            background-color: DodgerBlue;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid #757575;
+            border-bottom: none;
+            border-top: none;
+            z-index: 99;
+            /*position the autocomplete items to be the same width as the container:*/
+            top: 100%;
+            left: 0;
+            right: 0;
+            color: black
+        }
+
+        .autocomplete-items div {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border-bottom: 1px solid #d4d4d4;
+        }
+
+        /*when hovering an item:*/
+        .autocomplete-items div:hover {
+            background-color: #e9e9e9;
+        }
+
+        /*when navigating through the items using the arrow keys:*/
+        .autocomplete-active {
+            background-color: DodgerBlue !important;
+            color: #ffffff;
+        }
+
+        #clear {
+            position: absolute;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            top: 7px;
+            right: 7px;
+        }
+
+        .close-x {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border: 7px solid #a1a1a1;
+            border-radius: 20px;
+            cursor: pointer;
+            background:
+                linear-gradient(45deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 43%, #fff 45%, #fff 55%, rgba(0, 0, 0, 0) 57%, rgba(0, 0, 0, 0) 100%),
+                linear-gradient(135deg, #a1a1a1 0%, #a1a1a1 43%, #fff 45%, #fff 55%, #a1a1a1 57%, #a1a1a1 100%);
+        }
+
+        .close-x:hover {
+            border: 7px solid #808080;
+            background:
+                linear-gradient(45deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 43%, #fff 45%, #fff 55%, rgba(0, 0, 0, 0) 57%, rgba(0, 0, 0, 0) 100%),
+                linear-gradient(135deg, #808080 0%, #808080 43%, #fff 45%, #fff 55%, #808080 57%, #808080 100%);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="filters">
+
+        <div class="autocomplete">
+            <h1 id="propName"></h1>
+            <div id="clear">
+                <div class="close-x"></div>
+            </div>
+            <input id="myInput" class="clearable" type="text" name="myCountry" placeholder="Search by County">
+        </div>
+
+        <div>
+            <!-- <input type="text" id="shop" placeholder="shop name" /><button onclick="filterByShopName()">Filter</button> -->
+            <div id="shop-list"></div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+
+
+    <script>
+        const selectedShops = ["Tesco", "Coop"];
+        const input = document.getElementById("myInput")
+        const clear = document.getElementById("clear")
+        const shopName = document.getElementById("shop");
+        const shopList = document.getElementById("shop-list");
+        const shopData = [];
+
+        mapboxgl.accessToken = 'pk.eyJ1Ijoic3VqYW5jaGFrcmFib3J0eSIsImEiOiJja2Q5MzBuc3owenplMnBzY2I0eDYwdDhvIn0.imItePLDlYNF2BGVde_mkw';
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/light-v10',
+            center: { lng: -2.774533172216252, lat: 54.12181638598531 },
+            zoom: 7
+        });
+
+        map.on('load', () => {
+
+            d3.csv("data/TRL Requirements 19th July 2022 - Map geocoded.csv")
+                .then(data => {
+                    console.log('Store', data);
+                    shopData.push(...data)
+                    autocomplete(input, data);
+
+                    /*
+                    const n = data.length;
+                    (async () => {
+                        for (let index = 0; index < n; index++) {
+                            const { name, city, country } = data[index]
+                            const addr = `${name}, ${city}, ${country}`
+                            await fetch(`https://maps.googleapis.com/maps/api/geocode/json?&address=${addr}&key=AIzaSyBzfMl1G0OrMw6cdVydIA4vxiGFmX9P-TI`)
+                                .then(i => i.json())
+                                .then(res => {
+                                    console.log(index, ' - ', res);
+
+                                    if (res.status && res.status === "OK") {
+                                        const { lat, lng } = res.results[0].geometry.location
+                                        data[index].lat = lat
+                                        data[index].lng = lng
+                                    }
+                                })
+                        }
+                        console.log('data', data);
+                    })();
+                    */
+
+                    //get unique
+                    const reduced = data
+                        .filter(i => +i.all_motor_vehicles > 4999)
+                        .map(i => {
+                            return { lat: +i.latitude, lon: +i.longitude, year: +i.year, all: +i.all_motor_vehicles, road_name: i.road_name }
+                        })
+
+                    const pins = data
+                        //.sort((a, b) => a.lat - b.lat)
+                        .map(pin => {
+                            const { lat, lng, all } = pin
+                            return {
+                                "type": "Feature", "properties": { ...pin },
+                                "geometry": {
+                                    "type": "Point", "coordinates": [+lng, +lat]
+                                }
+                            }
+                        })
+                    const featureCollection = turf.featureCollection(pins)
+                    map.getSource("traffic").setData(featureCollection)
+                    console.log('featureCollection', featureCollection);
+                })
+
+
+
+            map.addSource('traffic', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                }
+            });
+            map.addLayer({
+                'id': 'traffic',
+                'type': 'circle',
+                'source': 'traffic',
+                'paint': {
+                    'circle-radius': 4,
+                    'circle-color': 'red'
+                },
+            });
+
+            map.addLayer({
+                'id': 'trafficText',
+                'type': 'symbol',
+                'source': 'traffic',
+                'layout': {
+                    'text-field': ['get', 'all_motor_vehicles'],
+                    'text-size': 10,
+                    'text-transform': 'uppercase',
+                    'text-offset': ['get', 'position'],
+                    'text-allow-overlap': true,
+                    'icon-allow-overlap': true,
+                    // 'text-justify': ['get', 'all_motor_vehicles']
+                },
+                'paint': {
+                    'text-color': '#202',
+
+                },
+            });
+
+
+            map.on('click', 'traffic', (e) => {
+                console.log('e', e);
+                // Copy coordinates array.
+                const description = e.features[0].properties.name;
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(description)
+                    .addTo(map);
+
+                e.originalEvent.cancelBubble = true;
+            });
+
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'traffic', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'traffic', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+        });
+        
+        const clearInput = () => {
+            input.value = '';
+            const pins = shopData
+                .map(pin => {
+                    const { lat, lng, all } = pin
+                    return {
+                        "type": "Feature", "properties": { ...pin },
+                        "geometry": {
+                            "type": "Point", "coordinates": [+lng, +lat]
+                        }
+                    }
+                })
+            const featureCollection = turf.featureCollection(pins)
+            map.getSource("traffic").setData(featureCollection)
+        }
+
+
+        clear.addEventListener("click", clearInput)
+
+
+        const setShops = (name) => {
+            const pins = shopData
+                .filter(pin => pin.name === name)
+                .map(pin => {
+                    const { lat, lng, all } = pin
+                    return {
+                        "type": "Feature", "properties": { ...pin },
+                        "geometry": {
+                            "type": "Point", "coordinates": [+lng, +lat]
+                        }
+                    }
+                })
+            const featureCollection = turf.featureCollection(pins)
+            map.getSource("traffic").setData(featureCollection)
+        }
+
+
+        const convertToCsv = (arr) => {
+            const keys = Object.keys(arr[0]);
+            const replacer = (_key, value) => value === null ? '' : value;
+            const processRow = row => keys.map(key => JSON.stringify(row[key], replacer)).join(',');
+            return [keys.join(','), ...arr.map(processRow)].join('\r\n');
+        };
+        const downloadFile = (fileName, data) => {
+            var link = document.createElement('a');
+            link.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
+            link.setAttribute('download', fileName);
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+
+
+        function autocomplete(inp, data, service = undefined) {
+            /*the autocomplete function takes two arguments,
+                        the text field element and an array of possible autocompleted values:*/
+            var currentFocus;
+            /*execute a function when someone writes in the text field:*/
+
+            inp.addEventListener("input", function (e) {
+                var a, b, i, val = this.value;
+                /*close any already open lists of autocompleted values*/
+                closeAllLists();
+                if (!val) { return false; }
+                currentFocus = -1;
+                /*create a DIV element that will contain the items (values):*/
+                a = document.createElement("DIV");
+                a.setAttribute("id", this.id + "autocomplete-list");
+                a.setAttribute("class", "autocomplete-items");
+                /*append the DIV element as a child of the autocomplete container:*/
+                this.parentNode.appendChild(a);
+
+                // const arr = data.map((i, key) => {
+                //     return {
+                //         index: key,
+                //         text: `${i.name} ${i.city}`
+                //     }
+                // })
+
+                const arr = [...new Set(data.map(i => i.name))].map((i, key) => {
+                    return {
+                        index: key,
+                        text: `${i}`
+                    }
+                })
+
+                let counter = 0;
+
+                /*for each item in the array...*/
+                for (i = 0; i < arr.length; i++) {
+
+                    /*check if the item starts with the same letters as the text field value:*/
+
+                    const search = arr[i].text.toUpperCase().search(val.toUpperCase())
+                    if (search > -1) {
+                        /*create a DIV element for each matching element:*/
+                        b = document.createElement("DIV");
+                        /*make the matching letters bold:*/
+
+                        const text = arr[i].text.substr(0, search) + '<b>' + arr[i].text.substr(search, val.length) + '</b>' + arr[i].text.substr((search + val.length), arr[i].text.length)
+
+                        b.innerHTML = text
+                        /*insert a input field that will hold the current array item's value:*/
+                        b.innerHTML += "<input type='hidden' id=" + arr[i].index + " value='" + arr[i].text + "'>";
+                        /*execute a function when someone clicks on the item value (DIV element):*/
+                        b.addEventListener("click", function (e) {
+                            /*insert the value for the autocomplete text field:*/
+                            inp.value = this.getElementsByTagName("input")[0].value.replaceAll('<br>', ' ');
+                            const index = this.getElementsByTagName("input")[0].id;
+                            // /*close the list of autocompleted values,
+                            // (or any other open lists of autocompleted values:*/
+                            // closeAllLists();
+                            // const point = data[index]
+                            // selectPoint(point)
+
+                            setShops(inp.value)
+                        });
+                        if (counter > 20) return; // display first 20 results
+                        a.appendChild(b);
+                        counter++;
+                    }
+                }
+            });
+            /*execute a function presses a key on the keyboard:*/
+            inp.addEventListener("keydown", function (e) {
+                var x = document.getElementById(this.id + "autocomplete-list");
+                if (x) x = x.getElementsByTagName("div");
+                if (e.keyCode == 40) {
+                    /*If the arrow DOWN key is pressed,
+                    increase the currentFocus variable:*/
+                    currentFocus++;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 38) { //up
+                    /*If the arrow UP key is pressed,
+                    decrease the currentFocus variable:*/
+                    currentFocus--;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 13) {
+                    /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                    e.preventDefault();
+                    if (currentFocus > -1) {
+                        /*and simulate a click on the "active" item:*/
+                        if (x) x[currentFocus].click();
+                    }
+                }
+            });
+            function addActive(x) {
+                /*a function to classify an item as "active":*/
+                if (!x) return false;
+                /*start by removing the "active" class on all items:*/
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                /*add class "autocomplete-active":*/
+                x[currentFocus].classList.add("autocomplete-active");
+            }
+            function removeActive(x) {
+                /*a function to remove the "active" class from all autocomplete items:*/
+                for (var i = 0; i < x.length; i++) {
+                    x[i].classList.remove("autocomplete-active");
+                }
+            }
+            function closeAllLists(elmnt) {
+                /*close all autocomplete lists in the document,
+                            except the one passed as an argument:*/
+                var x = document.getElementsByClassName("autocomplete-items");
+                for (var i = 0; i < x.length; i++) {
+                    if (elmnt != x[i] && elmnt != inp) {
+                        x[i].parentNode.removeChild(x[i]);
+                    }
+                }
+            }
+            /*execute a function when someone clicks in the document:*/
+            document.addEventListener("click", function (e) {
+                closeAllLists(e.target);
+            });
+        }
+        //map.setFilter('gb',['none'])
+    </script>
+
+</body>
+
+</html>
