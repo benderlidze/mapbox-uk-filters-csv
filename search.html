@@ -343,9 +343,7 @@
             map.getSource("traffic").setData(featureCollection)
         }
 
-
         clear.addEventListener("click", clearInput)
-
 
         const setShops = (name) => {
             const pins = shopData
@@ -362,7 +360,6 @@
             const featureCollection = turf.featureCollection(pins)
             map.getSource("traffic").setData(featureCollection)
         }
-
 
         const convertToCsv = (arr) => {
             const keys = Object.keys(arr[0]);
