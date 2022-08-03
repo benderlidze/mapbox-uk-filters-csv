@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Filters</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+    <script src="js/shp.js"></script>
+
+    <link href="js/nouislider.min.css" rel="stylesheet">
+    <script src="js/nouislider.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        #filters {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background-color: white;
+            padding: 20px;
+            max-width: 460px;
+            border-radius: 10px;
+            box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 50px;
+        }
+
+        .slider {
+            padding: 10px 0px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .slider input {
+            width: 50px;
+        }
+
+        .slider input {
+            width: 50px;
+        }
+
+        .switches {
+            margin: 20px 0px;
+        }
+
+        .switches>label {
+            display: block;
+        }
+
+        fieldset {
+            border: 1px solid #cdcdcd;
+            border-radius: 4px;
+        }
+
+        #shop-list {
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            max-height: 600px;
+        }
+
+        .sectors {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            grid-gap: 10px;
+        }
+
+        .div-box {
+            display: flex;
+            width: 100px;
+            height: 100px;
+
+            margin: 3px;
+            border-radius: 10px;
+            justify-content: center;
+            align-items: center;
+            align-content: center;
+            background-color: white;
+            flex-direction: column;
+            cursor: pointer;
+            background-color: #e4e4e4;
+            border: 2px solid #e4e4e4;
+        }
+
+        .div-box:hover {
+            background-color: #e6f0f2;
+        }
+
+        .div-box-active {
+            background-color: #e6f0f2;
+            border: 2px solid #5699a2;
+        }
+
+        /*==================---------AUTOCOMPLETE-------------------==================*/
+        /*the container must be positioned relative:*/
+        .autocomplete {
+            position: relative;
+            display: flex;
+            flex: 1;
+            justify-content: center;
+        }
+
+        input {
+            border: 1px solid #5699a2;
+            background-color: #f1f1f1;
+            padding: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+            border-radius: 5px;
+            margin: 3px 3px 3px 0px;
+        }
+
+        input[type=text] {
+            background-color: #f1f1f1;
+            width: 100%;
+        }
+
+        input[type=submit] {
+            background-color: DodgerBlue;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid #757575;
+            border-bottom: none;
+            border-top: none;
+            z-index: 99;
+            /*position the autocomplete items to be the same width as the container:*/
+            top: 100%;
+            left: 0;
+            right: 0;
+            color: black
+        }
+
+        .autocomplete-items div {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border-bottom: 1px solid #d4d4d4;
+        }
+
+        /*when hovering an item:*/
+        .autocomplete-items div:hover {
+            background-color: #e9e9e9;
+        }
+
+        /*when navigating through the items using the arrow keys:*/
+        .autocomplete-active {
+            background-color: DodgerBlue !important;
+            color: #ffffff;
+        }
+
+        #clear {
+            position: absolute;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            top: 7px;
+            right: 7px;
+        }
+
+        .close-x {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border: 7px solid #a1a1a1;
+            border-radius: 20px;
+            cursor: pointer;
+            background:
+                linear-gradient(45deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 43%, #fff 45%, #fff 55%, rgba(0, 0, 0, 0) 57%, rgba(0, 0, 0, 0) 100%),
+                linear-gradient(135deg, #a1a1a1 0%, #a1a1a1 43%, #fff 45%, #fff 55%, #a1a1a1 57%, #a1a1a1 100%);
+        }
+
+        .close-x:hover {
+            border: 7px solid #808080;
+            background:
+                linear-gradient(45deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 43%, #fff 45%, #fff 55%, rgba(0, 0, 0, 0) 57%, rgba(0, 0, 0, 0) 100%),
+                linear-gradient(135deg, #808080 0%, #808080 43%, #fff 45%, #fff 55%, #808080 57%, #808080 100%);
+        }
+
+        /*============--------------SWITCHER-----------------=========================*/
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 22px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch>.slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        .switch>.slider:before {
+            position: absolute;
+            content: "";
+            height: 15px;
+            width: 15px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        .switch>input:checked+.slider {
+            background-color: #2196F3;
+        }
+
+        .switch>input:focus+.slider {
+            box-shadow: 0 0 1px #2196F3;
+        }
+
+        .switch>input:checked+.slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        .switch-item {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-top: 10px;
+        }
+
+        .switch-item>label {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="filters">
+
+        <div class="autocomplete">
+            <h1 id="propName"></h1>
+            <div id="clear">
+                <div class="close-x"></div>
+            </div>
+            <input id="searchInput" class="clearable" type="text" name="myCountry" placeholder="Search by County">
+        </div>
+
+        <div class="legend">Acres</div>
+        <div class="slider">
+            <div><input type="text" id="acresSlider-min"></div>
+            <div>
+                <div id="acresSlider" style="width:200px;margin:0px 20px;"></div>
+            </div>
+            <div><input type="text" id="acresSlider-max"></div>
+        </div>
+
+        <div class="legend">GB</div>
+
+        <div class="switch-item">
+            <label class="switch">
+                <input type="checkbox" id="gbOnOff">
+                <span class="slider round"></span>
+            </label>
+            Population on/off
+        </div>
+
+        <!-- <label for="gbOnOff"><input type="checkbox" id="gbOnOff">Population on/off</label> -->
+        <div class="slider">
+            <div><input type="text" id="gbSlider-min"></div>
+            <div>
+                <div id="gbSlider" style="width:200px;margin:0px 20px;"></div>
+            </div>
+            <div><input type="text" id="gbSlider-max"></div>
+        </div>
+
+        <div class="legend">Traffic</div>
+        <div class="switch-item">
+            <label class="switch">
+                <input type="checkbox" id="trafficOnOff">
+                <span class="slider round"></span>
+            </label>
+            Traffic on/off
+        </div>
+
+        <div class="slider">
+            <div><input type="text" id="trafficSlider-min"></div>
+            <div>
+                <div id="trafficSlider" style="width:200px;margin:0px 20px;"></div>
+            </div>
+            <div><input type="text" id="trafficSlider-max"></div>
+        </div>
+
+        <div class="switches">
+
+            <div class="switch-item">
+                <label class="switch">
+                    <input type="checkbox" id="buildUpOnOff">
+                    <span class="slider round"></span>
+                </label>
+                Built up Areas on/off
+            </div>
+            <div class="switch-item">
+                <label class="switch">
+                    <input type="checkbox" id="polyUpOnOff">
+                    <span class="slider round"></span>
+                </label>
+                Bristol Areas on/off
+            </div>
+        </div>
+        <div id="sectors" class="sectors"></div>
+        <div>
+            <div id="shop-list"></div>
+        </div>
+
+        <div class="switch-item">
+            <label class="switch">
+                <input type="checkbox" id="satelliteLayer">
+                <span class="slider round"></span>
+            </label>
+            Satellite
+        </div>
+
+    </div>
+
+    <div id="map"></div>
+
+
+
+    <script>
+        const input = document.getElementById("searchInput")
+        const clear = document.getElementById("clear")
+
+        const sectorsDiv = document.getElementById('sectors');
+        const gbSliderMin = document.getElementById('gbSlider-min');
+        const gbSliderMax = document.getElementById('gbSlider-max');
+        const gbOnOff = document.getElementById('gbOnOff');
+        const buildUpOnOff = document.getElementById('buildUpOnOff');
+        const trafficOnOff = document.getElementById('trafficOnOff');
+
+        const selectedSectors = []; //no shops at load
+        const selectedShops = []; //no shops at load
+        const shopName = document.getElementById("shop");
+        const shopList = document.getElementById("shop-list");
+        const satelliteLayer = document.getElementById('satelliteLayer');
+
+        const shopData = [];
+
+        mapboxgl.accessToken = 'pk.eyJ1Ijoic3VqYW5jaGFrcmFib3J0eSIsImEiOiJja2Q5MzBuc3owenplMnBzY2I0eDYwdDhvIn0.imItePLDlYNF2BGVde_mkw';
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/light-v10',
+            center: { lng: -5.38319371390287, lat: 54.328587368249714 },
+            zoom: 5
+        });
+        map.addControl(new mapboxgl.NavigationControl());
+
+        satelliteLayer.addEventListener("input", function () {
+            if (satelliteLayer.checked) {
+                map.setLayoutProperty('satellite', 'visibility', 'visible');
+            } else {
+                map.setLayoutProperty('satellite', 'visibility', 'none');
+            }
+        });
+
+
+        buildUpOnOff.addEventListener("change", () => {
+            const visible = buildUpOnOff.checked ? 'visible' : 'none'
+            map.setLayoutProperty('shapes', 'visibility', visible);
+        })
+
+        polyUpOnOff.addEventListener("change", () => {
+            const visible = polyUpOnOff.checked ? 'visible' : 'none'
+            map.setLayoutProperty('polygons', 'visibility', visible);
+        })
+
+        gbOnOff.addEventListener("change", () => {
+            const visible = gbOnOff.checked ? 'visible' : 'none'
+            map.setLayoutProperty('GBcircle', 'visibility', visible);
+            map.setLayoutProperty('GBtext', 'visibility', visible);
+        })
+
+        trafficOnOff.addEventListener("change", () => {
+            const visible = trafficOnOff.checked ? 'visible' : 'none'
+            map.setLayoutProperty('traffic', 'visibility', visible);
+            map.setLayoutProperty('trafficText', 'visibility', visible);
+        })
+
+        const clearInput = () => {
+            input.value = '';
+            const pins = shopData
+                .map(pin => {
+                    const { lat, lng, all } = pin
+                    return {
+                        "type": "Feature", "properties": { ...pin },
+                        "geometry": {
+                            "type": "Point", "coordinates": [+lng, +lat]
+                        }
+                    }
+                })
+            const featureCollection = turf.featureCollection(pins)
+            map.getSource("traffic").setData(featureCollection)
+        }
+        clear.addEventListener("click", clearInput)
+
+        buildSlider("acresSlider", 0, 8, setAreaFilter)
+        buildSlider("gbSlider", 2400, 11000000, setGBFilter, true)
+        buildSlider("trafficSlider", 5000, 100000, setTrafficFilter, true)
+
+        function buildSlider(sliderName, min, max, filterFunction, integer = false) {
+            const SLIDER = document.getElementById(sliderName);
+            const SLIDER_MIN = document.getElementById(sliderName + "-min");
+            const SLIDER_MAX = document.getElementById(sliderName + "-max");
+            noUiSlider.create(SLIDER, {
+                start: [min, max],
+                connect: true,
+                range: {
+                    'min': min,
+                    'max': max
+                },
+            });
+            SLIDER.noUiSlider.on('change', function (d) {
+                console.log('change',);
+                const min = integer ? parseInt(d[0]) : d[0]
+                const max = integer ? parseInt(d[1]) : d[1]
+                filterFunction(min, max)
+            });
+            SLIDER.noUiSlider.on('update', function (d) {
+                console.log('update',);
+                const min = integer ? parseInt(d[0]) : d[0]
+                const max = integer ? parseInt(d[1]) : d[1]
+                SLIDER_MIN.value = min
+                SLIDER_MAX.value = max
+            });
+            SLIDER_MIN.addEventListener('change', function () {
+                SLIDER.noUiSlider.set([this.value, null]);
+                const min = SLIDER_MIN.value
+                const max = SLIDER_MAX.value
+                filterFunction(min, max)
+            });
+            SLIDER_MAX.addEventListener('change', function () {
+                SLIDER.noUiSlider.set([null, this.value]);
+                const min = SLIDER_MIN.value
+                const max = SLIDER_MAX.value
+                filterFunction(min, max)
+            });
+        }
+
+
+        function setAreaFilter(min, max) {
+            console.log('setAreaFilter', min, max);
+            console.log('setAreaFilter', parseFloat(min), parseFloat(max));
+            map.setFilter('polygons', ['all', ['>', 'area', parseFloat(min)], ['<', 'area', parseFloat(max)]]);
+        }
+
+        function setGBFilter(min, max) {
+            console.log('setGBFilter', min, max);
+            map.setFilter('GBcircle', ['all', ['>', 'population', parseInt(min)], ['<', 'population', parseInt(max)]]);
+            map.setFilter('GBtext', ['all', ['>', 'population', parseInt(min)], ['<', 'population', parseInt(max)]]);
+        }
+        function setTrafficFilter(min, max) {
+            console.log('setTrafficFilter', min, max);
+            map.setFilter('traffic', ['all', ['>', 'all_motor_vehicles', parseInt(min)], ['<', 'all_motor_vehicles', parseInt(max)]]);
+            map.setFilter('trafficText', ['all', ['>', 'all_motor_vehicles', parseInt(min)], ['<', 'all_motor_vehicles', parseInt(max)]]);
+        }
+
+        map.on('load', () => {
+            
+            d3.csv("data/dft_reduced.csv")
+                .then(data => {
+                    console.log('Store', data);
+
+                    //get unique
+                    const reduced = data
+                        .filter(i => +i.all_motor_vehicles > 4999)
+                        .map(i => {
+                            return { lat: +i.latitude, lon: +i.longitude, year: +i.year, all: +i.all_motor_vehicles, road_name: i.road_name }
+                        })
+
+                    const f = new Map()
+
+                    reduced.map(i => {
+                        const key = `${i.lat}-${i.lon}`;
+                        const d = f.get(key);
+                        if (!d) {//get only latest year [2009,2010,2011] => 2011
+                            f.set(key, { lat: i.lat, lon: i.lon, year: i.year, all: i.all, road_name: i.road_name })
+                        } else {
+                            if (+i.year > +d.year) {
+                                f.set(key, { lat: i.lat, lon: i.lon, year: i.year, all: i.all, road_name: i.road_name })
+                            }
+                        }
+                    })
+
+                    const _positions = new Map();
+                    const fixLables = Array.from(f).map(i => {
+                        const { lat, lon, all } = i[1]
+                        const coords = `${lat.toFixed(4)}-${lon.toFixed(4)}`
+                        let position = [1, -1]
+                        if (_positions.has(coords)) {
+                            position = [-1, 1]
+                        } else {
+                            _positions.set(coords)
+                        }
+                        return { ...i[1], position }
+                    })
+
+                    const pins = fixLables
+                        //.sort((a, b) => a.lat - b.lat)
+                        .map(pin => {
+                            const { lat, lon, all } = pin
+                            return {
+                                "type": "Feature", "properties": { 'all_motor_vehicles': all, ...pin },
+                                "geometry": {
+                                    "type": "Point", "coordinates": [+lon, +lat]
+                                }
+                            }
+                        })
+                    const featureCollection = turf.featureCollection(pins)
+                    map.getSource("traffic").setData(featureCollection)
+                })
+
+
+            fetch("data/bristol.zip")
+                .then(text => text.arrayBuffer())
+                .then((myshape) => shp(myshape))
+                .then((data) => {
+                    //geo.addData(data)
+                    console.log('Bristol', data);
+                    data.features.filter(i => i.geometry !== null).forEach(poly => {
+                        poly.properties.area = turf.area(poly) / 4046;
+                    })
+                    map.getSource("polygons").setData(data)
+                }).catch(e => console.log('error', e));
+
+
+            fetch("data/Built-up_Areas_(December_2011)_Boundaries_V2.zip")
+                .then(text => text.arrayBuffer())
+                .then((myshape) => shp(myshape))
+                .then((data) => {
+                    //geo.addData(data)
+                    console.log('data', data);
+                    map.getSource("shapes").setData(data)
+                }).catch(e => console.log('error', e));
+
+            d3.csv("data/gb.csv")
+                .then(data => {
+                    console.log('gb', data);
+                    const pins = data.map(pin => {
+                        const { lat, lng } = pin
+                        return {
+                            "type": "Feature", "properties": {
+                                ...pin,
+                                population: +pin.population,
+                                cityandpop: pin.city + ' / ' + pin.population
+                            },
+                            "geometry": {
+                                "type": "Point", "coordinates": [+lng, +lat]
+                            }
+                        }
+                    })
+                    const featureCollection = turf.featureCollection(pins)
+                    map.getSource("gb").setData(featureCollection)
+                })
+            //*/
+            //d3.csv("data/supermarket store location data - Sheet2.csv")
+            d3.csv("data/NEW SHOP DATA.csv")
+                .then(data => {
+
+                    data.forEach(shop => {
+                        shopData.push({
+                            ...shop,
+                            sectors: (shop.sector && shop.sector.length > 0) ? shop.sector.split(",").map(i => i.trim()) : []
+                        })
+                    })
+
+                    console.log('Store', data);
+                    uploadPhotosBuildLayer(data)
+                    buildCategoryFilters(data)
+                    autocomplete(input, data, shopName => {
+                        selectedShops.push(shopName)
+                        filterByShopNameS(selectedShops)
+                    });
+                })
+
+            //*/
+            map.addLayer({
+                id: 'satellite',
+                source: { "type": "raster", "url": "mapbox://mapbox.satellite", "tileSize": 256 },
+                type: "raster",
+                layout: {
+                    visibility: 'none'
+                }
+            });
+
+            map.addSource('shapes', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                }
+            });
+
+            map.addLayer({
+                'id': 'shapes',
+                'type': 'fill',
+                'source': 'shapes',
+                'paint': {
+                    'fill-color': 'blue',
+                    'fill-opacity': 0.8
+                },
+                'layout': {
+                    'visibility': 'none'
+                },
+            });
+
+            map.addSource('polygons', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                }
+            });
+
+            map.addLayer({
+                'id': 'polygons',
+                'type': 'fill',
+                'source': 'polygons',
+                'paint': {
+                    'fill-color': 'red',
+                    'fill-opacity': 0.4
+                },
+                'layout': {
+                    'visibility': 'none'
+                },
+            });
+
+            map.addSource('gb', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                }
+            });
+            map.addLayer({
+                'id': 'GBcircle',
+                'type': 'circle',
+                'source': 'gb',
+                'paint': {
+                    'circle-radius': 6,
+                    'circle-color': '#B42222'
+                },
+                'layout': {
+                    'visibility': 'none'
+                },
+            });
+            map.addLayer({
+                'id': 'GBtext',
+                'type': 'symbol',
+                'source': 'gb',
+                'layout': {
+                    'text-field': ['get', 'cityandpop'],
+                    'text-size': 10,
+                    'text-transform': 'uppercase',
+                    'text-allow-overlap': true,
+                    'icon-allow-overlap': true,
+                    'text-offset': [0, 1],
+                    'visibility': 'none'
+                },
+                'paint': {
+                    'text-color': '#202',
+                    "text-halo-color": "#fff",
+                    "text-halo-width": 2
+                },
+            });
+
+
+            map.addSource('store', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                },
+                cluster: true,
+                clusterMaxZoom: 14, // Max zoom to cluster points on
+                clusterRadius: 50 // Radius of each cluster when clustering points 
+            });
+
+            map.addLayer({
+                id: 'store-clusters',
+                type: 'circle',
+                source: 'store',
+                filter: ['has', 'point_count'],
+                paint: {
+                    'circle-color': [
+                        'step',
+                        ['get', 'point_count'],
+                        '#51bbd6',
+                        100,
+                        '#f1f075',
+                        750,
+                        '#f28cb1'
+                    ],
+                    'circle-radius': [
+                        'step',
+                        ['get', 'point_count'],
+                        20,
+                        100,
+                        30,
+                        750,
+                        40
+                    ]
+                }
+            });
+
+            map.addLayer({
+                id: 'store-cluster-count',
+                type: 'symbol',
+                source: 'store',
+                filter: ['has', 'point_count'],
+                layout: {
+                    'text-field': '{point_count_abbreviated}',
+                    'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                    'text-size': 12
+                }
+            });
+
+            map.addLayer({
+                id: 'storeLogo',
+                'type': 'symbol',
+                source: 'store',
+                filter: ['!', ['has', 'point_count']],
+                'layout': {
+                    'icon-image': ['get', 'company_name'], // reference the image
+                    'icon-size': 0.15,
+                    'icon-allow-overlap': true,
+                }
+            });
+
+            map.addSource('traffic', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                }
+            });
+            map.addLayer({
+                'id': 'traffic',
+                'type': 'circle',
+                'source': 'traffic',
+                'paint': {
+                    'circle-radius': 4,
+                    'circle-color': 'red'
+                },
+                'layout': {
+                    'visibility': 'none'
+                },
+            });
+
+            map.addLayer({
+                'id': 'trafficText',
+                'type': 'symbol',
+                'source': 'traffic',
+                'layout': {
+                    'text-field': ['get', 'all_motor_vehicles'],
+                    'text-size': 10,
+                    'text-transform': 'uppercase',
+                    'text-offset': ['get', 'position'],
+                    'text-allow-overlap': true,
+                    'icon-allow-overlap': true,
+                    // 'text-justify': ['get', 'all_motor_vehicles']
+                    'visibility': 'none'
+                },
+                'paint': {
+                    'text-color': '#202',
+
+                },
+            });
+            map.on('click', 'traffic', (e) => {
+                console.log('e', e);
+                // Copy coordinates array.
+                const description = e.features[0].properties.road_name;
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(description)
+                    .addTo(map);
+
+                e.originalEvent.cancelBubble = true;
+            });
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'traffic', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'traffic', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+
+
+
+            map.on('click', 'store', (e) => {
+                console.log('e', e);
+                // Copy coordinates array.
+                const name = e.features[0].properties.company_name;
+                const addr = e.features[0].properties.property_address;
+                const description = `<h2>${name}</h2>${addr}`
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(description)
+                    .addTo(map);
+
+                e.originalEvent.cancelBubble = true;
+            });
+
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'store', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'store', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+
+            map.on('click', 'shapes', (e) => {
+
+                if (e.originalEvent.cancelBubble) {
+                    return;
+                }
+                console.log('e', e);
+                // Copy coordinates array.
+                const description = e.features[0].properties.bua11nm;
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(description)
+                    .addTo(map);
+            });
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'shapes', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'shapes', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+        });
+
+        function uploadPhotosBuildLayer(data) {
+            const names = [...new Set(data.map(store => store.company_name).sort())]
+
+            names.forEach(name => {
+                map.loadImage(`logos/${name.toLowerCase()}.png`, (error, image) => {
+                    if (error) {
+                        map.loadImage(`logos/default.png`, (error, image) => {
+                            console.log('name', name);
+                            map.addImage(name, image);
+                        });
+                        throw error;
+                    }
+                    map.addImage(name, image);
+                });
+            })
+
+            // const pins = data.map(pin => {
+            //     const { property_latitude, property_longitude } = pin
+            //     return {
+            //         "type": "Feature", "properties": { ...pin, },
+            //         "geometry": {
+            //             "type": "Point", "coordinates": [+property_longitude, +property_latitude]
+            //         }
+            //     }
+            // })
+            // const featureCollection = turf.featureCollection(pins)
+            // map.getSource("store").setData(featureCollection)
+
+        }
+
+
+        function buildCategoryFilters(data) {
+
+            const sectorsArr = data.map(store => store.sector.split(",").map(i => i.trim())).flat()
+            const sector = [...new Set(sectorsArr)]
+            sector.forEach(name => {
+
+                const checkbox = buildDivBox(name, false, sectorName => {
+
+
+
+                    var index = selectedSectors.indexOf(sectorName);
+                    if (index !== -1) {
+                        selectedSectors.splice(index, 1);
+                    } else {
+                        selectedSectors.push(sectorName)
+                    }
+
+
+                    const shopNames = shopData.filter(shop => {
+                        return selectedSectors.every(elem => shop.sectors.includes(elem))
+                    })
+                    console.log('shopNames', shopNames);
+
+                    const pins = shopNames
+                        .map(pin => {
+                            const { property_latitude, property_longitude } = pin
+                            return {
+                                "type": "Feature", "properties": { ...pin, },
+                                "geometry": {
+                                    "type": "Point", "coordinates": [+property_longitude, +property_latitude]
+                                }
+                            }
+                        })
+                    const featureCollection = turf.featureCollection(pins)
+                    map.getSource("store").setData(featureCollection)
+                })
+                sectorsDiv.appendChild(checkbox)
+            })
+        }
+
+        function buildStoreFilters(data) {
+
+            const names = [...new Set(data.map(store => store.company_name).sort())]
+            console.log('names', names);
+            names.forEach(name => {
+
+                const checkbox = buildCheckBox(name, selectedShops.includes(name), e => {
+                    console.log('name', e);
+                    const checked = e.target.checked
+                    const value = e.target.id
+                    if (checked) {
+                        selectedShops.push(value)
+                    } else {
+                        var index = selectedShops.indexOf(value);
+                        if (index !== -1) {
+                            selectedShops.splice(index, 1);
+                        }
+                    }
+                    filterByShopNameS(selectedShops)
+                })
+                shopList.appendChild(checkbox)
+            })
+        }
+
+        function buildCheckBox(name, checked, eventFunction) {
+
+            const div = document.createElement("div")
+            const checkbox = document.createElement('input');
+            checkbox.type = "checkbox";
+            checkbox.name = "name";
+            checkbox.value = name;
+            checkbox.id = name;
+            checkbox.addEventListener("input", eventFunction)
+            checkbox.checked = checked
+            var label = document.createElement('label')
+            label.htmlFor = name;
+            label.appendChild(document.createTextNode(name));
+
+            div.appendChild(checkbox);
+            div.appendChild(label);
+
+
+            return div
+        }
+
+        function buildDivBox(name, checked, eventFunction) {
+
+            let active = false;
+
+            const div = document.createElement("div")
+            div.className = 'div-box'
+            div.id = name;
+            div.addEventListener("click", () => {
+                active = !active
+                console.log('active', active);
+
+                if (active) {
+                    div.classList.add("div-box-active")
+                } else {
+                    div.classList.remove("div-box-active")
+                }
+
+                eventFunction(name)
+            })
+
+            const img = document.createElement("img")
+            img.src = 'logos/icons/gym.svg'
+            img.style.width = "60px"
+            img.style.height = "60px"
+
+            const label = document.createElement("div")
+            label.innerText = name
+
+            div.appendChild(img)
+            div.appendChild(label);
+
+
+            return div
+        }
+
+
+        function filterByShopName() {
+            const name = shopName.value;
+            map.setFilter('store', ['==', 'company_name', name]);
+            map.setFilter('storeLogo', ['==', 'company_name', name]);
+        }
+
+        function filterByShopNameS(shopNameArray) {
+
+            const pins = shopData
+                .filter(pin => shopNameArray.includes(pin.company_name))
+                .map(pin => {
+                    const { property_latitude, property_longitude } = pin
+                    return {
+                        "type": "Feature", "properties": { ...pin, },
+                        "geometry": {
+                            "type": "Point", "coordinates": [+property_longitude, +property_latitude]
+                        }
+                    }
+                })
+            const featureCollection = turf.featureCollection(pins)
+            map.getSource("store").setData(featureCollection)
+        }
+
+
+        function autocomplete(inp, data, callback) {
+            var currentFocus;
+            /*execute a function when someone writes in the text field:*/
+
+            console.log('data', data);
+            inp.addEventListener("input", function (e) {
+                var a, b, i, val = this.value;
+                /*close any already open lists of autocompleted values*/
+                closeAllLists();
+                if (!val) { return false; }
+                currentFocus = -1;
+                /*create a DIV element that will contain the items (values):*/
+                a = document.createElement("DIV");
+                a.setAttribute("id", this.id + "autocomplete-list");
+                a.setAttribute("class", "autocomplete-items");
+                /*append the DIV element as a child of the autocomplete container:*/
+                this.parentNode.appendChild(a);
+
+                const arr = [...new Set(data.map(i => i.company_name))].map((i, key) => {
+                    return {
+                        index: key,
+                        text: `${i}`
+                    }
+                })
+
+                let counter = 0;
+
+                console.log('arr', arr);
+                /*for each item in the array...*/
+                for (i = 0; i < arr.length; i++) {
+
+                    /*check if the item starts with the same letters as the text field value:*/
+
+                    const search = arr[i].text.toUpperCase().search(val.toUpperCase())
+                    if (search > -1) {
+                        /*create a DIV element for each matching element:*/
+                        b = document.createElement("DIV");
+                        /*make the matching letters bold:*/
+
+                        const text = arr[i].text.substr(0, search) + '<b>' + arr[i].text.substr(search, val.length) + '</b>' + arr[i].text.substr((search + val.length), arr[i].text.length)
+
+                        b.innerHTML = text
+                        /*insert a input field that will hold the current array item's value:*/
+                        b.innerHTML += "<input type='hidden' id=" + arr[i].index + " value='" + arr[i].text + "'>";
+                        /*execute a function when someone clicks on the item value (DIV element):*/
+                        b.addEventListener("click", function (e) {
+                            /*insert the value for the autocomplete text field:*/
+                            inp.value = this.getElementsByTagName("input")[0].value.replaceAll('<br>', ' ');
+                            const index = this.getElementsByTagName("input")[0].id;
+                            // /*close the list of autocompleted values,
+                            // (or any other open lists of autocompleted values:*/
+                            // closeAllLists();
+                            // const point = data[index]
+                            // selectPoint(point)
+                            if (typeof callback === 'function') {
+                                callback(inp.value)
+                            }
+                        });
+                        if (counter > 20) return; // display first 20 results
+                        a.appendChild(b);
+                        counter++;
+                    }
+                }
+            });
+            /*execute a function presses a key on the keyboard:*/
+            inp.addEventListener("keydown", function (e) {
+                var x = document.getElementById(this.id + "autocomplete-list");
+                if (x) x = x.getElementsByTagName("div");
+                if (e.keyCode == 40) {
+                    /*If the arrow DOWN key is pressed,
+                    increase the currentFocus variable:*/
+                    currentFocus++;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 38) { //up
+                    /*If the arrow UP key is pressed,
+                    decrease the currentFocus variable:*/
+                    currentFocus--;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 13) {
+                    /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                    e.preventDefault();
+                    if (currentFocus > -1) {
+                        /*and simulate a click on the "active" item:*/
+                        if (x) x[currentFocus].click();
+                    }
+                }
+            });
+            function addActive(x) {
+                /*a function to classify an item as "active":*/
+                if (!x) return false;
+                /*start by removing the "active" class on all items:*/
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                /*add class "autocomplete-active":*/
+                x[currentFocus].classList.add("autocomplete-active");
+            }
+            function removeActive(x) {
+                /*a function to remove the "active" class from all autocomplete items:*/
+                for (var i = 0; i < x.length; i++) {
+                    x[i].classList.remove("autocomplete-active");
+                }
+            }
+            function closeAllLists(elmnt) {
+                /*close all autocomplete lists in the document,
+                            except the one passed as an argument:*/
+                var x = document.getElementsByClassName("autocomplete-items");
+                for (var i = 0; i < x.length; i++) {
+                    if (elmnt != x[i] && elmnt != inp) {
+                        x[i].parentNode.removeChild(x[i]);
+                    }
+                }
+            }
+            /*execute a function when someone clicks in the document:*/
+            document.addEventListener("click", function (e) {
+                closeAllLists(e.target);
+            });
+        }
+    </script>
+
+</body>
+
+</html>
