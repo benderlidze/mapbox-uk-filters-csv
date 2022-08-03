@@ -12,6 +12,7 @@
 
     <script src="js/shp.js"></script>
 
+    <link href="css/toggle.css" rel="stylesheet">
     <link href="js/nouislider.min.css" rel="stylesheet">
     <script src="js/nouislider.min.js"></script>
 
@@ -19,6 +20,7 @@
         body {
             margin: 0;
             padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
         }
 
         #map {
@@ -34,8 +36,8 @@
             left: 20px;
             z-index: 10;
             background-color: white;
-            padding: 20px;
-            max-width: 460px;
+            padding: 10px;
+            max-width: 370px;
             border-radius: 10px;
             box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 50px;
         }
@@ -84,8 +86,8 @@
 
         .div-box {
             display: flex;
-            width: 100px;
-            height: 100px;
+            width: 75px;
+            height: 75px;
 
             margin: 3px;
             border-radius: 10px;
@@ -97,6 +99,10 @@
             cursor: pointer;
             background-color: #e4e4e4;
             border: 2px solid #e4e4e4;
+
+            text-align: center;
+            font-size: 11px;
+            font-family: Arial, Helvetica, sans-serif;
         }
 
         .div-box:hover {
@@ -268,6 +274,37 @@
         .switch-item>label {
             margin-right: 10px;
         }
+
+
+        .roundSlider {
+            height: 10px;
+        }
+
+        .roundSlider .noUi-connect {
+            background: #0366d6;
+        }
+
+        .roundSlider .noUi-handle {
+            height: 18px;
+            width: 18px;
+            top: -5px;
+            right: -9px;
+            /* half the width */
+            border-radius: 9px;
+        }
+
+        .roundSlider .noUi-handle:after,
+        .roundSlider .noUi-handle:before {
+            /* content: ""; */
+            display: none;
+        }
+
+
+        .item-header {
+            font-size: 1.5rem;
+            min-width: 200px;
+            margin: 20px 0px;
+        }
     </style>
 </head>
 
@@ -275,87 +312,94 @@
 
     <div id="filters">
 
+
+
+        <div class="item-header">Search retailer location</div>
+
         <div class="autocomplete">
             <h1 id="propName"></h1>
             <div id="clear">
                 <div class="close-x"></div>
             </div>
-            <input id="searchInput" class="clearable" type="text" name="myCountry" placeholder="Search by County">
+            <input id="searchInput" class="clearable" type="text" name="myCountry"
+                placeholder="Enter 'Tesco' or 'Pets at Home'">
         </div>
 
-        <div class="legend">Acres</div>
-        <div class="slider">
-            <div><input type="text" id="acresSlider-min"></div>
-            <div>
-                <div id="acresSlider" style="width:200px;margin:0px 20px;"></div>
-            </div>
-            <div><input type="text" id="acresSlider-max"></div>
-        </div>
-
-        <div class="legend">GB</div>
 
         <div class="switch-item">
-            <label class="switch">
-                <input type="checkbox" id="gbOnOff">
-                <span class="slider round"></span>
-            </label>
-            Population on/off
+            <div class="item-header">Population Data</div>
+            <div class="toggle-button-cover">
+                <div class="button-cover">
+                    <div class="toggle-button button r">
+                        <input type="checkbox" class="checkbox" id="gbOnOff" checked="false">
+                        <div class="knobs"></div>
+                        <div class="layer"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- <label for="gbOnOff"><input type="checkbox" id="gbOnOff">Population on/off</label> -->
         <div class="slider">
             <div><input type="text" id="gbSlider-min"></div>
             <div>
-                <div id="gbSlider" style="width:200px;margin:0px 20px;"></div>
+                <div id="gbSlider" class="roundSlider" style="width:200px;margin:0px 20px;"></div>
             </div>
             <div><input type="text" id="gbSlider-max"></div>
         </div>
 
-        <div class="legend">Traffic</div>
         <div class="switch-item">
-            <label class="switch">
-                <input type="checkbox" id="trafficOnOff">
-                <span class="slider round"></span>
-            </label>
-            Traffic on/off
+            <div class="item-header">Traffic</div>
+            <div class="toggle-button-cover">
+                <div class="button-cover">
+                    <div class="toggle-button button r">
+                        <input type="checkbox" class="checkbox" id="trafficOnOff" checked="false">
+                        <div class="knobs"></div>
+                        <div class="layer"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="slider">
             <div><input type="text" id="trafficSlider-min"></div>
             <div>
-                <div id="trafficSlider" style="width:200px;margin:0px 20px;"></div>
+                <div id="trafficSlider" class="roundSlider" style="width:200px;margin:0px 20px;"></div>
             </div>
             <div><input type="text" id="trafficSlider-max"></div>
         </div>
 
-        <div class="switches">
-
-            <div class="switch-item">
-                <label class="switch">
-                    <input type="checkbox" id="buildUpOnOff">
-                    <span class="slider round"></span>
-                </label>
-                Built up Areas on/off
-            </div>
-            <div class="switch-item">
-                <label class="switch">
-                    <input type="checkbox" id="polyUpOnOff">
-                    <span class="slider round"></span>
-                </label>
-                Bristol Areas on/off
+        <div class="switch-item">
+            <div class="item-header">Built up Areas</div>
+            <div class="toggle-button-cover">
+                <div class="button-cover">
+                    <div class="toggle-button button r">
+                        <input type="checkbox" class="checkbox" id="buildUpOnOff" checked="false">
+                        <div class="knobs"></div>
+                        <div class="layer"></div>
+                    </div>
+                </div>
             </div>
         </div>
+
+
+        <div class="item-header">Sectors:</div>
         <div id="sectors" class="sectors"></div>
+
         <div>
             <div id="shop-list"></div>
         </div>
 
         <div class="switch-item">
-            <label class="switch">
-                <input type="checkbox" id="satelliteLayer">
-                <span class="slider round"></span>
-            </label>
-            Satellite
+            <div class="item-header">Satellite view</div>
+            <div class="toggle-button-cover">
+                <div class="button-cover">
+                    <div class="toggle-button button r">
+                        <input type="checkbox" id="satelliteLayer" class="checkbox" checked="false">
+                        <div class="knobs"></div>
+                        <div class="layer"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -394,9 +438,9 @@
 
         satelliteLayer.addEventListener("input", function () {
             if (satelliteLayer.checked) {
-                map.setLayoutProperty('satellite', 'visibility', 'visible');
-            } else {
                 map.setLayoutProperty('satellite', 'visibility', 'none');
+            } else {
+                map.setLayoutProperty('satellite', 'visibility', 'visible');
             }
         });
 
@@ -406,10 +450,10 @@
             map.setLayoutProperty('shapes', 'visibility', visible);
         })
 
-        polyUpOnOff.addEventListener("change", () => {
-            const visible = polyUpOnOff.checked ? 'visible' : 'none'
-            map.setLayoutProperty('polygons', 'visibility', visible);
-        })
+        // polyUpOnOff.addEventListener("change", () => {
+        //     const visible = polyUpOnOff.checked ? 'visible' : 'none'
+        //     map.setLayoutProperty('polygons', 'visibility', visible);
+        // })
 
         gbOnOff.addEventListener("change", () => {
             const visible = gbOnOff.checked ? 'visible' : 'none'
@@ -440,7 +484,7 @@
         }
         clear.addEventListener("click", clearInput)
 
-        buildSlider("acresSlider", 0, 8, setAreaFilter)
+        // buildSlider("acresSlider", 0, 8, setAreaFilter)
         buildSlider("gbSlider", 2400, 11000000, setGBFilter, true)
         buildSlider("trafficSlider", 5000, 100000, setTrafficFilter, true)
 
@@ -502,7 +546,7 @@
         }
 
         map.on('load', () => {
-            
+
             d3.csv("data/dft_reduced.csv")
                 .then(data => {
                     console.log('Store', data);
@@ -557,19 +601,19 @@
                 })
 
 
-            fetch("data/bristol.zip")
-                .then(text => text.arrayBuffer())
-                .then((myshape) => shp(myshape))
-                .then((data) => {
-                    //geo.addData(data)
-                    console.log('Bristol', data);
-                    data.features.filter(i => i.geometry !== null).forEach(poly => {
-                        poly.properties.area = turf.area(poly) / 4046;
-                    })
-                    map.getSource("polygons").setData(data)
-                }).catch(e => console.log('error', e));
+            // fetch("data/bristol.zip")
+            //     .then(text => text.arrayBuffer())
+            //     .then((myshape) => shp(myshape))
+            //     .then((data) => {
+            //         //geo.addData(data)
+            //         console.log('Bristol', data);
+            //         data.features.filter(i => i.geometry !== null).forEach(poly => {
+            //             poly.properties.area = turf.area(poly) / 4046;
+            //         })
+            //         map.getSource("polygons").setData(data)
+            //     }).catch(e => console.log('error', e));
 
-
+            /*
             fetch("data/Built-up_Areas_(December_2011)_Boundaries_V2.zip")
                 .then(text => text.arrayBuffer())
                 .then((myshape) => shp(myshape))
@@ -578,7 +622,7 @@
                     console.log('data', data);
                     map.getSource("shapes").setData(data)
                 }).catch(e => console.log('error', e));
-
+    
             d3.csv("data/gb.csv")
                 .then(data => {
                     console.log('gb', data);
@@ -1023,8 +1067,8 @@
 
             const img = document.createElement("img")
             img.src = 'logos/icons/gym.svg'
-            img.style.width = "60px"
-            img.style.height = "60px"
+            img.style.width = "30px"
+            img.style.height = "30px"
 
             const label = document.createElement("div")
             label.innerText = name
