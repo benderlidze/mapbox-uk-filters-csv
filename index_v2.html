@@ -446,7 +446,7 @@
 
 
         buildUpOnOff.addEventListener("change", () => {
-            const visible = buildUpOnOff.checked ? 'visible' : 'none'
+            const visible = buildUpOnOff.checked ? 'none' : 'visible'
             map.setLayoutProperty('shapes', 'visibility', visible);
         })
 
@@ -456,13 +456,13 @@
         // })
 
         gbOnOff.addEventListener("change", () => {
-            const visible = gbOnOff.checked ? 'visible' : 'none'
+            const visible = gbOnOff.checked ? 'none' : 'visible'
             map.setLayoutProperty('GBcircle', 'visibility', visible);
             map.setLayoutProperty('GBtext', 'visibility', visible);
         })
 
         trafficOnOff.addEventListener("change", () => {
-            const visible = trafficOnOff.checked ? 'visible' : 'none'
+            const visible = trafficOnOff.checked ? 'none' : 'visible'
             map.setLayoutProperty('traffic', 'visibility', visible);
             map.setLayoutProperty('trafficText', 'visibility', visible);
         })
@@ -613,7 +613,7 @@
             //         map.getSource("polygons").setData(data)
             //     }).catch(e => console.log('error', e));
 
-            /*
+            
             fetch("data/Built-up_Areas_(December_2011)_Boundaries_V2.zip")
                 .then(text => text.arrayBuffer())
                 .then((myshape) => shp(myshape))
