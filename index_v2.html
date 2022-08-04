@@ -37,7 +37,7 @@
             z-index: 10;
             background-color: white;
             padding: 10px;
-            max-width: 370px;
+            max-width: 270px;
             border-radius: 10px;
             box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 50px;
         }
@@ -80,14 +80,14 @@
         .sectors {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr 1fr;
-            grid-template-rows: 1fr 1fr 1fr;
-            grid-gap: 10px;
+            /* grid-template-rows: 1fr 1fr 1fr; */
+            /* grid-gap: 3px; */
         }
 
         .div-box {
             display: flex;
-            width: 75px;
-            height: 75px;
+            width: 60px;
+            height: 60px;
 
             margin: 3px;
             border-radius: 10px;
@@ -103,6 +103,11 @@
             text-align: center;
             font-size: 11px;
             font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .div-box>div {
+            inline-size: 51px;
+            overflow-wrap: break-word;
         }
 
         .div-box:hover {
@@ -127,7 +132,7 @@
             border: 1px solid #5699a2;
             background-color: #f1f1f1;
             padding: 5px;
-            font-size: 16px;
+            font-size: 12px;
             box-sizing: border-box;
             border-radius: 5px;
             margin: 3px 3px 3px 0px;
@@ -301,9 +306,9 @@
 
 
         .item-header {
-            font-size: 1.5rem;
-            min-width: 200px;
-            margin: 20px 0px;
+            font-size: 1rem;
+            min-width: 150px;
+            margin: 5px 0px;
         }
     </style>
 </head>
@@ -342,7 +347,7 @@
         <div class="slider">
             <div><input type="text" id="gbSlider-min"></div>
             <div>
-                <div id="gbSlider" class="roundSlider" style="width:200px;margin:0px 20px;"></div>
+                <div id="gbSlider" class="roundSlider" style="width:120px;margin:0px 20px;"></div>
             </div>
             <div><input type="text" id="gbSlider-max"></div>
         </div>
@@ -363,7 +368,7 @@
         <div class="slider">
             <div><input type="text" id="trafficSlider-min"></div>
             <div>
-                <div id="trafficSlider" class="roundSlider" style="width:200px;margin:0px 20px;"></div>
+                <div id="trafficSlider" class="roundSlider" style="width:120px;margin:0px 20px;"></div>
             </div>
             <div><input type="text" id="trafficSlider-max"></div>
         </div>
@@ -613,7 +618,7 @@
             //         map.getSource("polygons").setData(data)
             //     }).catch(e => console.log('error', e));
 
-            
+
             fetch("data/Built-up_Areas_(December_2011)_Boundaries_V2.zip")
                 .then(text => text.arrayBuffer())
                 .then((myshape) => shp(myshape))
@@ -622,7 +627,7 @@
                     console.log('data', data);
                     map.getSource("shapes").setData(data)
                 }).catch(e => console.log('error', e));
-    
+
             d3.csv("data/gb.csv")
                 .then(data => {
                     console.log('gb', data);
@@ -644,7 +649,7 @@
                 })
             //*/
             //d3.csv("data/supermarket store location data - Sheet2.csv")
-            d3.csv("data/NEW SHOP DATA.csv")
+            d3.csv("data/SHOP DATA.csv")
                 .then(data => {
 
                     data.forEach(shop => {

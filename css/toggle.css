@@ -79,7 +79,7 @@
 
 /* Button 1 */
 .toggle-button .knobs:before {
-    content: "YES";
+    content: "ON";
     position: absolute;
     top: 4px;
     left: 4px;
@@ -97,7 +97,7 @@
 }
 
 .toggle-button .checkbox:checked + .knobs:before {
-    content: "NO";
+    content: "OFF";
     left: 42px;
     background-color: #f44336;
 }
