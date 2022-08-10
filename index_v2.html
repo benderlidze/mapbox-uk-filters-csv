@@ -9,9 +9,7 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
-
     <script src="js/shp.js"></script>
-
     <link href="css/toggle.css" rel="stylesheet">
     <link href="js/nouislider.min.css" rel="stylesheet">
     <script src="js/nouislider.min.js"></script>
@@ -315,6 +313,41 @@
             text-decoration: underline;
             cursor: pointer;
         }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: black;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1000;
+            bottom: 110%;
+            left: 50%;
+            margin-left: -60px;
+        }
+
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: black transparent transparent transparent;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+        }
     </style>
 </head>
 
@@ -350,11 +383,17 @@
         </div>
 
         <div class="slider">
-            <div><input type="text" id="gbSlider-min"></div>
+            <div class="tooltip">
+                <span class="tooltiptext">Population Data min</span>
+                <input type="text" id="gbSlider-min">
+            </div>
             <div>
                 <div id="gbSlider" class="roundSlider" style="width:120px;margin:0px 20px;"></div>
             </div>
-            <div><input type="text" id="gbSlider-max"></div>
+            <div class="tooltip">
+                <span class="tooltiptext">Population Data min</span>
+                <input type="text" id="gbSlider-max">
+            </div>
         </div>
 
         <div class="switch-item">
