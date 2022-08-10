@@ -26,7 +26,6 @@
     box-sizing: border-box;
 }
 
-
 .button-cover,
 .knobs,
 .layer {
@@ -40,9 +39,9 @@
 .button {
     position: relative;
     top: 50%;
-    width: 74px;
-    height: 36px;
-    margin: -17px auto 0 auto;
+    width: 47px;
+    height: 22px;
+    margin: -10px auto 0 auto;
     overflow: hidden;
 }
 
@@ -81,24 +80,25 @@
 .toggle-button .knobs:before {
     content: "ON";
     position: absolute;
-    top: 4px;
-    left: 4px;
-    width: 20px;
-    height: 10px;
+    top: 2px;
+    left: 5px;
+    width: 7px;
+    height: 7px;
     color: #fff;
-    font-size: 10px;
+    font-size: 7px;
     font-weight: bold;
-    text-align: center;
-    line-height: 1;
-    padding: 9px 4px;
+    padding: 5px 5px;
     background-color: #03a9f4;
+    border-radius: 50%;
+    text-indent: -2px;
     border-radius: 50%;
     transition: 0.3s cubic-bezier(0.18, 0.89, 0.35, 1.15) all;
 }
 
 .toggle-button .checkbox:checked + .knobs:before {
     content: "OFF";
-    left: 42px;
+    left: 27px;
+    text-indent: -3px;
     background-color: #f44336;
 }
 

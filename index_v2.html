@@ -43,7 +43,7 @@
         }
 
         .slider {
-            padding: 10px 0px;
+            padding: 5px 0px;
             display: flex;
             flex-direction: row;
             align-items: center;
@@ -273,7 +273,7 @@
             display: flex;
             align-items: center;
             justify-content: flex-start;
-            margin-top: 10px;
+            margin-top: 5px;
         }
 
         .switch-item>label {
@@ -306,9 +306,14 @@
 
 
         .item-header {
-            font-size: 1rem;
+            font-size: 0.8rem;
             min-width: 150px;
             margin: 5px 0px;
+        }
+
+        #resetSectors {
+            text-decoration: underline;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -387,7 +392,9 @@
         </div>
 
 
-        <div class="item-header">Sectors:</div>
+        <div class="item-header">Sectors:
+            <span id="resetSectors">Reset</span>
+        </div>
         <div id="sectors" class="sectors"></div>
 
         <div>
@@ -417,6 +424,7 @@
         const input = document.getElementById("searchInput")
         const clear = document.getElementById("clear")
 
+        const resetSectors = document.getElementById('resetSectors');
         const sectorsDiv = document.getElementById('sectors');
         const gbSliderMin = document.getElementById('gbSlider-min');
         const gbSliderMax = document.getElementById('gbSlider-max');
@@ -431,6 +439,7 @@
         const satelliteLayer = document.getElementById('satelliteLayer');
 
         const shopData = [];
+        const sectorBoxes = [];
 
         mapboxgl.accessToken = 'pk.eyJ1Ijoic3VqYW5jaGFrcmFib3J0eSIsImEiOiJja2Q5MzBuc3owenplMnBzY2I0eDYwdDhvIn0.imItePLDlYNF2BGVde_mkw';
         const map = new mapboxgl.Map({
@@ -459,6 +468,18 @@
         //     const visible = polyUpOnOff.checked ? 'visible' : 'none'
         //     map.setLayoutProperty('polygons', 'visibility', visible);
         // })
+
+        resetSectors.addEventListener("click", () => {
+            sectorBoxes
+                .filter(box => box.classList.contains("div-box-active"))
+                .forEach(box => box.click())
+
+            setTimeout(() => {
+                const featureCollection = turf.featureCollection([])
+                map.getSource("store").setData(featureCollection)
+            }, 1000)
+
+        })
 
         gbOnOff.addEventListener("change", () => {
             const visible = gbOnOff.checked ? 'none' : 'visible'
@@ -661,7 +682,10 @@
 
                     console.log('Store', data);
                     uploadPhotosBuildLayer(data)
-                    buildCategoryFilters(data)
+
+                    const boxes = buildCategoryFilters(data)
+                    sectorBoxes.push(...boxes)
+
                     autocomplete(input, data, shopName => {
                         selectedShops.push(shopName)
                         filterByShopNameS(selectedShops)
@@ -884,7 +908,7 @@
 
 
 
-            map.on('click', 'store', (e) => {
+            map.on('click', 'storeLogo', (e) => {
                 console.log('e', e);
                 // Copy coordinates array.
                 const name = e.features[0].properties.company_name;
@@ -899,12 +923,12 @@
             });
 
             // Change the cursor to a pointer when the mouse is over the places layer.
-            map.on('mouseenter', 'store', () => {
+            map.on('mouseenter', 'storeLogo', () => {
                 map.getCanvas().style.cursor = 'pointer';
             });
 
             // Change it back to a pointer when it leaves.
-            map.on('mouseleave', 'store', () => {
+            map.on('mouseleave', 'storeLogo', () => {
                 map.getCanvas().style.cursor = '';
             });
 
@@ -969,11 +993,9 @@
 
             const sectorsArr = data.map(store => store.sector.split(",").map(i => i.trim())).flat()
             const sector = [...new Set(sectorsArr)]
-            sector.forEach(name => {
+            const checkboxes = sector.map(name => {
 
                 const checkbox = buildDivBox(name, false, sectorName => {
-
-
 
                     var index = selectedSectors.indexOf(sectorName);
                     if (index !== -1) {
@@ -982,9 +1004,8 @@
                         selectedSectors.push(sectorName)
                     }
 
-
                     const shopNames = shopData.filter(shop => {
-                        return selectedSectors.every(elem => shop.sectors.includes(elem))
+                        return selectedSectors.length > 0 && selectedSectors.every(elem => shop.sectors.includes(elem))
                     })
                     console.log('shopNames', shopNames);
 
@@ -1002,7 +1023,10 @@
                     map.getSource("store").setData(featureCollection)
                 })
                 sectorsDiv.appendChild(checkbox)
+
+                return checkbox
             })
+            return checkboxes
         }
 
         function buildStoreFilters(data) {
@@ -1010,7 +1034,6 @@
             const names = [...new Set(data.map(store => store.company_name).sort())]
             console.log('names', names);
             names.forEach(name => {
-
                 const checkbox = buildCheckBox(name, selectedShops.includes(name), e => {
                     console.log('name', e);
                     const checked = e.target.checked
@@ -1030,7 +1053,6 @@
         }
 
         function buildCheckBox(name, checked, eventFunction) {
-
             const div = document.createElement("div")
             const checkbox = document.createElement('input');
             checkbox.type = "checkbox";
@@ -1042,18 +1064,14 @@
             var label = document.createElement('label')
             label.htmlFor = name;
             label.appendChild(document.createTextNode(name));
-
             div.appendChild(checkbox);
             div.appendChild(label);
-
-
             return div
         }
 
         function buildDivBox(name, checked, eventFunction) {
 
             let active = false;
-
             const div = document.createElement("div")
             div.className = 'div-box'
             div.id = name;
@@ -1069,19 +1087,16 @@
 
                 eventFunction(name)
             })
-
+            const iconName = name.toLowerCase().trim()
+            console.log('iconsName', iconName);
             const img = document.createElement("img")
-            img.src = 'logos/icons/gym.svg'
+            img.src = `icons/${name}.svg`
             img.style.width = "30px"
             img.style.height = "30px"
-
             const label = document.createElement("div")
             label.innerText = name
-
             div.appendChild(img)
             div.appendChild(label);
-
-
             return div
         }
 
