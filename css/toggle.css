@@ -24,6 +24,7 @@
     display: table-cell;
     position: relative;
     box-sizing: border-box;
+    left: 70px;
 }
 
 .button-cover,

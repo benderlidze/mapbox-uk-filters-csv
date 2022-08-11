@@ -307,11 +307,24 @@
             font-size: 0.8rem;
             min-width: 150px;
             margin: 5px 0px;
+            display: flex;
+            align-items: center;
+        }
+
+        .item-header>div {
+            margin-left: 5px;
+            cursor: pointer;
+            display: flex;
         }
 
         #resetSectors {
-            text-decoration: underline;
             cursor: pointer;
+            display: flex;
+            border: 1px solid #5699a2;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin: 5px 0px;
+            width: fit-content;
         }
 
         .tooltip {
@@ -348,6 +361,10 @@
         .tooltip:hover .tooltiptext {
             visibility: visible;
         }
+
+        hr {
+            border-top: 1px solid rgb(230, 230, 230);
+        }
     </style>
 </head>
 
@@ -368,9 +385,14 @@
                 placeholder="Enter 'Tesco' or 'Pets at Home'">
         </div>
 
-
+        <hr>
         <div class="switch-item">
-            <div class="item-header">Population Data</div>
+            <div class="item-header">Population Data
+                <div class="tooltip">
+                    <span class="tooltiptext">Population Data min</span>
+                    <img src="icons/icons8-info-16.png">
+                </div>
+            </div>
             <div class="toggle-button-cover">
                 <div class="button-cover">
                     <div class="toggle-button button r">
@@ -383,21 +405,26 @@
         </div>
 
         <div class="slider">
-            <div class="tooltip">
-                <span class="tooltiptext">Population Data min</span>
+            <div>
                 <input type="text" id="gbSlider-min">
             </div>
             <div>
                 <div id="gbSlider" class="roundSlider" style="width:120px;margin:0px 20px;"></div>
             </div>
-            <div class="tooltip">
-                <span class="tooltiptext">Population Data min</span>
+            <div>
                 <input type="text" id="gbSlider-max">
             </div>
         </div>
+        <hr>
 
         <div class="switch-item">
-            <div class="item-header">Traffic</div>
+            <div class="item-header">
+                Traffic
+                <div class="tooltip">
+                    <span class="tooltiptext">Population Data min</span>
+                    <img src="icons/icons8-info-16.png">
+                </div>
+            </div>
             <div class="toggle-button-cover">
                 <div class="button-cover">
                     <div class="toggle-button button r">
@@ -416,9 +443,15 @@
             </div>
             <div><input type="text" id="trafficSlider-max"></div>
         </div>
-
+        <hr>
         <div class="switch-item">
-            <div class="item-header">Built up Areas</div>
+            <div class="item-header">
+                Built up Areas
+                <div class="tooltip">
+                    <span class="tooltiptext">Population Data min</span>
+                    <img src="icons/icons8-info-16.png">
+                </div>
+            </div>
             <div class="toggle-button-cover">
                 <div class="button-cover">
                     <div class="toggle-button button r">
@@ -429,17 +462,14 @@
                 </div>
             </div>
         </div>
+        <hr>
 
-
-        <div class="item-header">Sectors:
-            <span id="resetSectors">Reset</span>
-        </div>
         <div id="sectors" class="sectors"></div>
 
         <div>
             <div id="shop-list"></div>
         </div>
-
+        <hr>
         <div class="switch-item">
             <div class="item-header">Satellite view</div>
             <div class="toggle-button-cover">
@@ -452,7 +482,10 @@
                 </div>
             </div>
         </div>
-
+        <hr>
+        <div class="item-header">
+            <span id="resetSectors">Reset Sectors</span>
+        </div>
     </div>
 
     <div id="map"></div>
@@ -612,6 +645,7 @@
 
         map.on('load', () => {
 
+
             d3.csv("data/dft_reduced.csv")
                 .then(data => {
                     console.log('Store', data);
@@ -664,20 +698,6 @@
                     const featureCollection = turf.featureCollection(pins)
                     map.getSource("traffic").setData(featureCollection)
                 })
-
-
-            // fetch("data/bristol.zip")
-            //     .then(text => text.arrayBuffer())
-            //     .then((myshape) => shp(myshape))
-            //     .then((data) => {
-            //         //geo.addData(data)
-            //         console.log('Bristol', data);
-            //         data.features.filter(i => i.geometry !== null).forEach(poly => {
-            //             poly.properties.area = turf.area(poly) / 4046;
-            //         })
-            //         map.getSource("polygons").setData(data)
-            //     }).catch(e => console.log('error', e));
-
 
             fetch("data/Built-up_Areas_(December_2011)_Boundaries_V2.zip")
                 .then(text => text.arrayBuffer())
@@ -790,37 +810,48 @@
                     'features': []
                 }
             });
-            map.addLayer({
-                'id': 'GBcircle',
-                'type': 'circle',
-                'source': 'gb',
-                'paint': {
-                    'circle-radius': 6,
-                    'circle-color': '#B42222'
-                },
-                'layout': {
-                    'visibility': 'none'
-                },
-            });
-            map.addLayer({
-                'id': 'GBtext',
-                'type': 'symbol',
-                'source': 'gb',
-                'layout': {
-                    'text-field': ['get', 'cityandpop'],
-                    'text-size': 10,
-                    'text-transform': 'uppercase',
-                    'text-allow-overlap': true,
-                    'icon-allow-overlap': true,
-                    'text-offset': [0, 1],
-                    'visibility': 'none'
-                },
-                'paint': {
-                    'text-color': '#202',
-                    "text-halo-color": "#fff",
-                    "text-halo-width": 2
-                },
-            });
+            // map.addLayer({
+            //     'id': 'GBcircle',
+            //     'type': 'circle',
+            //     'source': 'gb',
+            //     'paint': {
+            //         'circle-radius': 6,
+            //         'circle-color': '#B42222'
+            //     },
+            //     'layout': {
+            //         'visibility': 'none'
+            //     },
+            // });
+
+            map.loadImage('icons/people.png',
+                (error, image) => {
+                    if (error) throw error;
+                    map.addImage('people', image);
+                    map.addLayer({
+                        'id': 'GBtext',
+                        'type': 'symbol',
+                        'source': 'gb',
+                        'layout': {
+                            'icon-image': 'people', // reference the image
+                            'icon-size': 0.5,
+                            'icon-allow-overlap': true,
+
+                            'text-field': ['get', 'cityandpop'],
+                            'text-size': 10,
+                            'text-transform': 'uppercase',
+                            'text-allow-overlap': true,
+                            'icon-allow-overlap': true,
+                            'text-offset': [0, 1.5],
+                            'visibility': 'none'
+                        },
+                        'paint': {
+                            'text-color': '#202',
+                            "text-halo-color": "#fff",
+                            "text-halo-width": 2
+                        },
+                    });
+                })
+
 
 
             map.addSource('store', {
@@ -905,25 +936,38 @@
                 },
             });
 
-            map.addLayer({
-                'id': 'trafficText',
-                'type': 'symbol',
-                'source': 'traffic',
-                'layout': {
-                    'text-field': ['get', 'all_motor_vehicles'],
-                    'text-size': 10,
-                    'text-transform': 'uppercase',
-                    'text-offset': ['get', 'position'],
-                    'text-allow-overlap': true,
-                    'icon-allow-overlap': true,
-                    // 'text-justify': ['get', 'all_motor_vehicles']
-                    'visibility': 'none'
-                },
-                'paint': {
-                    'text-color': '#202',
 
-                },
-            });
+            map.loadImage('icons/car.png',
+                (error, image) => {
+                    if (error) throw error;
+                    map.addImage('car', image);
+                    map.addLayer({
+                        'id': 'trafficText',
+                        'type': 'symbol',
+                        'source': 'traffic',
+                        'layout': {
+                            'icon-image': 'car', // reference the image
+                            'icon-size': 0.07,
+                            'icon-allow-overlap': true,
+
+                            'text-field': ['get', 'all_motor_vehicles'],
+                            'text-size': 10,
+                            'text-transform': 'uppercase',
+                            'text-offset': ['get', 'position'],
+                            'text-allow-overlap': true,
+                            'icon-allow-overlap': true,
+
+                            'visibility': 'none'
+                        },
+                        'paint': {
+                            'text-color': '#202',
+                            "text-halo-color": "#fff",
+                            "text-halo-width": 2
+
+                        },
+                    });
+                })
+
             map.on('click', 'traffic', (e) => {
                 console.log('e', e);
                 // Copy coordinates array.
@@ -1001,7 +1045,8 @@
             const names = [...new Set(data.map(store => store.company_name).sort())]
 
             names.forEach(name => {
-                map.loadImage(`logos/${name.toLowerCase()}.png`, (error, image) => {
+
+                map.loadImage(`logos/${name.toLowerCase().trim()}.png`, (error, image) => {
                     if (error) {
                         map.loadImage(`logos/default.png`, (error, image) => {
                             console.log('name', name);
@@ -1030,7 +1075,7 @@
 
         function buildCategoryFilters(data) {
 
-            const sectorsArr = data.map(store => store.sector.split(",").map(i => i.trim())).flat()
+            const sectorsArr = data.map(store => store.sector.split(",").map(i => i.trim())).flat().filter(i => i !== "")
             const sector = [...new Set(sectorsArr)]
             const checkboxes = sector.map(name => {
 
@@ -1046,7 +1091,6 @@
                     const shopNames = shopData.filter(shop => {
                         return selectedSectors.length > 0 && selectedSectors.every(elem => shop.sectors.includes(elem))
                     })
-                    console.log('shopNames', shopNames);
 
                     const pins = shopNames
                         .map(pin => {
