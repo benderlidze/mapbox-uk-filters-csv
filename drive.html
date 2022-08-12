@@ -9,107 +9,66 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
-
     <script src="js/shp.js"></script>
-
+    <link href="css/toggle.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
     <link href="js/nouislider.min.css" rel="stylesheet">
     <script src="js/nouislider.min.js"></script>
-
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
-
-        #map {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 100%;
-        }
-
-        #filters {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 10;
-            background-color: white;
-            padding: 20px;
-            min-width: 480px;
-            ;
-        }
-
-        .slider {
-            padding: 10px 0px;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-        }
-
-        .slider input {
-            width: 50px;
-        }
-
-        .slider input {
-            width: 50px;
-        }
-
-        .switches {
-            margin: 20px 0px;
-        }
-
-        .switches>label {
-            display: block;
-        }
-
-        fieldset {
-            border: 1px solid #cdcdcd;
-            border-radius: 4px;
-        }
-
-        #shop-list {
-            display: flex;
-            flex-direction: column;
-            flex-wrap: wrap;
-            max-height: 800px;
-        }
-
-        .sectors {
-            display: flex;
-            flex-direction: column;
-            flex-wrap: wrap;
-            max-height: 150px;
-            margin: 20px 0px;
-        }
-
-        #remover {
-            padding: 0.5em;
-            border: 2px solid rgb(161, 161, 161);
-            border-radius: 0.5em;
-            cursor: pointer;
-            margin: 5px 0px;
-            width: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #remover:hover {
-            background-color: rgb(224, 224, 224);
-        }
-    </style>
 </head>
 
 <body>
 
+    <!-- The Modal -->
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <p id="results"></p>
+        </div>
+    </div>
+
+
     <div id="filters">
-        <div id='remover'>Add satellite</div>
-        BS1 6XX
+        <h4>Gap Analysis Map</h4>
+
+        <div class="bold">Step 1: </div>
+        <span class="small-text">Enter a postcode of the property or site.</span> BS1 6XX
         <div id="address">
             <input type="text" id="search">
         </div>
+
+        <div class="bold">Step 2: </div>
+        <span class="small-text">Search a retailer or select a sector below to show their nearest store.</span>
+        <div class="autocomplete">
+            <!-- <div id="clear">
+                <div class="close-x"></div>
+            </div> -->
+            <input id="searchInput" class="clearable" type="text" name="myCountry"
+                placeholder="Enter 'Tesco' or 'Pets at Home'">
+        </div>
+        <div class="bold">Sectors: </div>
         <div id="sectors" class="sectors"></div>
-        <div id="shop-list"></div>
+        <hr>
+
+        <div class="switch-item">
+            <div class="item-header">Satellite view</div>
+            <div class="toggle-button-cover">
+                <div class="button-cover">
+                    <div class="toggle-button button r">
+                        <input type="checkbox" id="satelliteLayer" class="checkbox" checked="false">
+                        <div class="knobs"></div>
+                        <div class="layer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr>
+        <div class="item-header">
+            <span id="exportResults">Export results</span>
+        </div>
+        <hr>
+        <div class="item-header">
+            <span id="resetSectors">Reset Sectors</span>
+        </div>
     </div>
 
     <div id="map"></div>
@@ -122,6 +81,16 @@
         const selectedShops = []; //no shops at load
         const shopName = document.getElementById("shop");
         const shopList = document.getElementById("shop-list");
+        const satelliteLayer = document.getElementById('satelliteLayer');
+        const input = document.getElementById("searchInput")
+        const resetSectors = document.getElementById('resetSectors');
+        const exportResults = document.getElementById('exportResults');
+
+        const modal = document.getElementById("myModal");
+        const closeModal = document.getElementById("closeModal");
+        const resultsDiv = document.getElementById("results");
+
+        const sectorBoxes = [];
         const shopData = [];
         const userPosition = {
             lat: undefined,
@@ -137,22 +106,55 @@
         });
         map.addControl(new mapboxgl.NavigationControl());
 
-        const switchy = document.getElementById('remover');
-        switchy.addEventListener("click", function () {
-            if (switchy.className === 'on') {
-                switchy.setAttribute('class', 'off');
+        satelliteLayer.addEventListener("input", function () {
+            if (satelliteLayer.checked) {
                 map.setLayoutProperty('satellite', 'visibility', 'none');
-                switchy.innerHTML = 'Add satellite';
             } else {
-                switchy.setAttribute('class', 'on');
                 map.setLayoutProperty('satellite', 'visibility', 'visible');
-                switchy.innerHTML = 'Remove satellite';
             }
         });
 
+        resetSectors.addEventListener("click", () => {
+            sectorBoxes
+                .filter(box => box.classList.contains("div-box-active"))
+                .forEach(box => box.click())
+
+            setTimeout(() => {
+                const featureCollection = turf.featureCollection([])
+                map.getSource("store").setData(featureCollection)
+            }, 1000)
+
+        })
+
+
+        // --------------------- MODAL -----------------
+        closeModal.addEventListener("click", () => {
+            modal.style.display = "none";
+        })
+        exportResults.addEventListener("click", () => {
+            modal.style.display = "block";
+        })
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        // const switchy = document.getElementById('remover');
+        // switchy.addEventListener("click", function () {
+        //     if (switchy.className === 'on') {
+        //         switchy.setAttribute('class', 'off');
+        //         map.setLayoutProperty('satellite', 'visibility', 'none');
+        //         switchy.innerHTML = 'Add satellite';
+        //     } else {
+        //         switchy.setAttribute('class', 'on');
+        //         map.setLayoutProperty('satellite', 'visibility', 'visible');
+        //         switchy.innerHTML = 'Remove satellite';
+        //     }
+        // });
+
         map.on('load', () => {
-
-
 
             d3.csv("data/SHOP DATA.csv")
                 .then(data => {
@@ -166,10 +168,16 @@
 
                     console.log('Store', data);
                     uploadPhotosBuildLayer(data)
-                    buildStoreFilters(data)
-                    //filterByShopNameS(selectedShops)
-                    buildCategoryFilters(data)
+
+                    const boxes = buildCategoryFilters(data)
+                    sectorBoxes.push(...boxes)
+
+                    autocomplete(input, data, shopName => {
+                        selectedShops.push(shopName)
+                        filterByShopNameS(selectedShops)
+                    });
                 })
+
 
             map.addLayer({
                 id: 'satellite',
@@ -237,7 +245,7 @@
                 filter: ['!', ['has', 'point_count']],
                 'layout': {
                     'icon-image': ['get', 'company_name'], // reference the image
-                    'icon-size': 1,
+                    'icon-size': 0.15,
                     'icon-allow-overlap': true,
                 }
             });
@@ -338,7 +346,7 @@
             const names = [...new Set(data.map(store => store.company_name).sort())]
 
             names.forEach(name => {
-                map.loadImage(`logos/small/${name.toLowerCase()}.png`, (error, image) => {
+                map.loadImage(`logos/${name.toLowerCase()}.png`, (error, image) => {
                     if (error) {
                         map.loadImage(`logos/small/default.png`, (error, image) => {
                             console.log('name', name);
@@ -353,24 +361,20 @@
 
         function buildCategoryFilters(data) {
 
-            const sectorsArr = data.map(store => store.sector.split(",").map(i => i.trim())).flat()
+            const sectorsArr = data.map(store => store.sector.split(",").map(i => i.trim())).flat().filter(i => i !== "")
             const sector = [...new Set(sectorsArr)]
-            sector.forEach(name => {
+            const checkboxes = sector.map(name => {
 
-                const checkbox = buildCheckBox(name, false, e => {
-                    console.log('name', e);
-                    const checked = e.target.checked
-                    const value = e.target.id
-                    if (checked) {
-                        selectedSectors.push(value)
+                const checkbox = buildDivBox(name, false, sectorName => {
+
+
+                    var index = selectedSectors.indexOf(sectorName);
+                    if (index !== -1) {
+                        selectedSectors.splice(index, 1);
                     } else {
-                        var index = selectedSectors.indexOf(value);
-                        if (index !== -1) {
-                            selectedSectors.splice(index, 1);
-                        }
+                        selectedSectors.push(sectorName)
                     }
                     // filterByShopNameS(selectedShops)
-
 
                     const shopNames = shopData.filter(shop => {
                         return selectedSectors.length > 0 && selectedSectors.every(elem => shop.sectors.includes(elem))
@@ -381,23 +385,42 @@
                     const uniqueShopNames = [... new Set(shopNames.map(i => i.company_name))]
                     findClosestToUser(uniqueShopNames)
 
-                    /*
-                    const pins = shopNames
-                        .map(pin => {
-                            const { property_latitude, property_longitude } = pin
-                            return {
-                                "type": "Feature", "properties": { ...pin, },
-                                "geometry": {
-                                    "type": "Point", "coordinates": [+property_longitude, +property_latitude]
-                                }
-                            }
-                        })
-                    const featureCollection = turf.featureCollection(pins)
-                    map.getSource("store").setData(featureCollection)
-                    */
                 })
                 sectorsDiv.appendChild(checkbox)
+                return checkbox
             })
+            return checkboxes
+        }
+
+        function buildDivBox(name, checked, eventFunction) {
+
+            let active = false;
+            const div = document.createElement("div")
+            div.className = 'div-box'
+            div.id = name;
+            div.addEventListener("click", () => {
+                active = !active
+                console.log('active', active);
+
+                if (active) {
+                    div.classList.add("div-box-active")
+                } else {
+                    div.classList.remove("div-box-active")
+                }
+
+                eventFunction(name)
+            })
+            const iconName = name.toLowerCase().trim()
+            console.log('iconsName', iconName);
+            const img = document.createElement("img")
+            img.src = `icons/${iconName}.svg`
+            img.style.width = "30px"
+            img.style.height = "30px"
+            const label = document.createElement("div")
+            label.innerText = name
+            div.appendChild(img)
+            div.appendChild(label);
+            return div
         }
 
         // function buildCategoryFilters(data) {
@@ -476,7 +499,7 @@
                             "type": "Point", "coordinates": [+property_longitude, +property_latitude]
                         }
                     }
-                    return { distance, name: pin.company_name, geometry }
+                    return { distance, name: pin.company_name, addr: pin.property_address, geometry }
                 })
                 .sort((a, b) => {
                     return a.distance - b.distance
@@ -487,40 +510,28 @@
                     }
                 })
 
-
-            // https://maps.googleapis.com/maps/api/distancematrix/json?origins=23.020284,72.4396566|23.027100,72.508000&destinations=22.3039702,70.7671403|22.999500,72.600300&sensor=false&key=AIzaSyDSVjMQM3Hgp3upVIWiHSW1CTTP-VFT85A
-            // var origin1 = new google.maps.LatLng(55.930385, -3.118425);
-            // var origin2 = 'Greenwich, England';
-            // var destinationA = 'Stockholm, Sweden';
-            // var destinationB = new google.maps.LatLng(50.087692, 14.421150);
-            // var service = new google.maps.DistanceMatrixService();
-            // service.getDistanceMatrix(
-            //     {
-            //         origins: [origin1, origin2],
-            //         destinations: [destinationA, destinationB],
-            //         travelMode: 'DRIVING',
-
-            //     }, (response, status) => {
-            //         console.log('response', response);
-            //     });
-
             console.log('unique', unique);
+
+            // PRINT results to modal 
+            const res = []
+            unique.forEach(r => {
+                res.push(`${r.name}: ${r.distance.toFixed(1)}miles | ${r.addr} `)
+            })
+            resultsDiv.innerHTML = res.join("<br>");
+
 
             const measureCollection = { type: 'FeatureCollection', features: [] };
             const pins = Array.from(unique).map(data => {
-
                 const m = drawMeasureLine(from.geometry.coordinates, data[1].geometry.geometry.coordinates)
                 measureCollection.features.push(...m)
-
                 return data[1].geometry
             })
 
             const featureCollection = turf.featureCollection(pins)
             map.getSource("store").setData(featureCollection)
+            map.getSource('measure').setData(measureCollection)
 
             console.log('measureCollection', measureCollection);
-
-            map.getSource('measure').setData(measureCollection)
             //console.log('featureCollection', featureCollection);
         }
 
@@ -623,6 +634,128 @@
 
                 userPosition.lat = lat
                 userPosition.lng = lng
+            });
+        }
+
+
+        function autocomplete(inp, data, callback) {
+            var currentFocus;
+            /*execute a function when someone writes in the text field:*/
+
+            console.log('data', data);
+            inp.addEventListener("input", function (e) {
+                var a, b, i, val = this.value;
+                /*close any already open lists of autocompleted values*/
+                closeAllLists();
+                if (!val) { return false; }
+                currentFocus = -1;
+                /*create a DIV element that will contain the items (values):*/
+                a = document.createElement("DIV");
+                a.setAttribute("id", this.id + "autocomplete-list");
+                a.setAttribute("class", "autocomplete-items");
+                /*append the DIV element as a child of the autocomplete container:*/
+                this.parentNode.appendChild(a);
+
+                const arr = [...new Set(data.map(i => i.company_name))].map((i, key) => {
+                    return {
+                        index: key,
+                        text: `${i}`
+                    }
+                })
+
+                let counter = 0;
+
+                console.log('arr', arr);
+                /*for each item in the array...*/
+                for (i = 0; i < arr.length; i++) {
+
+                    /*check if the item starts with the same letters as the text field value:*/
+
+                    const search = arr[i].text.toUpperCase().search(val.toUpperCase())
+                    if (search > -1) {
+                        /*create a DIV element for each matching element:*/
+                        b = document.createElement("DIV");
+                        /*make the matching letters bold:*/
+
+                        const text = arr[i].text.substr(0, search) + '<b>' + arr[i].text.substr(search, val.length) + '</b>' + arr[i].text.substr((search + val.length), arr[i].text.length)
+
+                        b.innerHTML = text
+                        /*insert a input field that will hold the current array item's value:*/
+                        b.innerHTML += "<input type='hidden' id=" + arr[i].index + " value='" + arr[i].text + "'>";
+                        /*execute a function when someone clicks on the item value (DIV element):*/
+                        b.addEventListener("click", function (e) {
+                            /*insert the value for the autocomplete text field:*/
+                            inp.value = this.getElementsByTagName("input")[0].value.replaceAll('<br>', ' ');
+                            const index = this.getElementsByTagName("input")[0].id;
+                            // /*close the list of autocompleted values,
+                            // (or any other open lists of autocompleted values:*/
+                            // closeAllLists();
+                            // const point = data[index]
+                            // selectPoint(point)
+                            if (typeof callback === 'function') {
+                                callback(inp.value)
+                            }
+                        });
+                        if (counter > 20) return; // display first 20 results
+                        a.appendChild(b);
+                        counter++;
+                    }
+                }
+            });
+            /*execute a function presses a key on the keyboard:*/
+            inp.addEventListener("keydown", function (e) {
+                var x = document.getElementById(this.id + "autocomplete-list");
+                if (x) x = x.getElementsByTagName("div");
+                if (e.keyCode == 40) {
+                    /*If the arrow DOWN key is pressed,
+                    increase the currentFocus variable:*/
+                    currentFocus++;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 38) { //up
+                    /*If the arrow UP key is pressed,
+                    decrease the currentFocus variable:*/
+                    currentFocus--;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 13) {
+                    /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                    e.preventDefault();
+                    if (currentFocus > -1) {
+                        /*and simulate a click on the "active" item:*/
+                        if (x) x[currentFocus].click();
+                    }
+                }
+            });
+            function addActive(x) {
+                /*a function to classify an item as "active":*/
+                if (!x) return false;
+                /*start by removing the "active" class on all items:*/
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                /*add class "autocomplete-active":*/
+                x[currentFocus].classList.add("autocomplete-active");
+            }
+            function removeActive(x) {
+                /*a function to remove the "active" class from all autocomplete items:*/
+                for (var i = 0; i < x.length; i++) {
+                    x[i].classList.remove("autocomplete-active");
+                }
+            }
+            function closeAllLists(elmnt) {
+                /*close all autocomplete lists in the document,
+                            except the one passed as an argument:*/
+                var x = document.getElementsByClassName("autocomplete-items");
+                for (var i = 0; i < x.length; i++) {
+                    if (elmnt != x[i] && elmnt != inp) {
+                        x[i].parentNode.removeChild(x[i]);
+                    }
+                }
+            }
+            /*execute a function when someone clicks in the document:*/
+            document.addEventListener("click", function (e) {
+                closeAllLists(e.target);
             });
         }
 
