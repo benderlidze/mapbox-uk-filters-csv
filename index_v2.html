@@ -38,7 +38,7 @@
         <div class="switch-item">
             <div class="item-header">Population Data
                 <div class="tooltip">
-                    <span class="tooltiptext">Population Data min</span>
+                    <span class="tooltiptext">UK Census data. Filter by min and max population sizes below</span>
                     <img src="icons/icons8-info-16.png">
                 </div>
             </div>
@@ -70,7 +70,7 @@
             <div class="item-header">
                 Traffic
                 <div class="tooltip">
-                    <span class="tooltiptext">Population Data min</span>
+                    <span class="tooltiptext">Daily traffic flow. Filter by min and max flow counts below</span>
                     <img src="icons/icons8-info-16.png">
                 </div>
             </div>
@@ -97,7 +97,7 @@
             <div class="item-header">
                 Built up Areas
                 <div class="tooltip">
-                    <span class="tooltiptext">Population Data min</span>
+                    <span class="tooltiptext">Villages, towns and cities where people live</span>
                     <img src="icons/icons8-info-16.png">
                 </div>
             </div>
@@ -113,7 +113,12 @@
         </div>
         <hr>
 
+        <div class="item-header">
+            Sectors
+        </div>
         <div id="sectors" class="sectors"></div>
+
+
 
         <div>
             <div id="shop-list"></div>
@@ -133,7 +138,7 @@
         </div>
         <hr>
         <div class="item-header">
-            <span id="resetSectors">Reset Sectors</span>
+            <span id="resetSectors">Reset</span>
         </div>
     </div>
 
@@ -199,7 +204,7 @@
                 const featureCollection = turf.featureCollection([])
                 map.getSource("store").setData(featureCollection)
             }, 1000)
-
+            input.value = '';
         })
 
         gbOnOff.addEventListener("change", () => {
