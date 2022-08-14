@@ -31,7 +31,7 @@
         <h4>Gap Analysis Map</h4>
 
         <div class="bold">Step 1: </div>
-        <span class="small-text">Enter a postcode of the property or site.</span> BS1 6XX
+        <span class="small-text">Enter a postcode of the property or site.</span>
         <div id="address">
             <input type="text" id="search">
         </div>
@@ -67,7 +67,7 @@
         </div>
         <hr>
         <div class="item-header">
-            <span id="resetSectors">Reset Sectors</span>
+            <span id="resetSectors">Reset</span>
         </div>
     </div>
 
@@ -123,7 +123,7 @@
                 const featureCollection = turf.featureCollection([])
                 map.getSource("store").setData(featureCollection)
             }, 1000)
-
+            document.getElementById("search").value = '';
         })
 
 
@@ -140,19 +140,6 @@
                 modal.style.display = "none";
             }
         }
-
-        // const switchy = document.getElementById('remover');
-        // switchy.addEventListener("click", function () {
-        //     if (switchy.className === 'on') {
-        //         switchy.setAttribute('class', 'off');
-        //         map.setLayoutProperty('satellite', 'visibility', 'none');
-        //         switchy.innerHTML = 'Add satellite';
-        //     } else {
-        //         switchy.setAttribute('class', 'on');
-        //         map.setLayoutProperty('satellite', 'visibility', 'visible');
-        //         switchy.innerHTML = 'Remove satellite';
-        //     }
-        // });
 
         map.on('load', () => {
 
@@ -174,7 +161,8 @@
 
                     autocomplete(input, data, shopName => {
                         selectedShops.push(shopName)
-                        filterByShopNameS(selectedShops)
+                        //filterByShopNameS(selectedShops)
+                        findClosestToUser(selectedShops)
                     });
                 })
 
@@ -286,13 +274,18 @@
                     'text-allow-overlap': true,
                     "text-offset": [0, 1]
                 },
+                'paint': {
+                    'text-color': '#202',
+                    "text-halo-color": "#fff",
+                    "text-halo-width": 2
+                },
                 'filter': ['==', '$type', 'Point']
             });
 
             //================MEASURE LINE =====================
 
 
-            map.on('click', 'store', (e) => {
+            map.on('click', 'storeLogo', (e) => {
                 console.log('e', e);
                 // Copy coordinates array.
                 const name = e.features[0].properties.company_name;
@@ -307,12 +300,12 @@
             });
 
             // Change the cursor to a pointer when the mouse is over the places layer.
-            map.on('mouseenter', 'store', () => {
+            map.on('mouseenter', 'storeLogo', () => {
                 map.getCanvas().style.cursor = 'pointer';
             });
 
             // Change it back to a pointer when it leaves.
-            map.on('mouseleave', 'store', () => {
+            map.on('mouseleave', 'storeLogo', () => {
                 map.getCanvas().style.cursor = '';
             });
 
