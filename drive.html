@@ -23,6 +23,7 @@
         <div class="modal-content">
             <span class="close" id="closeModal">&times;</span>
             <p id="results"></p>
+            <div class="buttons" id="copytoclipboard">Copy</div>
         </div>
     </div>
 
@@ -75,7 +76,9 @@
 
     <script>
 
+        let modalText;
         let userMarker;
+        const copy = document.getElementById('sectors');
         const sectorsDiv = document.getElementById('sectors');
         const selectedSectors = []; //no shops at load
         const selectedShops = []; //no shops at load
@@ -126,6 +129,9 @@
             document.getElementById("search").value = '';
         })
 
+        copy.addEventListener("click", () => {
+            navigator.clipboard.writeText(modalText);
+        })
 
         // --------------------- MODAL -----------------
         closeModal.addEventListener("click", () => {
@@ -519,15 +525,18 @@
             })
 
             //resultsDiv.innerHTML = res.join("<br>");
-            resultsDiv.innerHTML = `<table>
+            const code = document.getElementById("search").value
+            modalText = `
+            <h3>Retailer distance from ${code}</h3>
+            <table>
                 <tr>
                     <th>Name</th>
-                    <th>Dist</th>
-                    <th>Addr</th>
+                    <th>Distance</th>
+                    <th>Address</th>
                 </tr>
                     ${table}
                 </table>`
-
+            resultsDiv.innerHTML = modalText
 
             const measureCollection = { type: 'FeatureCollection', features: [] };
             const pins = Array.from(unique).map(data => {
