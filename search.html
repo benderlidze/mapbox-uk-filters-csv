@@ -32,6 +32,8 @@
             z-index: 10;
             background-color: white;
             padding: 10px;
+            max-height: 80%;
+            overflow: auto;
         }
 
         /*the container must be positioned relative:*/
@@ -140,6 +142,8 @@
             <!-- <input type="text" id="shop" placeholder="shop name" /><button onclick="filterByShopName()">Filter</button> -->
             <div id="shop-list"></div>
         </div>
+
+
     </div>
 
     <div id="map"></div>
@@ -282,7 +286,7 @@
                     'circle-stroke-width': 1,
                     'circle-stroke-color': '#fff'
                 }
-            }); 
+            });
 
             // inspect a cluster on click
             map.on('click', 'clusters', (e) => {
@@ -346,10 +350,16 @@
         clear.addEventListener("click", clearInput)
 
         const setShops = (name) => {
+
+            const results = []
             const pins = shopData
                 .filter(pin => pin.name === name)
-                .map(pin => {
+                .map((pin, key) => {
                     const { lat, lng, all } = pin
+
+
+                    results.push(`${key + 1} | ${pin.city} ${pin.name}`)
+
                     return {
                         "type": "Feature", "properties": { ...pin },
                         "geometry": {
@@ -359,6 +369,11 @@
                 })
             const featureCollection = turf.featureCollection(pins)
             map.getSource("traffic").setData(featureCollection)
+
+
+            console.log('results', results);
+            const text = results.join("<br>")
+            shopList.innerHTML = text
         }
 
         const convertToCsv = (arr) => {
