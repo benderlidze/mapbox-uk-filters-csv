@@ -78,7 +78,7 @@
 
         let modalText;
         let userMarker;
-        const copy = document.getElementById('sectors');
+        const copy = document.getElementById('copytoclipboard');
         const sectorsDiv = document.getElementById('sectors');
         const selectedSectors = []; //no shops at load
         const selectedShops = []; //no shops at load
@@ -130,7 +130,16 @@
         })
 
         copy.addEventListener("click", () => {
-            navigator.clipboard.writeText(modalText);
+
+            // const res = document.getElementById("results")
+            // navigator.clipboard.writeText(res);
+            try {
+                const htmlCode = document.querySelector("#results").innerHTML
+                const blobInput = new Blob([htmlCode], { type: 'text/html' })
+                navigator.clipboard.write([new ClipboardItem({ 'text/html': blobInput })])
+            } catch (e) {
+                alert(e)
+            }
         })
 
         // --------------------- MODAL -----------------
@@ -513,14 +522,21 @@
 
             // PRINT results to modal 
             //const res = []
-            let table = '';
+            let table = `<tr>
+                            <th>Name</th>
+                            <th>Distance</th>
+                            <th>Address</th>
+                        </tr>`;
+            let index = 1;
             unique.forEach(r => {
-                //res.push(`${r.name}: ${r.distance.toFixed(1)}miles | ${r.addr} `)
+
+                index++
+                const style = (index % 2 === 0) ? 'style="background-color: #dddddd;" ' : ""
                 const text = ` `
-                table += `<tr>
-                            <td>${r.name}</td> 
-                            <td>${r.distance.toFixed(1)}miles </td>
-                            <td>${r.addr}</td>
+                table += `<tr ${style}>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${r.name}</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${r.distance.toFixed(1)}miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${r.addr}</td>
                         </tr>`
             })
 
@@ -528,12 +544,7 @@
             const code = document.getElementById("search").value
             modalText = `
             <h3>Retailer distance from ${code}</h3>
-            <table>
-                <tr>
-                    <th>Name</th>
-                    <th>Distance</th>
-                    <th>Address</th>
-                </tr>
+            <table style="border-collapse: collapse; width: 100%;">
                     ${table}
                 </table>`
             resultsDiv.innerHTML = modalText
