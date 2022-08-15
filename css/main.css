@@ -435,6 +435,11 @@ h4 {
     cursor: pointer;
 }
 
+#results{
+    max-height: 400px;
+    overflow-y: auto;
+}
+
 /* table {
     font-family: arial, sans-serif;
     border-collapse: collapse;
