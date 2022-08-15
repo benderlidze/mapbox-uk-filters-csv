@@ -523,13 +523,12 @@
             // PRINT results to modal 
             //const res = []
             let table = `<tr>
-                            <th>Name</th>
-                            <th>Distance</th>
-                            <th>Address</th>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Name</th>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Distance</th>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Address</th>
                         </tr>`;
             let index = 1;
             unique.forEach(r => {
-
                 index++
                 const style = (index % 2 === 0) ? 'style="background-color: #dddddd;" ' : ""
                 const text = ` `
