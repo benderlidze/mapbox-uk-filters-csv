@@ -506,11 +506,27 @@
             console.log('unique', unique);
 
             // PRINT results to modal 
-            const res = []
+            //const res = []
+            let table = '';
             unique.forEach(r => {
-                res.push(`${r.name}: ${r.distance.toFixed(1)}miles | ${r.addr} `)
+                //res.push(`${r.name}: ${r.distance.toFixed(1)}miles | ${r.addr} `)
+                const text = ` `
+                table += `<tr>
+                            <td>${r.name}</td> 
+                            <td>${r.distance.toFixed(1)}miles </td>
+                            <td>${r.addr}</td>
+                        </tr>`
             })
-            resultsDiv.innerHTML = res.join("<br>");
+
+            //resultsDiv.innerHTML = res.join("<br>");
+            resultsDiv.innerHTML = `<table>
+                <tr>
+                    <th>Name</th>
+                    <th>Dist</th>
+                    <th>Addr</th>
+                </tr>
+                    ${table}
+                </table>`
 
 
             const measureCollection = { type: 'FeatureCollection', features: [] };
