@@ -52,7 +52,13 @@
 
         <div class="switch-item">
             <div class="item-header">Satellite view</div>
-            <div class="toggle-button-cover">
+
+            <label class="switch">
+                <input type="checkbox" id="satelliteLayer">
+                <span class="slider round"></span>
+            </label>
+
+            <!-- <div class="toggle-button-cover">
                 <div class="button-cover">
                     <div class="toggle-button button r">
                         <input type="checkbox" id="satelliteLayer" class="checkbox" checked="false">
@@ -60,7 +66,7 @@
                         <div class="layer"></div>
                     </div>
                 </div>
-            </div>
+            </div> -->
         </div>
         <hr>
         <div class="item-header">
@@ -111,9 +117,9 @@
 
         satelliteLayer.addEventListener("input", function () {
             if (satelliteLayer.checked) {
-                map.setLayoutProperty('satellite', 'visibility', 'none');
-            } else {
                 map.setLayoutProperty('satellite', 'visibility', 'visible');
+            } else {
+                map.setLayoutProperty('satellite', 'visibility', 'none');
             }
         });
 
