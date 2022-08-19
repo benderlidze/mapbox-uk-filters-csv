@@ -44,7 +44,7 @@
             </div>
 
             <label class="switch">
-                <input type="checkbox" id="gbOnOff" checked="false">
+                <input type="checkbox" id="gbOnOff">
                 <span class="slider round"></span>
             </label>
 
@@ -82,7 +82,7 @@
             </div>
 
             <label class="switch">
-                <input type="checkbox" id="trafficOnOff" checked="false">
+                <input type="checkbox" id="trafficOnOff">
                 <span class="slider round"></span>
             </label>
 
@@ -114,7 +114,7 @@
                 </div>
             </div>
             <label class="switch">
-                <input type="checkbox" id="buildUpOnOff" checked="false">
+                <input type="checkbox" id="buildUpOnOff">
                 <span class="slider round"></span>
             </label>
             <!-- <div class="toggle-button-cover">
@@ -144,7 +144,7 @@
             <div class="item-header">Satellite view</div>
 
             <label class="switch">
-                <input type="checkbox" id="satelliteLayer" checked="false">
+                <input type="checkbox" id="satelliteLayer">
                 <span class="slider round"></span>
             </label>
 
@@ -200,15 +200,14 @@
 
         satelliteLayer.addEventListener("input", function () {
             if (satelliteLayer.checked) {
-                map.setLayoutProperty('satellite', 'visibility', 'none');
-            } else {
                 map.setLayoutProperty('satellite', 'visibility', 'visible');
+            } else {
+                map.setLayoutProperty('satellite', 'visibility', 'none');
             }
         });
 
-
         buildUpOnOff.addEventListener("change", () => {
-            const visible = buildUpOnOff.checked ? 'none' : 'visible'
+            const visible = buildUpOnOff.checked ? 'visible' : 'none'
             map.setLayoutProperty('shapes', 'visibility', visible);
         })
 
@@ -230,13 +229,13 @@
         })
 
         gbOnOff.addEventListener("change", () => {
-            const visible = gbOnOff.checked ? 'none' : 'visible'
+            const visible = gbOnOff.checked ? 'visible' : 'none'
             map.setLayoutProperty('GBcircle', 'visibility', visible);
             map.setLayoutProperty('GBtext', 'visibility', visible);
         })
 
         trafficOnOff.addEventListener("change", () => {
-            const visible = trafficOnOff.checked ? 'none' : 'visible'
+            const visible = trafficOnOff.checked ? 'visible' : 'none'
             map.setLayoutProperty('traffic', 'visibility', visible);
             map.setLayoutProperty('trafficText', 'visibility', visible);
         })
