@@ -32,8 +32,6 @@
             z-index: 10;
             background-color: white;
             padding: 10px;
-            max-height: 80%;
-            overflow: auto;
         }
 
         /*the container must be positioned relative:*/
@@ -122,6 +120,36 @@
             background:
                 linear-gradient(45deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 43%, #fff 45%, #fff 55%, rgba(0, 0, 0, 0) 57%, rgba(0, 0, 0, 0) 100%),
                 linear-gradient(135deg, #808080 0%, #808080 43%, #fff 45%, #fff 55%, #808080 57%, #808080 100%);
+        }
+
+        #shop-list {
+            max-height: 80vh;
+            overflow: auto;
+        }
+
+        .list-item {
+            /* padding: 3px; */
+            display: flex;
+            padding: 10px;
+            margin: 8px;
+            border: 1px solid #d1d1d1;
+            /* max-width: fit-content; */
+            flex-direction: column;
+            /* box-sizing: content-box; */
+            border-radius: 6px;
+            max-width: 300px;
+        }
+
+        .web-link {
+            display: block;
+            padding: 4px 10px;
+            background-color: rgb(128, 49, 49);
+            color: white;
+            text-decoration: none;
+            width: fit-content;
+            cursor: pointer;
+            border-radius: 10px;
+            margin-top:5px;
         }
     </style>
 </head>
@@ -227,7 +255,7 @@
                 // from 12/22/15 to 1/21/16 as logged by USGS' Earthquake hazards program.
                 data: 'https://docs.mapbox.com/mapbox-gl-js/assets/earthquakes.geojson',
                 cluster: true,
-                clusterMaxZoom: 14, // Max zoom to cluster points on
+                clusterMaxZoom: 20, // Max zoom to cluster points on
                 clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
             });
 
@@ -290,22 +318,46 @@
 
             // inspect a cluster on click
             map.on('click', 'clusters', (e) => {
-                const features = map.queryRenderedFeatures(e.point, {
-                    layers: ['clusters']
-                });
-                const clusterId = features[0].properties.cluster_id;
-                map.getSource('traffic').getClusterExpansionZoom(
-                    clusterId,
-                    (err, zoom) => {
-                        if (err) return;
+                // const features = map.queryRenderedFeatures(e.point, {
+                //     layers: ['clusters']
+                // });
+                // const clusterId = features[0].properties.cluster_id;
+                // console.log('clusterId', clusterId);
 
-                        map.easeTo({
-                            center: features[0].geometry.coordinates,
-                            zoom: zoom
-                        });
-                    }
-                );
+                // map.getSource('traffic').getClusterExpansionZoom(
+                //     clusterId,
+                //     (err, zoom) => {
+                //         if (err) return;
+
+                //         map.easeTo({
+                //             center: features[0].geometry.coordinates,
+                //             zoom: zoom
+                //         });
+                //     }
+                // );
+
+                var features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+                var clusterId = features[0].properties.cluster_id,
+                    point_count = features[0].properties.point_count,
+                    clusterSource = map.getSource('traffic');
+
+                clusterSource.getClusterLeaves(clusterId, point_count, 0, function (err, features) {
+                    console.log('features', features);
+                    printBrands(features)
+                })
+
             });
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'clusters', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'clusters', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+
 
             map.on('click', 'traffic', (e) => {
                 console.log('e', e);
@@ -345,21 +397,17 @@
                 })
             const featureCollection = turf.featureCollection(pins)
             map.getSource("traffic").setData(featureCollection)
+            shopList.innerHTML = '';
         }
 
         clear.addEventListener("click", clearInput)
 
         const setShops = (name) => {
 
-            const results = []
             const pins = shopData
-                .filter(pin => pin.name === name)
+                .filter(pin => pin.city.toLowerCase() === name)
                 .map((pin, key) => {
                     const { lat, lng, all } = pin
-
-
-                    results.push(`${key + 1} | ${pin.city} ${pin.name}`)
-
                     return {
                         "type": "Feature", "properties": { ...pin },
                         "geometry": {
@@ -369,10 +417,22 @@
                 })
             const featureCollection = turf.featureCollection(pins)
             map.getSource("traffic").setData(featureCollection)
+            printBrands(pins)
+        }
 
-
-            console.log('results', results);
-            const text = results.join("<br>")
+        const printBrands = (list) => {
+            const results = []
+            list.forEach((pin, key) => {
+                const { name, description, Website, city } = pin.properties
+                results.push(`
+                        <div class="list-item">
+                            ${name} ${description}
+                            <div>${city}</div>
+                            <a href="${Website}" class="web-link" target="_blank">Website</a>
+                        </div>
+                    `)
+            });
+            const text = results.join("")
             shopList.innerHTML = text
         }
 
@@ -418,7 +478,7 @@
                 //     }
                 // })
 
-                const arr = [...new Set(data.map(i => i.name))].map((i, key) => {
+                const arr = [...new Set(data.map(i => i.city.toLowerCase()))].map((i, key) => {
                     return {
                         index: key,
                         text: `${i}`
