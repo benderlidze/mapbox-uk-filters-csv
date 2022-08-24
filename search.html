@@ -18,6 +18,14 @@
 
 <body>
 
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <p id="results"></p>
+            <div class="buttons" id="copytoclipboard">Copy</div>
+        </div>
+    </div>
+
     <div id="filters" style="min-width: 250px;">
 
         <div class="autocomplete">
@@ -25,7 +33,10 @@
             <div id="clear">
                 <div class="close-x"></div>
             </div>
-            <input id="myInput" class="clearable" type="text" name="myCountry" placeholder="Search by County">
+            <input id="myInput" class="clearable" type="text" name="myCountry" placeholder="Search Town or City">
+        </div>
+        <div class="item-header">
+            <span id="exportResults">Export results</span>
         </div>
         <div>
             <!-- <input type="text" id="shop" placeholder="shop name" /><button onclick="filterByShopName()">Filter</button> -->
@@ -37,12 +48,19 @@
     <div id="map"></div>
 
     <script>
+        let modalText;
         const selectedShops = ["Tesco", "Coop"];
         const input = document.getElementById("myInput")
         const clear = document.getElementById("clear")
         const shopName = document.getElementById("shop");
         const shopList = document.getElementById("prop-list");
         const shopData = [];
+
+        const copy = document.getElementById('copytoclipboard');
+        const exportResults = document.getElementById('exportResults');
+        const modal = document.getElementById("myModal");
+        const closeModal = document.getElementById("closeModal");
+        const resultsDiv = document.getElementById("results");
 
         mapboxgl.accessToken = 'pk.eyJ1Ijoic3VqYW5jaGFrcmFib3J0eSIsImEiOiJja2Q5MzBuc3owenplMnBzY2I0eDYwdDhvIn0.imItePLDlYNF2BGVde_mkw';
         const map = new mapboxgl.Map({
@@ -51,6 +69,31 @@
             center: { lng: -2.774533172216252, lat: 54.12181638598531 },
             zoom: 7
         });
+
+        // --------------------- MODAL -----------------
+        copy.addEventListener("click", () => {
+            // const res = document.getElementById("results")
+            // navigator.clipboard.writeText(res);
+            try {
+                const htmlCode = document.querySelector("#results").innerHTML
+                const blobInput = new Blob([htmlCode], { type: 'text/html' })
+                navigator.clipboard.write([new ClipboardItem({ 'text/html': blobInput })])
+            } catch (e) {
+                alert(e)
+            }
+        })
+        closeModal.addEventListener("click", () => {
+            modal.style.display = "none";
+        })
+        exportResults.addEventListener("click", () => {
+            modal.style.display = "block";
+        })
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
 
         map.on('load', () => {
 
@@ -180,6 +223,14 @@
                 clusterSource.getClusterLeaves(clusterId, point_count, 0, function (err, features) {
                     console.log('features', features);
                     printBrands(features)
+
+
+                    const cities = [...new Set(features.map(i => i.properties.address))].join("<br>")
+                    new mapboxgl.Popup()
+                        .setLngLat(e.lngLat)
+                        .setHTML(cities)
+                        .addTo(map);
+
                 })
 
             });
@@ -264,17 +315,51 @@
         const printBrands = (list) => {
             const results = []
             list.forEach((pin, key) => {
-                const { name, description, Website, city } = pin.properties
+                const { name, description, website, city } = pin.properties
                 results.push(`
                         <div class="list-item">
                             ${name} ${description}
                             <!-- <div>${city}</div> -->
-                            <a href="${Website}" class="web-link" target="_blank">Flyer</a>
+                            <a href="${website}" class="web-link" target="_blank">Flyer</a>
                         </div>
                     `)
             });
             const text = results.join("")
             shopList.innerHTML = text
+
+
+
+            //--------------- MODAL --------------------------------
+            //--------------- MODAL --------------------------------
+            //--------------- MODAL --------------------------------
+            console.log('list', list);
+            const cities = [...new Set(list.map(i => i.properties.address.trim()))].join(", ")
+            let table = `<tr>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Name</th>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Description</th>
+                        </tr>`;
+            let index = 1;
+            list.forEach(pin => {
+                const { name, description } = pin.properties
+                index++
+                const style = (index % 2 === 0) ? 'style="background-color: #dddddd;" ' : ""
+                const text = ` `
+                table += `<tr ${style}>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${name}</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${description}</td>
+                        </tr>`
+            })
+
+            modalText = `
+                <h3>Requirements for ${cities}</h3>
+                <table style="border-collapse: collapse; width: 100%;">
+                    ${table}
+                </table>`
+            resultsDiv.innerHTML = modalText
+            //--------------- MODAL --------------------------------
+            //--------------- MODAL --------------------------------
+            //--------------- MODAL --------------------------------
+
         }
 
         const convertToCsv = (arr) => {
