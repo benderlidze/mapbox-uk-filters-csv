@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Add multiple geometries from one GeoJSON source</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+    <script src="js/shp.js"></script>
+    <link href="css/toggle.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+
+</head>
+
+<body>
+
+
+
+    <script>
+        const all = [];
+
+        d3.csv("data/Resi Jan 2020 - dec 12-22nd missing. added 22nd jan 2022 - Cards.csv")
+            .then(data => {
+                console.log('Store', data);
+
+
+                const n = data.length;
+                (async () => {
+                    for (let index = 0; index < n; index++) {
+                        // const { name, city, country } = data[index]
+                        const addr = data[index]['Postcode'] !== "" ? data[index]['Postcode'] : `${data[index]['Site address']}`
+                        //https://maps.googleapis.com/maps/api/geocode/json?address=Lviv&key=AIzaSyACTxTtjv8zzjp5kgFi6lnu5Jx0VjRBJM0
+                        await fetch(`https://maps.googleapis.com/maps/api/geocode/json?&address=${addr}&key=AIzaSyACTxTtjv8zzjp5kgFi6lnu5Jx0VjRBJM0`)
+                            .then(i => i.json())
+                            .then(res => {
+                                console.log(index, ' - ', res);
+                                if (res.status && res.status === "OK") {
+                                    const { lat, lng } = res.results[0].geometry.location
+                                    data[index].lat = lat
+                                    data[index].lng = lng
+
+                                    all.push({ ...data[index], geo: res.results[0] })
+                                }
+                            })
+                    }
+                    console.log('data', data);
+                    console.log('all', all);
+                })()
+                /* */
+
+            })
+
+    </script>
+
+</body>
+
+</html>
