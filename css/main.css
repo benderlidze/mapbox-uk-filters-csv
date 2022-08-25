@@ -357,6 +357,7 @@ input[type="submit"] {
     margin: 5px 0px;
     width: fit-content;
 }
+
 .buttons {
     cursor: pointer;
     display: flex;
@@ -366,6 +367,21 @@ input[type="submit"] {
     margin: 5px 0px;
     width: fit-content;
 }
+.buttons:active {
+    background-color: #b0d8dd;
+}
+
+.myBtn {
+    background-color: #fff;
+    cursor: pointer;
+    color: #000;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+.myBtn:active {
+    background-color: #dd4814;
+}
+
 #resetSectors {
     cursor: pointer;
     display: flex;

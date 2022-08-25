@@ -22,7 +22,7 @@
         <div class="modal-content">
             <span class="close" id="closeModal">&times;</span>
             <p id="results"></p>
-            <div class="buttons" id="copytoclipboard">Copy</div>
+            <button type="button" class="buttons" id="copytoclipboard">Copy</button>
         </div>
     </div>
 
@@ -58,6 +58,8 @@
 
         const copy = document.getElementById('copytoclipboard');
         const exportResults = document.getElementById('exportResults');
+        exportResults.style.display = 'none';
+
         const modal = document.getElementById("myModal");
         const closeModal = document.getElementById("closeModal");
         const resultsDiv = document.getElementById("results");
@@ -286,6 +288,8 @@
             const featureCollection = turf.featureCollection(pins)
             map.getSource("traffic").setData(featureCollection)
             shopList.innerHTML = '';
+
+            exportResults.style.display = 'none'
         }
 
         clear.addEventListener("click", clearInput)
@@ -317,8 +321,8 @@
             list.forEach((pin, key) => {
                 const { name, description, website, city } = pin.properties
                 results.push(`
-                        <div class="list-item">
-                            ${name} ${description}
+                        <div class="list-item" style="font-size:0.9rem">
+                            ${name} 
                             <!-- <div>${city}</div> -->
                             <a href="${website}" class="web-link" target="_blank">Flyer</a>
                         </div>
@@ -360,6 +364,8 @@
             //--------------- MODAL --------------------------------
             //--------------- MODAL --------------------------------
 
+
+            exportResults.style.display = "block"
         }
 
         const convertToCsv = (arr) => {
