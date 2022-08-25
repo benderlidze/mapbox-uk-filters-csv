@@ -21,7 +21,10 @@
 
     <div id="filters">
 
-
+        <span class="small-text">Search town or postcode</span>
+        <div id="address">
+            <input type="text" id="search">
+        </div>
 
         <div class="item-header">Search retailer location</div>
 
@@ -170,6 +173,7 @@
 
     <script>
         const input = document.getElementById("searchInput")
+        const search = document.getElementById("search")
         const clear = document.getElementById("clear")
 
         const resetSectors = document.getElementById('resetSectors');
@@ -188,6 +192,8 @@
 
         const shopData = [];
         const sectorBoxes = [];
+
+        let userMarker;
 
         mapboxgl.accessToken = 'pk.eyJ1Ijoic3VqYW5jaGFrcmFib3J0eSIsImEiOiJja2Q5MzBuc3owenplMnBzY2I0eDYwdDhvIn0.imItePLDlYNF2BGVde_mkw';
         const map = new mapboxgl.Map({
@@ -226,6 +232,7 @@
                 map.getSource("store").setData(featureCollection)
             }, 1000)
             input.value = '';
+            search.value = '';
         })
 
         gbOnOff.addEventListener("change", () => {
@@ -748,6 +755,41 @@
         }
 
 
+        function initMap() {
+            const input = document.getElementById("search");
+            const autocomplete = new google.maps.places.Autocomplete(input);
+            autocomplete.addListener("place_changed", () => {
+                const place = autocomplete.getPlace();
+                if (!place.geometry || !place.geometry.location) {
+                    window.alert("No details available for input: '" + place.name + "'");
+                    return;
+                }
+                console.log('place.geometry', place.geometry);
+                // if (place.geometry.viewport) {
+                //     map.fitBounds(place.geometry.viewport);
+                // } else {
+                //     map.setCenter(place.geometry.location);
+                //     map.setZoom(17);
+                // }
+                const { lat, lng } = place.geometry.location.toJSON()
+                map.flyTo({
+                    center: { lat, lng },
+                    zoom: 12
+                })
+
+                if (userMarker) userMarker.remove();
+
+                userMarker = new mapboxgl.Marker({ color: 'blue' })
+                    .setLngLat({ lat, lng })
+                    .addTo(map);
+
+                userPosition.lat = lat
+                userPosition.lng = lng
+            });
+        }
+
+
+
         function buildCategoryFilters(data) {
 
             const sectorsArr = data.map(store => store.sector.split(",").map(i => i.trim())).flat().filter(i => i !== "")
@@ -1004,6 +1046,10 @@
             });
         }
     </script>
+
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDSVjMQM3Hgp3upVIWiHSW1CTTP-VFT85A&callback=initMap&libraries=places&v=weekly"
+        defer></script>
 
 </body>
 
