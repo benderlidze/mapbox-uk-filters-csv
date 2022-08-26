@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Add multiple geometries from one GeoJSON source</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+    <script src="js/shp.js"></script>
+    <link href="css/toggle.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+
+</head>
+
+<body>
+
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <p id="results"></p>
+            <button type="button" class="buttons" id="copytoclipboard">Copy</button>
+        </div>
+    </div>
+
+    <div id="filters" style="min-width: 250px;">
+
+        <div class="autocomplete">
+            <h1 id="propName"></h1>
+            <div id="clear">
+                <div class="close-x"></div>
+            </div>
+            <input id="myInput" class="clearable" type="text" name="myCountry" placeholder="Search Town or City">
+        </div>
+        <div class="item-header">
+            <span id="exportResults">Export results</span>
+        </div>
+        <div>
+            <!-- <input type="text" id="shop" placeholder="shop name" /><button onclick="filterByShopName()">Filter</button> -->
+            <div id="prop-list"></div>
+        </div>
+
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        let modalText;
+        const selectedShops = ["Tesco", "Coop"];
+        const input = document.getElementById("myInput")
+        const clear = document.getElementById("clear")
+        const shopName = document.getElementById("shop");
+        const shopList = document.getElementById("prop-list");
+        const shopData = [];
+
+        const copy = document.getElementById('copytoclipboard');
+        const exportResults = document.getElementById('exportResults');
+        exportResults.style.display = 'none';
+
+        const modal = document.getElementById("myModal");
+        const closeModal = document.getElementById("closeModal");
+        const resultsDiv = document.getElementById("results");
+
+        mapboxgl.accessToken = 'pk.eyJ1Ijoic3VqYW5jaGFrcmFib3J0eSIsImEiOiJja2Q5MzBuc3owenplMnBzY2I0eDYwdDhvIn0.imItePLDlYNF2BGVde_mkw';
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/light-v10',
+            center: { lng: -2.774533172216252, lat: 54.12181638598531 },
+            zoom: 7
+        });
+
+        // --------------------- MODAL -----------------
+        copy.addEventListener("click", () => {
+            // const res = document.getElementById("results")
+            // navigator.clipboard.writeText(res);
+            try {
+                const htmlCode = document.querySelector("#results").innerHTML
+                const blobInput = new Blob([htmlCode], { type: 'text/html' })
+                navigator.clipboard.write([new ClipboardItem({ 'text/html': blobInput })])
+            } catch (e) {
+                alert(e)
+            }
+        })
+        closeModal.addEventListener("click", () => {
+            modal.style.display = "none";
+        })
+        exportResults.addEventListener("click", () => {
+            modal.style.display = "block";
+        })
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        map.on('load', () => {
+
+            //d3.csv("data/TRL Requirements 24 Aug for Sergey.csv")
+            fetch("data/geocoded.json")
+                .then(data => data.json())
+                .then(data => {
+                    console.log('Store', data);
+                    shopData.push(...data)
+                    autocomplete(input, data);
+
+                    const pins = data
+                        //.sort((a, b) => a.lat - b.lat)
+                        .map(pin => {
+                            const { lat, lng, all } = pin
+                            return {
+                                "type": "Feature", "properties": { ...pin },
+                                "geometry": {
+                                    "type": "Point", "coordinates": [+lng, +lat]
+                                }
+                            }
+                        })
+                    const featureCollection = turf.featureCollection(pins)
+                    map.getSource("traffic").setData(featureCollection)
+                    console.log('featureCollection', featureCollection);
+                })
+
+
+
+            map.addSource('traffic', {
+                type: 'geojson',
+                // Point to GeoJSON data. This example visualizes all M1.0+ earthquakes
+                // from 12/22/15 to 1/21/16 as logged by USGS' Earthquake hazards program.
+                data: 'https://docs.mapbox.com/mapbox-gl-js/assets/earthquakes.geojson',
+                cluster: true,
+                clusterMaxZoom: 20, // Max zoom to cluster points on
+                clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
+            });
+
+            map.addLayer({
+                id: 'clusters',
+                type: 'circle',
+                source: 'traffic',
+                filter: ['has', 'point_count'],
+                paint: {
+                    // Use step expressions (https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-step)
+                    // with three steps to implement three types of circles:
+                    //   * Blue, 20px circles when point count is less than 100
+                    //   * Yellow, 30px circles when point count is between 100 and 750
+                    //   * Pink, 40px circles when point count is greater than or equal to 750
+                    'circle-color': [
+                        'step',
+                        ['get', 'point_count'],
+                        '#51bbd6',
+                        100,
+                        '#f1f075',
+                        750,
+                        '#f28cb1'
+                    ],
+                    'circle-radius': [
+                        'step',
+                        ['get', 'point_count'],
+                        20,
+                        100,
+                        30,
+                        750,
+                        40
+                    ]
+                }
+            });
+
+            map.addLayer({
+                id: 'cluster-count',
+                type: 'symbol',
+                source: 'traffic',
+                filter: ['has', 'point_count'],
+                layout: {
+                    'text-field': '{point_count_abbreviated}',
+                    'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                    'text-size': 12
+                }
+            });
+
+            map.addLayer({
+                id: 'traffic',
+                type: 'circle',
+                source: 'traffic',
+                filter: ['!', ['has', 'point_count']],
+                paint: {
+                    'circle-color': 'red',
+                    'circle-radius': 4,
+                    'circle-stroke-width': 1,
+                    'circle-stroke-color': '#fff'
+                }
+            });
+
+            // inspect a cluster on click
+            map.on('click', 'clusters', (e) => {
+                // const features = map.queryRenderedFeatures(e.point, {
+                //     layers: ['clusters']
+                // });
+                // const clusterId = features[0].properties.cluster_id;
+                // console.log('clusterId', clusterId);
+
+                // map.getSource('traffic').getClusterExpansionZoom(
+                //     clusterId,
+                //     (err, zoom) => {
+                //         if (err) return;
+
+                //         map.easeTo({
+                //             center: features[0].geometry.coordinates,
+                //             zoom: zoom
+                //         });
+                //     }
+                // );
+
+                var features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+                var clusterId = features[0].properties.cluster_id,
+                    point_count = features[0].properties.point_count,
+                    clusterSource = map.getSource('traffic');
+
+                clusterSource.getClusterLeaves(clusterId, point_count, 0, function (err, features) {
+                    console.log('features', features);
+                    printBrands(features)
+
+
+                    const cities = [...new Set(features.map(i => i.properties.address))].join("<br>")
+                    new mapboxgl.Popup()
+                        .setLngLat(e.lngLat)
+                        .setHTML(cities)
+                        .addTo(map);
+
+                })
+
+            });
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'clusters', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'clusters', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+
+
+            map.on('click', 'traffic', (e) => {
+                console.log('e', e);
+                console.log('e', e.features[0]);
+                // Copy coordinates array.
+                const description = e.features[0].properties.Postcode;
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(description)
+                    .addTo(map);
+
+                e.originalEvent.cancelBubble = true;
+            });
+
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'traffic', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'traffic', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+        });
+
+        const clearInput = () => {
+            input.value = '';
+            const pins = shopData
+                .map(pin => {
+                    const { lat, lng, all } = pin
+                    return {
+                        "type": "Feature", "properties": { ...pin },
+                        "geometry": {
+                            "type": "Point", "coordinates": [+lng, +lat]
+                        }
+                    }
+                })
+            const featureCollection = turf.featureCollection(pins)
+            map.getSource("traffic").setData(featureCollection)
+            shopList.innerHTML = '';
+
+            exportResults.style.display = 'none'
+        }
+
+        clear.addEventListener("click", clearInput)
+
+        const setShops = (name) => {
+
+            const pins = shopData
+                .filter(pin => pin.address.toLowerCase() === name)
+                .map((pin, key) => {
+                    const { lat, lng, all } = pin
+                    return {
+                        "type": "Feature", "properties": { ...pin },
+                        "geometry": {
+                            "type": "Point", "coordinates": [+lng, +lat]
+                        }
+                    }
+                })
+            const featureCollection = turf.featureCollection(pins)
+            map.getSource("traffic").setData(featureCollection)
+            printBrands(pins)
+
+
+            const center = turf.center(featureCollection);
+            map.setCenter(center.geometry.coordinates)
+        }
+
+        const printBrands = (list) => {
+            const results = []
+            list.forEach((pin, key) => {
+                const { name, description, website, city } = pin.properties
+                results.push(`
+                        <div class="list-item" style="font-size:0.9rem">
+                            ${name} 
+                            <!-- <div>${city}</div> -->
+                            <a href="${website}" class="web-link" target="_blank">Flyer</a>
+                        </div>
+                    `)
+            });
+            const text = results.join("")
+            shopList.innerHTML = text
+
+
+
+            //--------------- MODAL --------------------------------
+            //--------------- MODAL --------------------------------
+            //--------------- MODAL --------------------------------
+            console.log('list', list);
+            const cities = [...new Set(list.map(i => i.properties.address.trim()))].join(", ")
+            let table = `<tr>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Name</th>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Description</th>
+                        </tr>`;
+            let index = 1;
+            list.forEach(pin => {
+                const { name, description } = pin.properties
+                index++
+                const style = (index % 2 === 0) ? 'style="background-color: #dddddd;" ' : ""
+                const text = ` `
+                table += `<tr ${style}>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${name}</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${description}</td>
+                        </tr>`
+            })
+
+            modalText = `
+                <h3>Requirements for ${cities}</h3>
+                <table style="border-collapse: collapse; width: 100%;">
+                    ${table}
+                </table>`
+            resultsDiv.innerHTML = modalText
+            //--------------- MODAL --------------------------------
+            //--------------- MODAL --------------------------------
+            //--------------- MODAL --------------------------------
+
+
+            exportResults.style.display = "block"
+        }
+
+        const convertToCsv = (arr) => {
+            const keys = Object.keys(arr[0]);
+            const replacer = (_key, value) => value === null ? '' : value;
+            const processRow = row => keys.map(key => JSON.stringify(row[key], replacer)).join(',');
+            return [keys.join(','), ...arr.map(processRow)].join('\r\n');
+        };
+        const downloadFile = (fileName, data) => {
+            var link = document.createElement('a');
+            link.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
+            link.setAttribute('download', fileName);
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        function autocomplete(inp, data, service = undefined) {
+            /*the autocomplete function takes two arguments,
+                        the text field element and an array of possible autocompleted values:*/
+            var currentFocus;
+            /*execute a function when someone writes in the text field:*/
+
+            inp.addEventListener("input", function (e) {
+                var a, b, i, val = this.value;
+                /*close any already open lists of autocompleted values*/
+                closeAllLists();
+                if (!val) { return false; }
+                currentFocus = -1;
+                /*create a DIV element that will contain the items (values):*/
+                a = document.createElement("DIV");
+                a.setAttribute("id", this.id + "autocomplete-list");
+                a.setAttribute("class", "autocomplete-items");
+                /*append the DIV element as a child of the autocomplete container:*/
+                this.parentNode.appendChild(a);
+
+                // const arr = data.map((i, key) => {
+                //     return {
+                //         index: key,
+                //         text: `${i.name} ${i.city}`
+                //     }
+                // })
+                console.log('data', data);
+                const arr = [...new Set(data.map(i => i.address.toLowerCase()))].map((i, key) => {
+                    return {
+                        index: key,
+                        text: `${i}`
+                    }
+                })
+
+                let counter = 0;
+
+                /*for each item in the array...*/
+                for (i = 0; i < arr.length; i++) {
+
+                    /*check if the item starts with the same letters as the text field value:*/
+
+                    const search = arr[i].text.toUpperCase().search(val.toUpperCase())
+                    if (search > -1) {
+                        /*create a DIV element for each matching element:*/
+                        b = document.createElement("DIV");
+                        /*make the matching letters bold:*/
+
+                        const text = arr[i].text.substr(0, search) + '<b>' + arr[i].text.substr(search, val.length) + '</b>' + arr[i].text.substr((search + val.length), arr[i].text.length)
+
+                        b.innerHTML = text
+                        /*insert a input field that will hold the current array item's value:*/
+                        b.innerHTML += "<input type='hidden' id=" + arr[i].index + " value='" + arr[i].text + "'>";
+                        /*execute a function when someone clicks on the item value (DIV element):*/
+                        b.addEventListener("click", function (e) {
+                            /*insert the value for the autocomplete text field:*/
+                            inp.value = this.getElementsByTagName("input")[0].value.replaceAll('<br>', ' ');
+                            const index = this.getElementsByTagName("input")[0].id;
+                            // /*close the list of autocompleted values,
+                            // (or any other open lists of autocompleted values:*/
+                            // closeAllLists();
+                            // const point = data[index]
+                            // selectPoint(point)
+
+                            setShops(inp.value)
+                        });
+                        if (counter > 20) return; // display first 20 results
+                        a.appendChild(b);
+                        counter++;
+                    }
+                }
+            });
+            /*execute a function presses a key on the keyboard:*/
+            inp.addEventListener("keydown", function (e) {
+                var x = document.getElementById(this.id + "autocomplete-list");
+                if (x) x = x.getElementsByTagName("div");
+                if (e.keyCode == 40) {
+                    /*If the arrow DOWN key is pressed,
+                    increase the currentFocus variable:*/
+                    currentFocus++;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 38) { //up
+                    /*If the arrow UP key is pressed,
+                    decrease the currentFocus variable:*/
+                    currentFocus--;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 13) {
+                    /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                    e.preventDefault();
+                    if (currentFocus > -1) {
+                        /*and simulate a click on the "active" item:*/
+                        if (x) x[currentFocus].click();
+                    }
+                }
+            });
+            function addActive(x) {
+                /*a function to classify an item as "active":*/
+                if (!x) return false;
+                /*start by removing the "active" class on all items:*/
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                /*add class "autocomplete-active":*/
+                x[currentFocus].classList.add("autocomplete-active");
+            }
+            function removeActive(x) {
+                /*a function to remove the "active" class from all autocomplete items:*/
+                for (var i = 0; i < x.length; i++) {
+                    x[i].classList.remove("autocomplete-active");
+                }
+            }
+            function closeAllLists(elmnt) {
+                /*close all autocomplete lists in the document,
+                            except the one passed as an argument:*/
+                var x = document.getElementsByClassName("autocomplete-items");
+                for (var i = 0; i < x.length; i++) {
+                    if (elmnt != x[i] && elmnt != inp) {
+                        x[i].parentNode.removeChild(x[i]);
+                    }
+                }
+            }
+            /*execute a function when someone clicks in the document:*/
+            document.addEventListener("click", function (e) {
+                closeAllLists(e.target);
+            });
+        }
+        //map.setFilter('gb',['none'])
+    </script>
+
+</body>
+
+</html>
