@@ -48,11 +48,24 @@
         </div>
         <div>
             <!-- <input type="text" id="shop" placeholder="shop name" /><button onclick="filterByShopName()">Filter</button> -->
-            <div class="item-header">Filters:</div>
             <div id="prop-list"></div>
-            <div id="filter-items"></div>
+            <div class="item-header">Filters:</div>
+            <div id="filter-items" class="sectors"></div>
         </div>
+        <hr>
+        <div class="switch-item">
+            <div class="item-header">Satellite view</div>
 
+            <label class="switch">
+                <input type="checkbox" id="satelliteLayer">
+                <span class="slider round"></span>
+            </label>
+
+        </div>
+        <hr>
+        <div class="item-header">
+            <span id="resetSectors">Reset</span>
+        </div>
     </div>
 
     <div id="map"></div>
@@ -72,6 +85,7 @@
         const exportResults = document.getElementById('exportResults');
         exportResults.style.display = 'none';
 
+        const satelliteLayer = document.getElementById('satelliteLayer');
         const modal = document.getElementById("myModal");
         const closeModal = document.getElementById("closeModal");
         const resultsDiv = document.getElementById("results");
@@ -84,6 +98,21 @@
             style: 'mapbox://styles/mapbox/light-v10',
             center: { lng: -2.774533172216252, lat: 54.12181638598531 },
             zoom: 7
+        });
+
+        resetSectors.addEventListener("click", () => {
+
+            document.querySelectorAll(".filter-box.filter-box-active").forEach(i => i.click())
+            document.querySelector("#search").value = ''
+        })
+
+
+        satelliteLayer.addEventListener("input", function () {
+            if (satelliteLayer.checked) {
+                map.setLayoutProperty('satellite', 'visibility', 'visible');
+            } else {
+                map.setLayoutProperty('satellite', 'visibility', 'none');
+            }
         });
 
         // --------------------- MODAL -----------------
@@ -138,7 +167,14 @@
                     map.getSource("traffic").setData(featureCollection)
 
                 })
-
+            map.addLayer({
+                id: 'satellite',
+                source: { "type": "raster", "url": "mapbox://mapbox.satellite", "tileSize": 256 },
+                type: "raster",
+                layout: {
+                    visibility: 'none'
+                }
+            });
 
 
             map.addSource('traffic', {
@@ -251,7 +287,7 @@
                 const text = `
                     <h3>${title}</h3>
                     <div>${proposal}</div>
-                    <div>${validated}</div>
+                    <div>Date: ${validated}</div>
                     <div><a href="${website}" class="web-link" target="_blank">Website</a></div>
                     `
                 // <div>${cat}</div>
@@ -322,12 +358,13 @@
             const results = []
             list.forEach((pin, key) => {
                 console.log('pin.properties', pin.properties);
-                const { name, description, website, city } = pin.properties
+                const website = pin.properties['Website-Button']
+                const addr = pin.properties['Site address']
+
                 results.push(`
                         <div class="list-item" style="font-size:0.9rem">
-                            ${name} 
-                            <!-- <div>${city}</div> -->
-                            <a href="${website}" class="web-link" target="_blank">Flyer</a>
+                            ${addr} 
+                            <a href="${website}" class="web-link" target="_blank">Website</a>
                         </div>
                     `)
             });
@@ -421,7 +458,10 @@
 
         function buildCategoryFilters(data) {
             const sectorsArr = data.map(store => store['Category-Hide'].split(",").map(i => i.trim())).flat()
-            const sector = [...new Set(sectorsArr)]
+            // const sector = [...new Set(sectorsArr)]
+
+            const sector = ['50-99 units', '100-249 units', '250-499 units', '500-999 units', '1000+ units', '[New Build]']
+
             const checkboxes = sector.map(name => {
                 const checkbox = buildDivBox(name, false, sectorName => {
                     var index = selectedSectors.indexOf(sectorName);
