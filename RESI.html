@@ -28,19 +28,26 @@
 
     <div id="filters" style="min-width: 250px;">
 
-        <div class="autocomplete">
+        <span class="small-text">Search town or postcode</span>
+        <div id="address">
+            <input type="text" id="search">
+        </div>
+
+        <!-- <div class="autocomplete">
             <h1 id="propName"></h1>
             <div id="clear">
                 <div class="close-x"></div>
             </div>
             <input id="myInput" class="clearable" type="text" name="myCountry" placeholder="Search Town or City">
-        </div>
+        </div> -->
         <div class="item-header">
             <span id="exportResults">Export results</span>
         </div>
         <div>
             <!-- <input type="text" id="shop" placeholder="shop name" /><button onclick="filterByShopName()">Filter</button> -->
+            <div class="item-header">Filters:</div>
             <div id="prop-list"></div>
+            <div id="filter-items"></div>
         </div>
 
     </div>
@@ -54,7 +61,9 @@
         const clear = document.getElementById("clear")
         const shopName = document.getElementById("shop");
         const shopList = document.getElementById("prop-list");
+        const filterItems = document.getElementById("filter-items");
         const shopData = [];
+        const selectedSectors = [];
 
         const copy = document.getElementById('copytoclipboard');
         const exportResults = document.getElementById('exportResults');
@@ -63,6 +72,8 @@
         const modal = document.getElementById("myModal");
         const closeModal = document.getElementById("closeModal");
         const resultsDiv = document.getElementById("results");
+
+        let userMarker;
 
         mapboxgl.accessToken = 'pk.eyJ1Ijoic3VqYW5jaGFrcmFib3J0eSIsImEiOiJja2Q5MzBuc3owenplMnBzY2I0eDYwdDhvIn0.imItePLDlYNF2BGVde_mkw';
         const map = new mapboxgl.Map({
@@ -99,13 +110,15 @@
 
         map.on('load', () => {
 
-            //d3.csv("data/TRL Requirements 24 Aug for Sergey.csv")
             fetch("data/geocoded.json")
                 .then(data => data.json())
                 .then(data => {
                     console.log('Store', data);
                     shopData.push(...data)
-                    autocomplete(input, data);
+
+                    // buildFilters(shopData).map(item => filterItems.appendChild(item))
+                    buildCategoryFilters(shopData).map(item => filterItems.appendChild(item))
+                    //autocomplete(input, data);
 
                     const pins = data
                         //.sort((a, b) => a.lat - b.lat)
@@ -120,7 +133,7 @@
                         })
                     const featureCollection = turf.featureCollection(pins)
                     map.getSource("traffic").setData(featureCollection)
-                    console.log('featureCollection', featureCollection);
+
                 })
 
 
@@ -129,7 +142,7 @@
                 type: 'geojson',
                 // Point to GeoJSON data. This example visualizes all M1.0+ earthquakes
                 // from 12/22/15 to 1/21/16 as logged by USGS' Earthquake hazards program.
-                data: 'https://docs.mapbox.com/mapbox-gl-js/assets/earthquakes.geojson',
+                data: turf.featureCollection([]),
                 cluster: true,
                 clusterMaxZoom: 20, // Max zoom to cluster points on
                 clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
@@ -244,13 +257,21 @@
 
 
             map.on('click', 'traffic', (e) => {
-                console.log('e', e);
-                console.log('e', e.features[0]);
                 // Copy coordinates array.
-                const description = e.features[0].properties.Postcode;
+                const title = e.features[0].properties['Site address'];
+                const proposal = e.features[0].properties['Proposal'];
+                const website = e.features[0].properties['Website-Button'];
+                const validated = e.features[0].properties['Validated'];
+
+                const text = `
+                    <h3>${title}</h3>
+                    <div>${proposal}</div>
+                    <div>${validated}</div>
+                    <div><a href="${website}" class="web-link" target="_blank">Website</a></div>
+                `
                 new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
-                    .setHTML(description)
+                    .setHTML(text)
                     .addTo(map);
 
                 e.originalEvent.cancelBubble = true;
@@ -378,6 +399,100 @@
             link.click();
             document.body.removeChild(link);
         };
+
+        // function buildFilters(data) {
+        //     const unique = [...new Set(data.map(d => d['Category-Hide']))]
+        //     const filtersList = unique.map(name => {
+        //         const div = document.createElement("div")
+        //         div.className = "filter-item"
+        //         const span = document.createElement("span")
+        //         span.innerText = name
+        //         div.appendChild(span)
+        //         return div
+        //     })
+        //     return filtersList
+        // }
+
+        function filterItemsByCategory() {
+            const pins = shopData
+                .filter(pin => {
+                    return selectedSectors.length > 0 ? selectedSectors.includes(pin['Category-Hide']) : pin
+                })
+                .map(pin => {
+                    const { lat, lng, all } = pin
+                    return {
+                        "type": "Feature", "properties": { ...pin },
+                        "geometry": {
+                            "type": "Point", "coordinates": [+lng, +lat]
+                        }
+                    }
+                })
+            const featureCollection = turf.featureCollection(pins)
+            map.getSource("traffic").setData(featureCollection)
+        }
+
+        function buildCategoryFilters(data) {
+
+            const sectorsArr = data.map(store => store['Category-Hide'])
+            const sector = [...new Set(sectorsArr)]
+            const checkboxes = sector.map(name => {
+                const checkbox = buildDivBox(name, false, sectorName => {
+                    var index = selectedSectors.indexOf(sectorName);
+                    if (index !== -1) {
+                        selectedSectors.splice(index, 1);
+                    } else {
+                        selectedSectors.push(sectorName)
+                    }
+                    filterItemsByCategory()
+                })
+                return checkbox
+            })
+            return checkboxes
+        }
+        function buildDivBox(name, checked, eventFunction) {
+
+            let active = false;
+            const div = document.createElement("div")
+            div.className = 'filter-box'
+            div.id = name;
+            div.addEventListener("click", () => {
+                active = !active
+                if (active) {
+                    div.classList.add("filter-box-active")
+                } else {
+                    div.classList.remove("filter-box-active")
+                }
+                eventFunction(name)
+            })
+            const label = document.createElement("div")
+            label.innerText = name
+            div.appendChild(label);
+            return div
+        }
+
+        function initMap() {
+            const input = document.getElementById("search");
+            const autocomplete = new google.maps.places.Autocomplete(input);
+            autocomplete.addListener("place_changed", () => {
+                const place = autocomplete.getPlace();
+                if (!place.geometry || !place.geometry.location) {
+                    window.alert("No details available for input: '" + place.name + "'");
+                    return;
+                }
+                const { lat, lng } = place.geometry.location.toJSON()
+                map.flyTo({
+                    center: { lat, lng },
+                    zoom: 12
+                })
+                if (userMarker) userMarker.remove();
+                userMarker = new mapboxgl.Marker({ color: 'blue' })
+                    .setLngLat({ lat, lng })
+                    .addTo(map);
+                userPosition.lat = lat
+                userPosition.lng = lng
+            });
+        }
+
 
         function autocomplete(inp, data, service = undefined) {
             /*the autocomplete function takes two arguments,
@@ -507,6 +622,10 @@
         }
         //map.setFilter('gb',['none'])
     </script>
+
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDSVjMQM3Hgp3upVIWiHSW1CTTP-VFT85A&callback=initMap&libraries=places&v=weekly"
+        defer></script>
 
 </body>
 
