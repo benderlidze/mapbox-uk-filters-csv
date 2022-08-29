@@ -33,13 +33,16 @@
             <input type="text" id="search">
         </div>
 
-        <!-- <div class="autocomplete">
-            <h1 id="propName"></h1>
-            <div id="clear">
-                <div class="close-x"></div>
-            </div>
-            <input id="myInput" class="clearable" type="text" name="myCountry" placeholder="Search Town or City">
-        </div> -->
+        <!-- 
+            <div class="autocomplete">
+                <h1 id="propName"></h1>
+                <div id="clear">
+                    <div class="close-x"></div>
+                </div>
+                <input id="myInput" class="clearable" type="text" name="myCountry" placeholder="Search Town or City">
+            </div> 
+        -->
+
         <div class="item-header">
             <span id="exportResults">Export results</span>
         </div>
@@ -207,23 +210,7 @@
 
             // inspect a cluster on click
             map.on('click', 'clusters', (e) => {
-                // const features = map.queryRenderedFeatures(e.point, {
-                //     layers: ['clusters']
-                // });
-                // const clusterId = features[0].properties.cluster_id;
-                // console.log('clusterId', clusterId);
 
-                // map.getSource('traffic').getClusterExpansionZoom(
-                //     clusterId,
-                //     (err, zoom) => {
-                //         if (err) return;
-
-                //         map.easeTo({
-                //             center: features[0].geometry.coordinates,
-                //             zoom: zoom
-                //         });
-                //     }
-                // );
 
                 var features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
                 var clusterId = features[0].properties.cluster_id,
@@ -233,14 +220,11 @@
                 clusterSource.getClusterLeaves(clusterId, point_count, 0, function (err, features) {
                     console.log('features', features);
                     printBrands(features)
-
-
                     const cities = [...new Set(features.map(i => i.properties.address))].join("<br>")
                     new mapboxgl.Popup()
                         .setLngLat(e.lngLat)
                         .setHTML(cities)
                         .addTo(map);
-
                 })
 
             });
@@ -262,12 +246,14 @@
                 const proposal = e.features[0].properties['Proposal'];
                 const website = e.features[0].properties['Website-Button'];
                 const validated = e.features[0].properties['Validated'];
+                const cat = e.features[0].properties['Category-Hide'];
 
                 const text = `
                     <h3>${title}</h3>
                     <div>${proposal}</div>
                     <div>${validated}</div>
                     <div><a href="${website}" class="web-link" target="_blank">Website</a></div>
+                    <div>${cat}</div>
                 `
                 new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
@@ -308,7 +294,7 @@
             exportResults.style.display = 'none'
         }
 
-        clear.addEventListener("click", clearInput)
+        // clear.addEventListener("click", clearInput)
 
         const setShops = (name) => {
 
@@ -335,6 +321,7 @@
         const printBrands = (list) => {
             const results = []
             list.forEach((pin, key) => {
+                console.log('pin.properties', pin.properties);
                 const { name, description, website, city } = pin.properties
                 results.push(`
                         <div class="list-item" style="font-size:0.9rem">
@@ -416,7 +403,8 @@
         function filterItemsByCategory() {
             const pins = shopData
                 .filter(pin => {
-                    return selectedSectors.length > 0 ? selectedSectors.includes(pin['Category-Hide']) : pin
+                    const cat = pin['Category-Hide'].split(",").map(i => i.trim())
+                    return selectedSectors.length > 0 ? selectedSectors.some(sel => cat.includes(sel)) : pin
                 })
                 .map(pin => {
                     const { lat, lng, all } = pin
@@ -433,7 +421,8 @@
 
         function buildCategoryFilters(data) {
 
-            const sectorsArr = data.map(store => store['Category-Hide'])
+            const sectorsArr = data.map(store => store['Category-Hide'].split(",").map(i => i.trim())).flat()
+
             const sector = [...new Set(sectorsArr)]
             const checkboxes = sector.map(name => {
                 const checkbox = buildDivBox(name, false, sectorName => {
