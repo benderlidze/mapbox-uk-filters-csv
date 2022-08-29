@@ -39,6 +39,10 @@
 
         <div class="bold">Step 2: </div>
         <span class="small-text">Search a retailer or select a sector below to show their nearest store.</span>
+
+
+
+
         <div class="autocomplete">
             <!-- <div id="clear">
                 <div class="close-x"></div>
@@ -46,6 +50,11 @@
             <input id="searchInput" class="clearable" type="text" name="myCountry"
                 placeholder="Enter 'Tesco' or 'Pets at Home'">
         </div>
+
+        <button class="sm-button" id="increment">+</button>
+        <input type="text" style="width:40px;" id="stores-number" value="1">
+        <button class="sm-button" id="decrement">-</button>
+
         <div class="bold">Sectors: </div>
         <div id="sectors" class="sectors"></div>
         <hr>
@@ -106,6 +115,11 @@
             lng: undefined
         }
 
+        const increment = document.getElementById('increment');
+        const decrement = document.getElementById('decrement');
+        const storesNumber = document.getElementById('stores-number');
+
+
         mapboxgl.accessToken = 'pk.eyJ1Ijoic3VqYW5jaGFrcmFib3J0eSIsImEiOiJja2Q5MzBuc3owenplMnBzY2I0eDYwdDhvIn0.imItePLDlYNF2BGVde_mkw';
         const map = new mapboxgl.Map({
             container: 'map',
@@ -114,6 +128,24 @@
             zoom: 5
         });
         map.addControl(new mapboxgl.NavigationControl());
+
+
+        increment.addEventListener("click", () => {
+            storesNumber.value = +storesNumber.value + 1
+            updateStoreNumber()
+        })
+        decrement.addEventListener("click", () => {
+            storesNumber.value = +storesNumber.value - 1
+            updateStoreNumber()
+        })
+
+
+        function updateStoreNumber() {
+            console.log('storesNumber.value', storesNumber.value);
+            if (storesNumber.value <= 1) storesNumber.value = 1;
+
+            findClosestToUser(selectedShops, storesNumber.value)
+        }
 
         satelliteLayer.addEventListener("input", function () {
             if (satelliteLayer.checked) {
@@ -134,6 +166,9 @@
             }, 1000)
             document.getElementById("search").value = '';
             document.getElementById("searchInput").value = '';
+
+            selectedShops.length = 0
+            map.getSource('measure').setData(turf.featureCollection([]))
         })
 
         copy.addEventListener("click", () => {
@@ -183,7 +218,6 @@
 
                     autocomplete(input, data, shopName => {
                         selectedShops.push(shopName)
-                        //filterByShopNameS(selectedShops)
                         findClosestToUser(selectedShops)
                     });
                 })
@@ -494,14 +528,14 @@
             })
         }
 
-        function findClosestToUser(selectedShops) {
+        function findClosestToUser(selectedShops, shopsNumber = 1) {
 
             console.log('selectedShops', selectedShops);
             if (!userPosition.lat) return;
             const unique = new Map();
             const from = turf.point([+userPosition.lng, +userPosition.lat]);
             const options = { units: 'kilometers' };
-            shopData
+            const distances = shopData
                 .filter(pin => selectedShops.includes(pin.company_name))
                 .map(pin => {
                     const { property_latitude, property_longitude } = pin
@@ -521,11 +555,12 @@
                 })
                 .map(pin => {
                     if (!unique.has(pin.name)) {
-                        unique.set(pin.name, pin)
+                        unique.set(pin.name, [pin])
+                    } else {
+                        const arr = unique.get(pin.name)
+                        arr.push(pin)
                     }
                 })
-
-            console.log('unique', unique);
 
             // PRINT results to modal 
             //const res = []
@@ -534,16 +569,21 @@
                             <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Distance</th>
                             <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Address</th>
                         </tr>`;
-            let index = 1;
-            unique.forEach(r => {
-                index++
-                const style = (index % 2 === 0) ? 'style="background-color: #dddddd;" ' : ""
-                const text = ` `
-                table += `<tr ${style}>
+            let lineNumber = 1;
+            unique.forEach(el => {
+
+                for (let index = 0; index < shopsNumber; index++) {
+                    const r = el[index];
+                    lineNumber++
+                    const style = (lineNumber % 2 === 0) ? 'style="background-color: #dddddd;" ' : ""
+                    const text = ` `
+                    table += `<tr ${style}>
                             <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${r.name}</td> 
                             <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${r.distance.toFixed(1)}miles </td>
                             <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${r.addr}</td>
                         </tr>`
+                }
+
             })
 
             //resultsDiv.innerHTML = res.join("<br>");
@@ -557,23 +597,31 @@
 
             const measureCollection = { type: 'FeatureCollection', features: [] };
             const pins = Array.from(unique).map(data => {
-                const m = drawMeasureLine(from.geometry.coordinates, data[1].geometry.geometry.coordinates)
-                measureCollection.features.push(...m)
-                return data[1].geometry
+
+                const geometries = []
+                for (let index = 0; index < shopsNumber; index++) {
+                    console.log('element', data[1][index]);
+                    const element = data[1][index];
+                    const m = drawMeasureLine(from.geometry.coordinates, element.geometry.geometry.coordinates)
+                    measureCollection.features.push(...m)
+                    geometries.push(element.geometry)
+                }
+                return geometries
+
             })
 
-            const featureCollection = turf.featureCollection(pins)
+            console.log('pins', pins);
+            const resData = pins.length === 0 ? [[]] : pins.length > 1 ? [pins.flat()] : [...pins]
+            console.log('resData', resData);
+
+
+            const featureCollection = turf.featureCollection(...resData)
             map.getSource("store").setData(featureCollection)
             map.getSource('measure').setData(measureCollection)
 
-            console.log('measureCollection', measureCollection);
-            //console.log('featureCollection', featureCollection);
         }
 
         function drawMeasureLine(fromP, toP) {
-
-            console.log('', fromP);
-            console.log('', toP);
 
             const from = turf.point(fromP);
             const to = turf.point(toP);
