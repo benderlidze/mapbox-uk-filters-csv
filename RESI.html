@@ -142,17 +142,20 @@
 
         map.on('load', () => {
 
-            fetch("data/geocoded.json")
-                .then(data => data.json())
+
+            Promise.all([
+                fetch("data/geocoded.json").then(res => res.json()),
+                fetch("data/Care Home June 19 - jan 22.json").then(res => res.json())
+            ])
                 .then(data => {
-                    console.log('Store', data);
-                    shopData.push(...data)
+                    const json = data.flat();
 
-                    // buildFilters(shopData).map(item => filterItems.appendChild(item))
+                    console.log('data', json);
+
+                    shopData.push(...json)
                     buildCategoryFilters(shopData).map(item => filterItems.appendChild(item))
-                    //autocomplete(input, data);
 
-                    const pins = data
+                    const pins = json
                         //.sort((a, b) => a.lat - b.lat)
                         .map(pin => {
                             const { lat, lng, all } = pin
@@ -167,6 +170,35 @@
                     map.getSource("traffic").setData(featureCollection)
 
                 })
+
+
+
+            // fetch("data/geocoded.json")
+            //     .then(data => data.json())
+            //     .then(data => {
+            //         console.log('Store', data);
+            //         shopData.push(...data)
+
+            //         // buildFilters(shopData).map(item => filterItems.appendChild(item))
+            //         buildCategoryFilters(shopData).map(item => filterItems.appendChild(item))
+            //         //autocomplete(input, data);
+
+            //         const pins = data
+            //             //.sort((a, b) => a.lat - b.lat)
+            //             .map(pin => {
+            //                 const { lat, lng, all } = pin
+            //                 return {
+            //                     "type": "Feature", "properties": { ...pin },
+            //                     "geometry": {
+            //                         "type": "Point", "coordinates": [+lng, +lat]
+            //                     }
+            //                 }
+            //             })
+            //         const featureCollection = turf.featureCollection(pins)
+            //         map.getSource("traffic").setData(featureCollection)
+
+            //     })
+
             map.addLayer({
                 id: 'satellite',
                 source: { "type": "raster", "url": "mapbox://mapbox.satellite", "tileSize": 256 },
@@ -457,10 +489,14 @@
         }
 
         function buildCategoryFilters(data) {
-            const sectorsArr = data.map(store => store['Category-Hide'].split(",").map(i => i.trim())).flat()
-            // const sector = [...new Set(sectorsArr)]
 
-            const sector = ['50-99 units', '100-249 units', '250-499 units', '500-999 units', '1000+ units', '[New Build]']
+            const sectorsArr = data.map(store => {
+                console.log('store', store, store['Category-Hide']);
+                return store['Category-Hide'].split(",").map(i => i.trim())
+            }).flat()
+            //const sector = [...new Set(sectorsArr)]
+
+            const sector = ['50-99 units', '100-249 units', '250-499 units', '500-999 units', '1000+ units', '[New Build]', 'Care']
 
             const checkboxes = sector.map(name => {
                 const checkbox = buildDivBox(name, false, sectorName => {
