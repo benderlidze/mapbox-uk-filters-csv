@@ -42,7 +42,7 @@ body {
     margin: 20px 0px;
 }
 
-.switches > label {
+.switches>label {
     display: block;
 }
 
@@ -87,7 +87,7 @@ fieldset {
     box-shadow: 0 2px 10px 0 rgb(25 93 194 / 7%);
 }
 
-.div-box > div {
+.div-box>div {
     inline-size: 51px;
     overflow-wrap: break-word;
 }
@@ -202,29 +202,25 @@ input[type="submit"] {
     border: 7px solid #a1a1a1;
     border-radius: 20px;
     cursor: pointer;
-    background: linear-gradient(
-            45deg,
+    background: linear-gradient(45deg,
             rgba(0, 0, 0, 0) 0%,
             rgba(0, 0, 0, 0) 43%,
             #fff 45%,
             #fff 55%,
             rgba(0, 0, 0, 0) 57%,
-            rgba(0, 0, 0, 0) 100%
-        ),
+            rgba(0, 0, 0, 0) 100%),
         linear-gradient(135deg, #a1a1a1 0%, #a1a1a1 43%, #fff 45%, #fff 55%, #a1a1a1 57%, #a1a1a1 100%);
 }
 
 .close-x:hover {
     border: 7px solid #808080;
-    background: linear-gradient(
-            45deg,
+    background: linear-gradient(45deg,
             rgba(0, 0, 0, 0) 0%,
             rgba(0, 0, 0, 0) 43%,
             #fff 45%,
             #fff 55%,
             rgba(0, 0, 0, 0) 57%,
-            rgba(0, 0, 0, 0) 100%
-        ),
+            rgba(0, 0, 0, 0) 100%),
         linear-gradient(135deg, #808080 0%, #808080 43%, #fff 45%, #fff 55%, #808080 57%, #808080 100%);
 }
 
@@ -242,7 +238,7 @@ input[type="submit"] {
     height: 0;
 }
 
-.switch > .slider {
+.switch>.slider {
     position: absolute;
     cursor: pointer;
     top: 0;
@@ -254,7 +250,7 @@ input[type="submit"] {
     transition: 0.4s;
 }
 
-.switch > .slider:before {
+.switch>.slider:before {
     position: absolute;
     content: "";
     height: 15px;
@@ -266,15 +262,15 @@ input[type="submit"] {
     transition: 0.4s;
 }
 
-.switch > input:checked + .slider {
+.switch>input:checked+.slider {
     background-color: #004cff;
 }
 
-.switch > input:focus + .slider {
+.switch>input:focus+.slider {
     box-shadow: 0 0 1px #004cff;
 }
 
-.switch > input:checked + .slider:before {
+.switch>input:checked+.slider:before {
     -webkit-transform: translateX(26px);
     -ms-transform: translateX(26px);
     transform: translateX(26px);
@@ -296,7 +292,7 @@ input[type="submit"] {
     margin-top: 5px;
 }
 
-.switch-item > label {
+.switch-item>label {
     margin-right: 10px;
 }
 
@@ -342,7 +338,7 @@ input[type="submit"] {
     align-items: center;
 }
 
-.item-header > div {
+.item-header>div {
     margin-left: 5px;
     cursor: pointer;
     display: flex;
@@ -367,6 +363,7 @@ input[type="submit"] {
     margin: 5px 0px;
     width: fit-content;
 }
+
 .buttons:active {
     background-color: #b0d8dd;
 }
@@ -378,6 +375,7 @@ input[type="submit"] {
     text-decoration: none;
     text-transform: uppercase;
 }
+
 .myBtn:active {
     background-color: #dd4814;
 }
@@ -434,8 +432,10 @@ hr {
     border: none;
     height: 1px;
     /* Set the hr color */
-    color: #e9eaf3; /* old IE */
-    background-color: #e9eaf3; /* Modern Browsers */
+    color: #e9eaf3;
+    /* old IE */
+    background-color: #e9eaf3;
+    /* Modern Browsers */
 }
 
 .bold {
@@ -455,17 +455,26 @@ h4 {
 
 /* The Modal (background) */
 .modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 1000; /* Sit on top */
-    padding-top: 100px; /* Location of the box */
+    display: none;
+    /* Hidden by default */
+    position: fixed;
+    /* Stay in place */
+    z-index: 1000;
+    /* Sit on top */
+    padding-top: 100px;
+    /* Location of the box */
     left: 0;
     top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgb(0, 0, 0); /* Fallback color */
-    background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
+    width: 100%;
+    /* Full width */
+    height: 100%;
+    /* Full height */
+    overflow: auto;
+    /* Enable scroll if needed */
+    background-color: rgb(0, 0, 0);
+    /* Fallback color */
+    background-color: rgba(0, 0, 0, 0.4);
+    /* Black w/ opacity */
 }
 
 /* Modal Content */
@@ -578,6 +587,7 @@ h4 {
     margin: 5px 0px;
     width: fit-content;
 }
+
 /* table {
     font-family: arial, sans-serif;
     border-collapse: collapse;
@@ -594,3 +604,10 @@ th {
 tr:nth-child(even) {
     background-color: #dddddd;
 } */
+
+
+#retailers {
+    display: grid;
+    gap: 1px;
+    grid-template-columns: repeat(4, 1fr);
+}

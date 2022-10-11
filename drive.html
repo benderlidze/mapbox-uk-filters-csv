@@ -27,6 +27,13 @@
         </div>
     </div>
 
+    <div id="retailers-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-retailers-modal">&times;</span>
+            <p id="retailers"></p>
+        </div>
+    </div>
+
 
     <div id="filters">
         <h4>Gap Analysis Map</h4>
@@ -38,10 +45,16 @@
         </div>
 
         <div class="bold">Step 2: </div>
-        <span class="small-text">Search a retailer or select a sector below to show their nearest store.</span>
-
-
-
+        <span class="small-text">
+            <div style="            
+                display: flex;
+                flex-direction: row;
+                justify-content: center;
+                align-items: center;">
+                Search a retailer or select a sector below to show their nearest store.
+                <img id="info-retailers" style="cursor: pointer" src="icons/icons8-info-16.png">
+            </div>
+        </span>
 
         <div class="autocomplete">
             <!-- <div id="clear">
@@ -51,9 +64,9 @@
                 placeholder="Enter 'Tesco' or 'Pets at Home'">
         </div>
 
-        <button class="sm-button" id="increment">+</button>
-        <input type="text" style="width:40px;" id="stores-number" value="1">
         <button class="sm-button" id="decrement">-</button>
+        <input type="text" style="width:40px;" id="stores-number" value="1">
+        <button class="sm-button" id="increment">+</button>
 
         <div class="bold">Sectors: </div>
         <div id="sectors" class="sectors"></div>
@@ -93,6 +106,12 @@
 
         let modalText;
         let userMarker;
+
+        const infoRetailers = document.getElementById('info-retailers');
+        const infoRetailersModal = document.getElementById('retailers-modal');
+        const closeRetailersModal = document.getElementById('close-retailers-modal');
+        const retailers = document.getElementById('retailers');
+
         const copy = document.getElementById('copytoclipboard');
         const sectorsDiv = document.getElementById('sectors');
         const selectedSectors = []; //no shops at load
@@ -129,6 +148,13 @@
         });
         map.addControl(new mapboxgl.NavigationControl());
 
+
+        infoRetailers.addEventListener("click", () => {
+            infoRetailersModal.style.display = 'block'
+        })
+        closeRetailersModal.addEventListener("click", () => {
+            infoRetailersModal.style.display = 'none'
+        })
 
         increment.addEventListener("click", () => {
             storesNumber.value = +storesNumber.value + 1
@@ -210,11 +236,14 @@
                         })
                     })
 
-                    console.log('Store', data);
                     uploadPhotosBuildLayer(data)
 
                     const boxes = buildCategoryFilters(data)
                     sectorBoxes.push(...boxes)
+
+                    const retailersNames = [...new Set(data.map(i => i.company_name))].map(name =>
+                        `<div>${name}</div>`).join("")
+                    retailers.innerHTML = retailersNames
 
                     autocomplete(input, data, shopName => {
                         selectedShops.push(shopName)
@@ -748,7 +777,6 @@
 
                 let counter = 0;
 
-                console.log('arr', arr);
                 /*for each item in the array...*/
                 for (i = 0; i < arr.length; i++) {
 
