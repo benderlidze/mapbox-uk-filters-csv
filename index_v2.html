@@ -328,7 +328,7 @@
         map.on('load', () => {
 
 
-            d3.csv("data/dft_reduced.csv")
+            d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQXpWou_hGirrxi5ZEp4EOsfKx60ih_sRFmvjL7A06iyb2FE2xsp2jKYIRaUsFd4nRpuuE7vcyjTyhc/pub?output=csv")
                 .then(data => {
                     console.log('Store', data);
 
@@ -390,7 +390,7 @@
                     map.getSource("shapes").setData(data)
                 }).catch(e => console.log('error', e));
 
-            d3.csv("data/gb.csv")
+            d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTXAq6o5OcXE2-t5TXhXpBFlE46SLMMaRsIkyaPg4c0q881Zar6Ig2b27IWm28qmj_pbYsZIybE_at_/pub?output=csv")
                 .then(data => {
                     console.log('gb', data);
                     const pins = data.map(pin => {
@@ -411,7 +411,7 @@
                 })
             //*/
             //d3.csv("data/supermarket store location data - Sheet2.csv")
-            d3.csv("data/SHOP DATA.csv")
+            d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRRCfZP7O-mr7dta_TApeE4GVpjh57jcK7r1RN2bx2RvYk3EslUZA8ay9y8-2gOu1c6-GCF26xkSLvn/pub?output=csv")
                 .then(data => {
 
                     data.forEach(shop => {
@@ -952,7 +952,7 @@
 
                 let counter = 0;
 
-                console.log('arr', arr);
+                // console.log('arr', arr);
                 /*for each item in the array...*/
                 for (i = 0; i < arr.length; i++) {
 
@@ -1048,7 +1048,7 @@
     </script>
 
     <script
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDSVjMQM3Hgp3upVIWiHSW1CTTP-VFT85A&callback=initMap&libraries=places&v=weekly"
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBrK7zAmbEFKIyv_g6XOE3WpSq34nOYuEI&callback=initMap&libraries=places&v=weekly"
         defer></script>
 
 </body>
