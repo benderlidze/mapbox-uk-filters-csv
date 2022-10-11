@@ -99,7 +99,7 @@
 
         map.on('load', () => {
 
-            d3.csv("data/TRL Requirements 24 Aug for Sergey.csv")
+            d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQZF50Y2rLA2Mly8v3q0sEaSgt7IVaWk3ppyv-gTt7Dhvr-6k0G8aGgZY1Gk3IolMTx3PNpCk3Xu8Gt/pub?output=csv")
                 .then(data => {
                     console.log('Store', data);
                     shopData.push(...data)
