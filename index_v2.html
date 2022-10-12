@@ -23,8 +23,11 @@
     <div id="retailers-modal" class="modal">
         <div class="modal-content">
             <span class="close" id="close-retailers-modal">&times;</span>
+            <h3>List of occupiers currently in our database</h3>
             <p id="retailers">Loading...</p>
+            <div id="button-request">Request another retailer(s)</div>
         </div>
+
     </div>
 
     <div id="filters">
@@ -183,7 +186,7 @@
 
 
     <script>
-
+ const buttonRequest = document.getElementById('button-request');
         const infoRetailers = document.getElementById('info-retailers');
         const infoRetailersModal = document.getElementById('retailers-modal');
         const closeRetailersModal = document.getElementById('close-retailers-modal');
@@ -452,8 +455,11 @@
                     const boxes = buildCategoryFilters(data)
                     sectorBoxes.push(...boxes)
 
-                    const retailersNames = [...new Set(data.map(i => i.company_name))].map(name =>
-                        `<div>${name}</div>`).join("")
+                
+                    const retailersNames = [...new Set(data.map(i => i.company_name))]
+                        .sort()
+                        .map(name =>
+                            `<div>${name}</div>`).join("")
                     retailers.innerHTML = retailersNames
 
                     autocomplete(input, data, shopName => {
