@@ -607,7 +607,21 @@ tr:nth-child(even) {
 
 
 #retailers {
-    display: grid;
+    /* display: grid;
     gap: 1px;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, 1fr); */
+
+    -webkit-column-count: 4;
+    -moz-column-count: 4;
+    column-count: 4;
+}
+
+#button-request {
+    cursor: pointer;
+    display: flex;
+    border: 1px solid #5699a2;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin: 5px 0px;
+    width: fit-content;
 }
