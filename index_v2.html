@@ -271,7 +271,7 @@
 
         trafficOnOff.addEventListener("change", () => {
             const visible = trafficOnOff.checked ? 'visible' : 'none'
-            map.setLayoutProperty('traffic', 'visibility', visible);
+            //map.setLayoutProperty('traffic', 'visibility', visible);
             map.setLayoutProperty('trafficText', 'visibility', visible);
         })
 
@@ -349,7 +349,7 @@
         }
         function setTrafficFilter(min, max) {
             console.log('setTrafficFilter', min, max);
-            map.setFilter('traffic', ['all', ['>', 'all_motor_vehicles', parseInt(min)], ['<', 'all_motor_vehicles', parseInt(max)]]);
+            //map.setFilter('traffic', ['all', ['>', 'all_motor_vehicles', parseInt(min)], ['<', 'all_motor_vehicles', parseInt(max)]]);
             map.setFilter('trafficText', ['all', ['>', 'all_motor_vehicles', parseInt(min)], ['<', 'all_motor_vehicles', parseInt(max)]]);
         }
 
@@ -640,18 +640,18 @@
                     'features': []
                 }
             });
-            map.addLayer({
-                'id': 'traffic',
-                'type': 'circle',
-                'source': 'traffic',
-                'paint': {
-                    'circle-radius': 4,
-                    'circle-color': 'red'
-                },
-                'layout': {
-                    'visibility': 'none'
-                },
-            });
+            // map.addLayer({
+            //     'id': 'traffic',
+            //     'type': 'circle',
+            //     'source': 'traffic',
+            //     'paint': {
+            //         'circle-radius': 4,
+            //         'circle-color': 'red'
+            //     },
+            //     'layout': {
+            //         'visibility': 'none'
+            //     },
+            // });
 
 
             map.loadImage('icons/car.png',
