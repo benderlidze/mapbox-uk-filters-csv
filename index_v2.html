@@ -186,7 +186,7 @@
 
 
     <script>
- const buttonRequest = document.getElementById('button-request');
+        const buttonRequest = document.getElementById('button-request');
         const infoRetailers = document.getElementById('info-retailers');
         const infoRetailersModal = document.getElementById('retailers-modal');
         const closeRetailersModal = document.getElementById('close-retailers-modal');
@@ -455,7 +455,7 @@
                     const boxes = buildCategoryFilters(data)
                     sectorBoxes.push(...boxes)
 
-                
+
                     const retailersNames = [...new Set(data.map(i => i.company_name))]
                         .sort()
                         .map(name =>
@@ -463,8 +463,8 @@
                     retailers.innerHTML = retailersNames
 
                     autocomplete(input, data, shopName => {
-                        selectedShops.push(shopName)
-                        filterByShopNameS(selectedShops)
+                        //selectedShops.push(shopName)
+                        filterByShopNameS(shopName)
                     });
                 })
 
@@ -944,6 +944,7 @@
 
         function filterByShopNameS(shopNameArray) {
 
+            console.log('shopNameArray', shopNameArray);
             const pins = shopData
                 .filter(pin => shopNameArray.includes(pin.company_name))
                 .map(pin => {
