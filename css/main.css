@@ -65,6 +65,11 @@ fieldset {
     /* grid-gap: 3px; */
 }
 
+.years {
+    display: flex;
+    flex-direction: column;
+}
+
 .div-box {
     display: flex;
     width: 60px;
