@@ -23,28 +23,34 @@
     <script>
         const all = [];
 
-        d3.csv("data/Care Home June 19 - Jan 22 - Cards.csv")
+        d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vReosdYfLArHa-SLaBpdwcKpegw9AmmFChbFu-ihEJl9zoGA8KMxWlGKrBVRfeVmt-H_uco6XzU5tAZ/pub?output=csv")
             .then(data => {
                 console.log('Store', data);
                 /*
                 const n = data.length;
                 (async () => {
                     for (let index = 0; index < n; index++) {
-                        // const { name, city, country } = data[index]
-                        const addr = data[index]['Postcode'] !== "" ? data[index]['Postcode'] : `${data[index]['Site address']}`
-                        //https://maps.googleapis.com/maps/api/geocode/json?address=Lviv&key=AIzaSyACTxTtjv8zzjp5kgFi6lnu5Jx0VjRBJM0
-                        await fetch(`https://maps.googleapis.com/maps/api/geocode/json?&address=${addr}&key=AIzaSyACTxTtjv8zzjp5kgFi6lnu5Jx0VjRBJM0`)
-                            .then(i => i.json())
-                            .then(res => {
-                                console.log(index, ' - ', res);
-                                if (res.status && res.status === "OK") {
-                                    const { lat, lng } = res.results[0].geometry.location
-                                    data[index].lat = lat
-                                    data[index].lng = lng
 
-                                    all.push({ ...data[index], geo: res.results[0] })
-                                }
-                            })
+                        if (data[index].lat === "" || data[index].lng === "") {
+                            const addr = data[index]['Postcode'] !== "" ? data[index]['Postcode'] : `${data[index]['Site address']}`
+                            //https://maps.googleapis.com/maps/api/geocode/json?address=Lviv&key=AIzaSyACTxTtjv8zzjp5kgFi6lnu5Jx0VjRBJM0
+                            await fetch(`https://maps.googleapis.com/maps/api/geocode/json?&address=${addr}&key=AIzaSyACTxTtjv8zzjp5kgFi6lnu5Jx0VjRBJM0`)
+                                .then(i => i.json())
+                                .then(res => {
+                                    console.log(index, ' - ', res);
+                                    if (res.status && res.status === "OK") {
+                                        const { lat, lng } = res.results[0].geometry.location
+                                        data[index].lat = lat
+                                        data[index].lng = lng
+
+                                        all.push({ ...data[index], lat, lng })
+                                    } else {
+                                        all.push({ ...data[index] })
+                                    }
+                                })
+                        } else {
+                            all.push({ ...data[index] })
+                        }
                     }
                     console.log('data', data);
                     console.log('all', all);
@@ -53,6 +59,18 @@
 
             })
 
+
+        downloadCSVFromJson = (filename, arrayOfJson) => {
+
+            // Create link and download
+            var link = document.createElement('a');
+            link.setAttribute('href', 'data:text/csv;charset=utf-8,%EF%BB%BF' + encodeURIComponent(d3.csvFormat(arrayOfJson)));
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
     </script>
 
 </body>
