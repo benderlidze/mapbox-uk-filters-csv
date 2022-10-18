@@ -496,7 +496,7 @@
                 return store['Category-Hide'].split(",").map(i => i.trim())
             }).flat()
             //const sector = [...new Set(sectorsArr), 'Care']
-            const sector = ['Care']
+            const sector = ['Care', 'Foodstore', 'Drive-thru', 'Petrol', 'EV']
 
             const checkboxes = sector.map(name => {
                 const checkbox = buildDivBox(name, false, sectorName => {
