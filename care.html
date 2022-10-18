@@ -28,7 +28,7 @@
 
     <div id="filters" style="min-width: 250px;">
 
-        <span class="small-text">Search town or postcode</span>
+        <span class="small-text bold">Search town or postcode</span>
         <div id="address">
             <input type="text" id="search">
         </div>
@@ -49,14 +49,14 @@
         <div>
             <!-- <input type="text" id="shop" placeholder="shop name" /><button onclick="filterByShopName()">Filter</button> -->
             <div id="prop-list"></div>
-            <div class="item-header">Filters:</div>
+            <div class="item-header bold">Filters:</div>
             <div id="filter-items" class="sectors"></div>
-            <div class="item-header">Filters by year</div>
+            <div class="item-header bold">Filters by year</div>
             <div id="filter-year" class="years"></div>
         </div>
         <hr>
         <div class="switch-item">
-            <div class="item-header">Satellite view</div>
+            <div class="item-header bold">Satellite view</div>
 
             <label class="switch">
                 <input type="checkbox" id="satelliteLayer">
@@ -65,8 +65,9 @@
 
         </div>
         <hr>
-        <div class="item-header">
+        <div class="item-header" style="flex-direction: column; align-items: flex-start;">
             <span id="resetSectors">Reset</span>
+            <div><i style="font-size: 0.7rem;">New applications only are shown on this map.</i></div>
         </div>
     </div>
 
@@ -112,7 +113,6 @@
             document.querySelector("#search").value = ''
             shopList.innerHTML = '';
         })
-
 
         satelliteLayer.addEventListener("input", function () {
             if (satelliteLayer.checked) {
