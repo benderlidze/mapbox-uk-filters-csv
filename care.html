@@ -50,7 +50,10 @@
             <!-- <input type="text" id="shop" placeholder="shop name" /><button onclick="filterByShopName()">Filter</button> -->
             <div id="prop-list"></div>
             <div class="item-header bold">Filters:</div>
-            <div id="filter-items" class="sectors"></div>
+            <div class="item-header bold">Commercial</div>
+            <div id="filters-commercial" class="sectors"></div>
+            <div class="item-header bold">Residential</div>
+            <div id="filters-residental" class="sectors"></div>
             <div class="item-header bold">Filters by year</div>
             <div id="filter-year" class="years"></div>
         </div>
@@ -80,7 +83,8 @@
         const clear = document.getElementById("clear")
         const shopName = document.getElementById("shop");
         const shopList = document.getElementById("prop-list");
-        const filterItems = document.getElementById("filter-items");
+        const filtersCommercial = document.getElementById("filters-commercial");
+        const filtersResidental = document.getElementById("filters-residental");
         const filterYear = document.getElementById("filter-year");
         const shopData = [];
         const selectedSectors = [];
@@ -164,7 +168,9 @@
 
                     shopData.push(...json)
 
-                    buildCategoryFilters(shopData).map(item => filterItems.appendChild(item))
+                    buildCommercialFilters(shopData).map(item => filtersCommercial.appendChild(item))
+                    buildResidentalFilters(shopData).map(item => filtersResidental.appendChild(item))
+
 
                     buildYearFilters(shopData).map(item => filterYear.appendChild(item))
 
@@ -504,15 +510,32 @@
             map.getSource("traffic").setData(featureCollection)
         }
 
-        function buildCategoryFilters(data) {
-
-            const sectorsArr = data.map(store => {
-                // console.log('store', store, store['Category-Hide']);
-                return store['Category-Hide'].split(",").map(i => i.trim())
-            }).flat()
+        function buildCommercialFilters(data) {
+            // const sectorsArr = data.map(store => {
+            //     return store['Category-Hide'].split(",").map(i => i.trim())
+            // }).flat()
             //const sector = [...new Set(sectorsArr), 'Care']
             const sector = ['Care', 'Foodstore', 'Drive-thru', 'Petrol', 'EV']
-
+            const checkboxes = sector.map(name => {
+                const checkbox = buildDivBox(name, false, sectorName => {
+                    var index = selectedSectors.indexOf(sectorName);
+                    if (index !== -1) {
+                        selectedSectors.splice(index, 1);
+                    } else {
+                        selectedSectors.push(sectorName)
+                    }
+                    filterItemsByCategory()
+                })
+                return checkbox
+            })
+            return checkboxes
+        }
+        function buildResidentalFilters(data) {
+            // const sectorsArr = data.map(store => {
+            //     return store['Category-Hide'].split(",").map(i => i.trim())
+            // }).flat()
+            //const sector = [...new Set(sectorsArr), 'Care']
+            const sector = ['50-99 units', '100-249 units', '250-499 units', '1000+ units', '500-999 units']
             const checkboxes = sector.map(name => {
                 const checkbox = buildDivBox(name, false, sectorName => {
                     var index = selectedSectors.indexOf(sectorName);
