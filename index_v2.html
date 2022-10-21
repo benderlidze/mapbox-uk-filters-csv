@@ -685,7 +685,7 @@
                     });
                 })
 
-            map.on('click', 'traffic', (e) => {
+            map.on('click', 'trafficText', (e) => {
                 console.log('e', e);
                 // Copy coordinates array.
                 const description = e.features[0].properties.road_name;
@@ -697,15 +697,13 @@
                 e.originalEvent.cancelBubble = true;
             });
             // Change the cursor to a pointer when the mouse is over the places layer.
-            map.on('mouseenter', 'traffic', () => {
+            map.on('mouseenter', 'trafficText', () => {
                 map.getCanvas().style.cursor = 'pointer';
             });
             // Change it back to a pointer when it leaves.
-            map.on('mouseleave', 'traffic', () => {
+            map.on('mouseleave', 'trafficText', () => {
                 map.getCanvas().style.cursor = '';
             });
-
-
 
 
             map.on('click', 'storeLogo', (e) => {
