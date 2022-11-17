@@ -364,6 +364,70 @@
 
             //*/
 
+
+            d3.csv("geocode/emanuel oliver to test - Sheet1 (1).csv")
+                .then(data => {
+                    console.log('gb', data);
+                    const pins = data.map(pin => {
+                        const { lat, lng } = pin
+                        return {
+                            "type": "Feature", "properties": {
+                                ...pin
+                            },
+                            "geometry": {
+                                "type": "Point", "coordinates": [+lng, +lat]
+                            }
+                        }
+                    })
+                    const featureCollection = turf.featureCollection(pins)
+                    map.getSource("circles").setData(featureCollection)
+                })
+            map.addSource('circles', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                }
+            });
+            map.addLayer({
+                'id': 'circle',
+                'type': 'circle',
+                'source': 'circles',
+                'paint': {
+                    'circle-color': '#4264fb',
+                    'circle-radius': 5,
+                    'circle-stroke-width': 1,
+                    'circle-stroke-color': '#ffffff'
+                }
+            });
+
+            // Center the map on the coordinates of any clicked circle from the 'circle' layer.
+            map.on('click', 'circle', (e) => {
+                const props = e.features[0].properties;
+                const text = `
+                    <div>
+                        <div>Address: ${props['Address']}</div>
+                        <div>Ground Floor (sqft): ${props['Ground Floor (sqft)']}</div>
+                        <div>Rent (pax): ${props['Rent (pax)']}</div>
+                        <div>Town: ${props['Town']}</div>
+                    </div>
+                `
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(text)
+                    .addTo(map);
+            });
+
+            // Change the cursor to a pointer when the it enters a feature in the 'circle' layer.
+            map.on('mouseenter', 'circle', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'circle', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
             map.addSource('shapes', {
                 'type': 'geojson',
                 'data': {

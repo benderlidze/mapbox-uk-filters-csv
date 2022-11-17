@@ -1,0 +1,66 @@
+Town,Address,Rent (pax),Ground Floor (sqft),lat,lng
+Abergavenny,6 High Street,"£45,000","2,857",51.825366,-3.019423
+Aberystwyth,15 Great Darkgate Street,"£16,000",423,52.41484,-4.0844821
+Birkenhead,12 Borough Pavement,£25000,975,53.3893589,-3.0239521
+Birkenhead,"MSU2, Pyramids Shopping Centre",On Application,"11,020",53.38886189999999,-3.0270303
+Birkenhead,13-17 Borough Pavement,£60000,4436,53.3892357,-3.0236251
+Birkenhead,4 Princes Pavement,£20000,942,53.3905733,-3.0223599
+Birkenhead,12 Princes Pavement,£20000,895,53.3905812,-3.0226878
+Birkenhead,18 Princes Pavement,£20000,1005,53.39040019999999,-3.0226199
+Birkenhead,3 St Johns Pavement,£45000,1418,53.3897869,-3.0258419
+Birkenhead,"Unit 3, West Mall",£35000,1252,53.38811639999999,-3.0299176
+Birkenhead,"Unit 6B, West Mall",£37500,1416,53.38811639999999,-3.0299176
+Birkenhead,"Unit 23, West Mall",£35000,1626,53.38811639999999,-3.0299176
+Birkenhead,"Unit 9, East Mall",£35000,1660,53.38811639999999,-3.0299176
+Bolton,28 Newport Street,£32500,1175,53.574264,-2.4271462
+Bolton,22 Newport Street,"£37,500","1,562",,
+Buckley,1 Brunswick Road,"£45000For Sale - £395,000",7772,-37.7786796,144.9775909
+Chester,44-50 Bridge Street Row,"£60,000","5,939",40.7031046,-73.9848276
+Chester,44 Foregate Street,On Application,"6,451",53.1911346,-2.8865877
+Chester,43-45 Bridge Street Row,"For Sale - £500,000","1,516",,
+Chester,30 Eastgate Row,"£35,000",804,53.1905739,-2.8897485
+Chester,48 Bridge Street,"£65,000","2,330",,
+Chester,37 Watergate Street,"For Sale - £150,000",674,53.1899189,-2.8941034
+Chester,15 Eastgate Street,"£70,000",873,53.19069930000001,-2.8907013
+Chester,R1 Pepper Street,"£90,000","2,530",,
+Colwyn Bay,"Unit B5-B6, Bay View Shopping Centre","£45,000","2,867",53.2953316,-3.7244651
+Colwyn Bay,Kiosk 2 Bay View Shopping Centre,"£12,000",329,53.2953316,-3.7244651
+Colwyn Bay,Unit 1 / 2 Bay View Shopping Centre,"£35,000","2,150",53.2953316,-3.7244651
+Colwyn Bay,Unit 13 Bay View Shopping Centre,"£22,000",844,53.2953316,-3.7244651
+Colwyn Bay,C4 Bay View Shopping Centre,"£80,000","6,000",53.2953316,-3.7244651
+Denbigh,Unit 7 Denbigh Retail Park,"£24,000","1,463",,
+Hunts Cross,287 Speke Road,"£24,000",874,53.3598272,-2.8552403
+Hunts Cross,275 Speke Road,"£14,000",528,53.3597877,-2.8556938
+Kendal,Unit 9 Wainwrights Yard,"£25,000",744,54.32825099999999,-2.7475946
+Kendal,Unit 5 Wainwrights Yard,"£22,000",612,54.32825099999999,-2.747594
+Kendal,Unit 7 Wainwrights Yard,"£22,000",604,54.32825099999999,-2.747594
+Liverpool,Ashcroft Buildings 37 Victoria Street,"£60 - 75,000","1,560 - 1,830",,
+Liverpool,83 Church Street,"£65,000",718,,
+Liverpool,60 Hanover Street,"£320,000","21,237",53.4039588,-2.9823352
+Llandudno,Unit 12 The Victoria Centre,£22500,843,52.9558227,-1.1468719
+Llandudno,Unit 1 Tudno Point,On Application,"1,517",53.324061,-3.827609
+Llandudno,Unit 2 Tudno Point,On Application,"2,830",53.3272673,-3.833538
+Llandudno,Unit 3 Tudno Point,On Application,"1,500",53.3270669,-3.8335849
+Norris Green,7-8 Broadway,"£45,000","2,164",53.4463151,-2.9197481
+Northwich,10-12 Leicester Street,"£75,000","1,962",53.26238799999999,-2.512337
+Ormskirk,37 Church Street (Rear Restaurant),"£60,000","2,185",53.568935,-2.885057
+Ormskirk,7 Aughton Street,"£25,000",915,53.5669549,-2.8860673
+Oswestry,16 Cross Street,"£45,000","3,311",52.857148,-3.056412
+Oswestry,English Walls,"£45,000","5,940",52.8586106,-3.0542449
+Oswestry,English Walls,"£174,089","9,900",52.8586106,-3.0542449
+Oswestry,2 Bailey Street,"£12,500",775,52.8595159,-3.0553138
+Oswestry,Royal Salon Leg Street,"£8,000",471,52.8597014,-3.0538381
+Oswestry,"Former Supermarket, Station Road",On Application,"22,291",,
+Pontypool,16 Crane Street,"£35,000","5,968",51.7021794,-3.0416333
+Prescot,42 Eccleston Street,"£30,000","2,361",53.4292406,-2.8035059
+Pwllheli,"Unit 3 Colonnade Buildings, New Street","£55,000","3,171",52.888462,-4.4162563
+Rhyl,10-12 Sussex Street,"£50,000For Sale - Price on Application","5,346",53.3210063,-3.4915373
+Rhyl,8 Sussex Street,"£30,000For Sale - Price on Application","1,734",53.32076379999999,-3.4923541
+Shrewsbury,47 Pride Hill,£59000,1018,52.7082334,-2.7537467
+Shrewsbury,The Darwin,On Application,Various,,
+Shrewsbury,78 Mardol,"£38,500",754,52.7080492,-2.7549265
+Southport,42 London Road,"£20,000",624,,
+Tattenhall,22 High Street,"£10,000",410,53.1204058,-2.7687012
+Wakefield,34 Kirkgate,"£42,500","2,965",53.6826204,-1.4955458
+Wakefield,36 Kirkgate,"£35,000","1,962",53.6824139,-1.4941308
+Wrexham,"Unit 14B, Island Green Retail Park","£30,000","1,490",53.0459518,-2.9982433

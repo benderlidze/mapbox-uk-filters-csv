@@ -23,18 +23,19 @@
     <script>
         const all = [];
 
-        d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vReosdYfLArHa-SLaBpdwcKpegw9AmmFChbFu-ihEJl9zoGA8KMxWlGKrBVRfeVmt-H_uco6XzU5tAZ/pub?output=csv")
+        //d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vReosdYfLArHa-SLaBpdwcKpegw9AmmFChbFu-ihEJl9zoGA8KMxWlGKrBVRfeVmt-H_uco6XzU5tAZ/pub?output=csv")
+        d3.csv("geocode/emanuel oliver to test - Sheet1 (1).csv")
             .then(data => {
                 console.log('Store', data);
-                /*
+
                 const n = data.length;
                 (async () => {
                     for (let index = 0; index < n; index++) {
-
-                        if (data[index].lat === "" || data[index].lng === "") {
-                            const addr = data[index]['Postcode'] !== "" ? data[index]['Postcode'] : `${data[index]['Site address']}`
-                            //https://maps.googleapis.com/maps/api/geocode/json?address=Lviv&key=AIzaSyACTxTtjv8zzjp5kgFi6lnu5Jx0VjRBJM0
-                            await fetch(`https://maps.googleapis.com/maps/api/geocode/json?&address=${addr}&key=AIzaSyACTxTtjv8zzjp5kgFi6lnu5Jx0VjRBJM0`)
+                        console.log('data[index]', data[index]);
+                        //if (data[index].lat === "" || data[index].lng === "") {
+                            const addr = `${data[index]['Town']} ${data[index]['Address']}`
+                            
+                            await fetch(`https://maps.googleapis.com/maps/api/geocode/json?&address=${addr}&key=`)
                                 .then(i => i.json())
                                 .then(res => {
                                     console.log(index, ' - ', res);
@@ -48,9 +49,9 @@
                                         all.push({ ...data[index] })
                                     }
                                 })
-                        } else {
-                            all.push({ ...data[index] })
-                        }
+                        // } else {
+                        //     all.push({ ...data[index] })
+                        // }
                     }
 
                     downloadCSVFromJson("aaaa.csv", all)
