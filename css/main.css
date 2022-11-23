@@ -119,6 +119,7 @@ fieldset {
     align-items: center;
     justify-content: center;
     font-weight: bold;
+    padding: 2px;
     /* inline-size: inherit !important;
     opacity: 1 !important; */
 }

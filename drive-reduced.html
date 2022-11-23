@@ -155,7 +155,6 @@
         });
         map.addControl(new mapboxgl.NavigationControl());
 
-
         exampleResults.addEventListener("click", () => {
             modal.style.display = "block";
             modalText = `
@@ -570,7 +569,7 @@
             if (name !== "Foodstore") {
                 div.classList.add("disabled")
                 div.appendChild(upgrade)
-                inner.style.opacity = "0.2"
+                inner.style.opacity = "0.1"
             }
 
             div.appendChild(inner)
