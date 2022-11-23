@@ -124,6 +124,20 @@ fieldset {
     opacity: 1 !important; */
 }
 
+.upgrade-button {
+    height: 13px;
+    font-size: 9px;
+    background-color: #7ed957de;
+    position: absolute;
+    border-radius: 9px;
+    color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    padding: 3px;
+}
+
 /*==================---------AUTOCOMPLETE-------------------==================*/
 /*the container must be positioned relative:*/
 .autocomplete {
