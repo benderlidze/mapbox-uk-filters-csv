@@ -108,7 +108,7 @@ fieldset {
 }
 
 .upgrade {
-    
+
     width: 46px;
     height: 46px;
     background-color: #7ed957;
@@ -367,6 +367,16 @@ input[type="submit"] {
 }
 
 #exportResults {
+    cursor: pointer;
+    display: flex;
+    border: 1px solid #5699a2;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin: 5px 0px;
+    width: fit-content;
+}
+
+.exportButton {
     cursor: pointer;
     display: flex;
     border: 1px solid #5699a2;

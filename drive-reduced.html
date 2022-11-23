@@ -95,9 +95,9 @@
         </div>
         <hr>
         <div class="item-header">
-            <span id="exportResults" class="disabled" style="opacity: 0.2;">Export results</span>
+            <span id="exportResults" class="exportButton disabled" style="opacity: 0.5;">Export results</span>
             &nbsp;
-            <span id="exportResults">Example export</span>
+            <span id="exampleResults" class="exportButton">Example export</span>
         </div>
         <hr>
         <div class="item-header">
@@ -112,6 +112,7 @@
         let modalText;
         let userMarker;
 
+        const exampleResults = document.getElementById('exampleResults');
         const buttonRequest = document.getElementById('button-request');
         const infoRetailers = document.getElementById('info-retailers');
         const infoRetailersModal = document.getElementById('retailers-modal');
@@ -154,6 +155,56 @@
         });
         map.addControl(new mapboxgl.NavigationControl());
 
+
+        exampleResults.addEventListener("click", () => {
+            modal.style.display = "block";
+            modalText = `
+            <h3>Retailer distance from Bristol BS1 6XX, UK</h3>
+            <table style="border-collapse: collapse; width: 100%;">
+                    <tbody><tr>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Name</th>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Distance</th>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Address</th>
+                        </tr><tr style="background-color: #dddddd;">
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">McColls</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">0.2miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">1 MARDYKE FERRY ROAD BALTIC WHARF, BRISTOL, BS1 6TT</td>
+                        </tr><tr>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Coop</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">0.3miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">171-179 Coronation Road Southville, Bristol, BS3 1RF</td>
+                        </tr><tr style="background-color: #dddddd;">
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">SPAR</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">0.6miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">SPAR, 181b Hotwells Road, Avon, BS8 4SA</td>
+                        </tr><tr>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Aldi</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">0.7miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">North Street, Bedminster, Bristol, BS3 1JA</td>
+                        </tr><tr style="background-color: #dddddd;">
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Tesco</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">0.8miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">166-176 North St, Bedminster, BS3 1HZ</td>
+                        </tr><tr>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">IcelandFoodWarehouse</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">1.0miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">UNIT B, S.BRISTOL RTL.PK. WINTERSTOKE ROAD, ASHTON GATE, BRISTOL, BS3 2LQ</td>
+                        </tr><tr style="background-color: #dddddd;">
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Sainsburys</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">1.1miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">9 Broad Quay, Bristol, BS1 4DA</td>
+                        </tr><tr>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Waitrose</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">1.1miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">The Pavillion, 85 Queens Road Bristol BS8 1QS</td>
+                        </tr><tr style="background-color: #dddddd;">
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Londis</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">1.2miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Bedminster, Bristol, Avon, BS3 4AB</td>
+                        </tr>
+                </tbody></table>`
+            resultsDiv.innerHTML = modalText
+        })
 
         buttonRequest.addEventListener("click", () => {
             window.open(`https://www.therequirementlist.com/features/submit-form`, '_blank');
@@ -644,10 +695,50 @@
             //resultsDiv.innerHTML = res.join("<br>");
             const code = document.getElementById("search").value
             modalText = `
-            <h3>Retailer distance from ${code}</h3>
+            <h3>Retailer distance from Bristol BS1 6XX, UK</h3>
             <table style="border-collapse: collapse; width: 100%;">
-                    ${table}
-                </table>`
+                    <tbody><tr>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Name</th>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Distance</th>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Address</th>
+                        </tr><tr style="background-color: #dddddd;">
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">McColls</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">0.2miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">1 MARDYKE FERRY ROAD BALTIC WHARF, BRISTOL, BS1 6TT</td>
+                        </tr><tr>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Coop</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">0.3miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">171-179 Coronation Road Southville, Bristol, BS3 1RF</td>
+                        </tr><tr style="background-color: #dddddd;">
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">SPAR</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">0.6miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">SPAR, 181b Hotwells Road, Avon, BS8 4SA</td>
+                        </tr><tr>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Aldi</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">0.7miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">North Street, Bedminster, Bristol, BS3 1JA</td>
+                        </tr><tr style="background-color: #dddddd;">
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Tesco</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">0.8miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">166-176 North St, Bedminster, BS3 1HZ</td>
+                        </tr><tr>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">IcelandFoodWarehouse</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">1.0miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">UNIT B, S.BRISTOL RTL.PK. WINTERSTOKE ROAD, ASHTON GATE, BRISTOL, BS3 2LQ</td>
+                        </tr><tr style="background-color: #dddddd;">
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Sainsburys</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">1.1miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">9 Broad Quay, Bristol, BS1 4DA</td>
+                        </tr><tr>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Waitrose</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">1.1miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">The Pavillion, 85 Queens Road Bristol BS8 1QS</td>
+                        </tr><tr style="background-color: #dddddd;">
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Londis</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">1.2miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Bedminster, Bristol, Avon, BS3 4AB</td>
+                        </tr>
+                </tbody></table>`
             resultsDiv.innerHTML = modalText
 
             const measureCollection = { type: 'FeatureCollection', features: [] };
