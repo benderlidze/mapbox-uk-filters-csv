@@ -293,6 +293,7 @@
             d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRRCfZP7O-mr7dta_TApeE4GVpjh57jcK7r1RN2bx2RvYk3EslUZA8ay9y8-2gOu1c6-GCF26xkSLvn/pub?output=csv")
                 .then(data => {
 
+
                     data.forEach(shop => {
                         shopData.push({
                             ...shop,
@@ -309,7 +310,7 @@
                     console.log('data', data);
                     const retailersNames = [
                         ...new Set(data
-                            .filter(d => d.sector.split(",").map(d => d.toLowerCase()).includes("foodstore"))
+                            .filter(d => d.sector.toLowerCase().includes("foodstore"))
                             .map(i => i.company_name))
                     ]
                         .sort()
