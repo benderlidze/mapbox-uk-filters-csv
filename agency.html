@@ -222,50 +222,59 @@
 
         map.on('load', () => {
 
-            d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRRCfZP7O-mr7dta_TApeE4GVpjh57jcK7r1RN2bx2RvYk3EslUZA8ay9y8-2gOu1c6-GCF26xkSLvn/pub?output=csv")
-                .then(data => {
+            Promise.all([
+                d3.csv(`https://docs.google.com/spreadsheets/d/e/2PACX-1vSQov7m26uAsCEByGqUWrKnpXh31GC2Z62YzOLAlMh3vl8GwQ4y42r8oX-QxJAyI2V5I-lb6Tq6xsYo/pub?gid=1668512990&single=true&output=csv`),
+                d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vSQov7m26uAsCEByGqUWrKnpXh31GC2Z62YzOLAlMh3vl8GwQ4y42r8oX-QxJAyI2V5I-lb6Tq6xsYo/pub?output=csv")
+            ]).then(data => {
 
-                    // data.forEach(shop => {
-                    //     shopData.push({
-                    //         ...shop,
-                    //         sectors: (shop.sector && shop.sector.length > 0) ? shop.sector.split(",").map(i => i.trim()) : []
-                    //     })
-                    // })
+                // data.forEach(shop => {
+                //     shopData.push({
+                //         ...shop,
+                //         sectors: (shop.sector && shop.sector.length > 0) ? shop.sector.split(",").map(i => i.trim()) : []
+                //     })
+                // })
 
-                    // uploadPhotosBuildLayer(data)
+                // uploadPhotosBuildLayer(data)
 
-                    // const boxes = buildCategoryFilters(data)
-                    // sectorBoxes.push(...boxes)
+                // const boxes = buildCategoryFilters(data)
+                // sectorBoxes.push(...boxes)
 
-                    // const retailersNames = [...new Set(data.map(i => i.company_name))]
-                    //     .sort()
-                    //     .map(name =>
-                    //         `<div>${name}</div>`).join("")
-                    // retailers.innerHTML = retailersNames
+                // const retailersNames = [...new Set(data.map(i => i.company_name))]
+                //     .sort()
+                //     .map(name =>
+                //         `<div>${name}</div>`).join("")
+                // retailers.innerHTML = retailersNames
 
-                    // autocomplete(input, data, shopName => {
-                    //     selectedShops.push(shopName)
-                    //     findClosestToUser(selectedShops)
-                    // });
+                // autocomplete(input, data, shopName => {
+                //     selectedShops.push(shopName)
+                //     findClosestToUser(selectedShops)
+                // });
+                console.log('data', data);
 
-                    const pins = data
-                        // .filter(pin => shopNameArray.includes(pin.company_name))
-                        .map(pin => {
-                            const { property_latitude, property_longitude } = pin
-                            return {
-                                "type": "Feature", "properties": { ...pin, },
-                                "geometry": {
-                                    "type": "Point", "coordinates": [+property_longitude, +property_latitude]
-                                }
+                const pinsData = data[1]
+                const logoData = data[0]
+
+                uploadPhotosBuildLayer(logoData)
+
+                const pins = pinsData
+                    .map(pin => {
+                        const { Lat, Long } = pin
+                        return {
+                            "type": "Feature", "properties": {
+                                ...pin, logo: pin['Agency Name']
+                            },
+                            "geometry": {
+                                "type": "Point", "coordinates": [+Long, +Lat]
                             }
-                        })
-                    const featureCollection = turf.featureCollection(pins)
-                    console.log('featureCollection', featureCollection);
-                    map.getSource("store").setData(featureCollection)
+                        }
+                    })
+                const featureCollection = turf.featureCollection(pins)
+                console.log('featureCollection', featureCollection);
+                map.getSource("store").setData(featureCollection)
 
-                    console.log('data', data);
+                console.log('data', data);
 
-                })
+            })
 
 
             map.addLayer({
@@ -327,31 +336,31 @@
                 }
             });
 
-            map.addLayer({
-                id: 'storeLogo',
-                type: 'circle',
-                source: 'store',
-                filter: ['!', ['has', 'point_count']],
-                paint: {
-                    'circle-color': '#11b4da',
-                    'circle-radius': 4,
-                    'circle-stroke-width': 1,
-                    'circle-stroke-color': '#fff'
-                }
-            });
-
-
             // map.addLayer({
             //     id: 'storeLogo',
-            //     type: 'symbol',
+            //     type: 'circle',
             //     source: 'store',
             //     filter: ['!', ['has', 'point_count']],
-            //     'layout': {
-            //         'icon-image': ['get', 'company_name'], // reference the image
-            //         'icon-size': 0.15,
-            //         'icon-allow-overlap': true,
+            //     paint: {
+            //         'circle-color': '#11b4da',
+            //         'circle-radius': 4,
+            //         'circle-stroke-width': 1,
+            //         'circle-stroke-color': '#fff'
             //     }
             // });
+
+
+            map.addLayer({
+                id: 'storeLogo',
+                type: 'symbol',
+                source: 'store',
+                filter: ['!', ['has', 'point_count']],
+                'layout': {
+                    'icon-image': ['get', 'logo'], // reference the image
+                    'icon-size': 0.15,
+                    'icon-allow-overlap': true,
+                }
+            });
 
 
 
@@ -403,14 +412,10 @@
             map.on('click', 'storeLogo', (e) => {
                 console.log('e', e);
                 // Copy coordinates array.
-                const name = e.features[0].properties.company_name;
-                const addr = e.features[0].properties.property_address;
+                const name = e.features[0].properties['Agency Name']
+                const addr = e.features[0].properties.Address;
                 const description = `
                 <h2>${name}</h2>${addr}
-                <br>
-                property_longitude: ${e.features[0].properties.property_longitude}
-                <br>
-                property_latitude: ${e.features[0].properties.property_latitude}
                 `
                 new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
@@ -457,18 +462,20 @@
         });
 
         function uploadPhotosBuildLayer(data) {
+
+            console.log('data', data);
+
             const names = [...new Set(data.map(store => store.company_name).sort())]
 
-            names.forEach(name => {
-                map.loadImage(`logos/${name.toLowerCase()}.png`, (error, image) => {
+            data.forEach(agency => {
+                map.loadImage(agency['Logo'], (error, image) => {
                     if (error) {
                         map.loadImage(`logos/small/default.png`, (error, image) => {
-                            console.log('name', name);
-                            map.addImage(name, image);
+                            map.addImage(agency['Agency'], image);
                         });
                         throw error;
                     }
-                    map.addImage(name, image);
+                    map.addImage(agency['Agency'], image);
                 });
             })
         }
