@@ -232,6 +232,15 @@ input[type="submit"] {
     right: 7px;
 }
 
+.clear-input {
+    position: absolute;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    top: 7px;
+    right: 7px;
+}
+
 .close-x {
     display: inline-block;
     width: 15px;

@@ -35,6 +35,14 @@
             </div>
             <input id="myInput" class="clearable" type="text" name="myCountry" placeholder="Search Town or City">
         </div>
+        <div class="autocomplete">
+            <h1 id="propName"></h1>
+            <div class="clear-input" id="clear-retailer">
+                <div class="close-x"></div>
+            </div>
+            <input id="inputRetailer" class="clearable" type="text" name="myCountry"
+                placeholder="Search by retailer name">
+        </div>
         <div class="item-header">
             <span id="exportResults">Export results</span>
         </div>
@@ -51,7 +59,9 @@
         let modalText;
         const selectedShops = ["Tesco", "Coop"];
         const input = document.getElementById("myInput")
+        const inputRetailer = document.getElementById("inputRetailer")
         const clear = document.getElementById("clear")
+        const clearRetailer = document.getElementById("clear-retailer")
         const shopName = document.getElementById("shop");
         const shopList = document.getElementById("prop-list");
         const shopData = [];
@@ -103,7 +113,23 @@
                 .then(data => {
                     console.log('Store', data);
                     shopData.push(...data)
-                    autocomplete(input, data);
+
+
+                    autocomplete(input, [...new Set(data.map(i => i.address.toLowerCase()))].map((i, key) => {
+                        return {
+                            index: key,
+                            text: `${i}`
+                        }
+                    }), setShops);
+
+                    autocomplete(inputRetailer, [...new Set(data.map(i => i.name.toLowerCase()))].map((i, key) => {
+                        return {
+                            index: key,
+                            text: `${i}`
+                        }
+                    }), setByRetailerName);
+
+
 
                     //get unique
                     // const reduced = data
@@ -275,6 +301,8 @@
 
         const clearInput = () => {
             input.value = '';
+            inputRetailer.value = '';
+
             const pins = shopData
                 .map(pin => {
                     const { lat, lng, all } = pin
@@ -287,12 +315,15 @@
                 })
             const featureCollection = turf.featureCollection(pins)
             map.getSource("traffic").setData(featureCollection)
+
             shopList.innerHTML = '';
 
             exportResults.style.display = 'none'
         }
 
         clear.addEventListener("click", clearInput)
+        clearRetailer.addEventListener("click", clearInput)
+
 
         const setShops = (name) => {
 
@@ -311,7 +342,26 @@
             map.getSource("traffic").setData(featureCollection)
             printBrands(pins)
 
+            const center = turf.center(featureCollection);
+            map.setCenter(center.geometry.coordinates)
+        }
 
+        const setByRetailerName = (name) => {
+
+            const pins = shopData
+                .filter(pin => pin.name.toLowerCase() === name.toLowerCase())
+                .map((pin, key) => {
+                    const { lat, lng, all } = pin
+                    return {
+                        "type": "Feature", "properties": { ...pin },
+                        "geometry": {
+                            "type": "Point", "coordinates": [+lng, +lat]
+                        }
+                    }
+                })
+            const featureCollection = turf.featureCollection(pins)
+            map.getSource("traffic").setData(featureCollection)
+            printBrands(pins)
             const center = turf.center(featureCollection);
             map.setCenter(center.geometry.coordinates)
         }
@@ -384,7 +434,7 @@
             document.body.removeChild(link);
         };
 
-        function autocomplete(inp, data, service = undefined) {
+        function autocomplete(inp, arr, callback) {
             /*the autocomplete function takes two arguments,
                         the text field element and an array of possible autocompleted values:*/
             var currentFocus;
@@ -403,19 +453,13 @@
                 /*append the DIV element as a child of the autocomplete container:*/
                 this.parentNode.appendChild(a);
 
-                // const arr = data.map((i, key) => {
+                console.log('arr', arr);
+                // const arr = [...new Set(data.map(i => i.address.toLowerCase()))].map((i, key) => {
                 //     return {
                 //         index: key,
-                //         text: `${i.name} ${i.city}`
+                //         text: `${i}`
                 //     }
                 // })
-                console.log('data', data);
-                const arr = [...new Set(data.map(i => i.address.toLowerCase()))].map((i, key) => {
-                    return {
-                        index: key,
-                        text: `${i}`
-                    }
-                })
 
                 let counter = 0;
 
@@ -446,7 +490,8 @@
                             // const point = data[index]
                             // selectPoint(point)
 
-                            setShops(inp.value)
+                            if (typeof callback === 'function') callback(inp.value)
+
                         });
                         if (counter > 20) return; // display first 20 results
                         a.appendChild(b);

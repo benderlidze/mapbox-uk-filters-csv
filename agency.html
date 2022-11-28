@@ -349,6 +349,19 @@
             //     }
             // });
 
+            map.addLayer({
+                id: 'traffic',
+                type: 'circle',
+                source: 'store',
+                filter: ['!', ['has', 'point_count']],
+                paint: {
+                    'circle-color': 'red',
+                    'circle-radius': 4,
+                    'circle-stroke-width': 1,
+                    'circle-stroke-color': '#fff'
+                }
+            });
+
 
             map.addLayer({
                 id: 'storeLogo',
@@ -357,11 +370,10 @@
                 filter: ['!', ['has', 'point_count']],
                 'layout': {
                     'icon-image': ['get', 'logo'], // reference the image
-                    'icon-size': 0.15,
+                    'icon-size': 1,
                     'icon-allow-overlap': true,
                 }
             });
-
 
 
             //================MEASURE LINE =====================
@@ -468,6 +480,14 @@
             const names = [...new Set(data.map(store => store.company_name).sort())]
 
             data.forEach(agency => {
+                console.log('Logo:', agency['Agency'], agency['Logo']);
+
+                if (agency['Logo'].trim() === '') {
+                    map.loadImage(`logos/small/default.png`, (error, image) => {
+                        map.addImage(agency['Agency'], image);
+                    });
+                }
+
                 map.loadImage(agency['Logo'], (error, image) => {
                     if (error) {
                         map.loadImage(`logos/small/default.png`, (error, image) => {
