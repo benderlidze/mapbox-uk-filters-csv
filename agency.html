@@ -261,7 +261,7 @@
                         const { Lat, Long } = pin
                         return {
                             "type": "Feature", "properties": {
-                                ...pin, logo: pin['Agency Name']
+                                ...pin, logo: pin['Agency Name'].toLowerCase()
                             },
                             "geometry": {
                                 "type": "Point", "coordinates": [+Long, +Lat]
@@ -480,23 +480,27 @@
             const names = [...new Set(data.map(store => store.company_name).sort())]
 
             data.forEach(agency => {
-                console.log('Logo:', agency['Agency'], agency['Logo']);
+                console.log('Logo:', agency['Agency']);
+
+                const agencyName = agency['Agency'].toLowerCase()
+
 
                 if (agency['Logo'].trim() === '') {
                     map.loadImage(`logos/small/default.png`, (error, image) => {
-                        map.addImage(agency['Agency'], image);
+                        map.addImage(agencyName, image);
                     });
                 }
 
                 map.loadImage(agency['Logo'], (error, image) => {
                     if (error) {
-                        map.loadImage(`logos/small/default.png`, (error, image) => {
-                            map.addImage(agency['Agency'], image);
+                        map.loadImage(`https://uploads-ssl.webflow.com/62fa4714b993866391e6174d/6384b38330aa4b3f14984be8_Screenshot%202021-05-12%20at%2014.24.29%20(3).jpg`, (error, image) => {
+                            map.addImage(agencyName, image);
                         });
                         throw error;
                     }
-                    map.addImage(agency['Agency'], image);
+                    map.addImage(agencyName, image);
                 });
+
             })
         }
 
