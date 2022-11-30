@@ -272,7 +272,7 @@
                 console.log('featureCollection', featureCollection);
                 map.getSource("store").setData(featureCollection)
 
-                console.log('data', data);
+                console.log('featureCollection', featureCollection);
 
             })
 
@@ -350,30 +350,50 @@
             // });
 
             map.addLayer({
-                id: 'traffic',
+                // id: 'traffic',
+                id: 'storeLogo',
                 type: 'circle',
                 source: 'store',
                 filter: ['!', ['has', 'point_count']],
                 paint: {
                     'circle-color': 'red',
-                    'circle-radius': 4,
+                    'circle-radius': 6,
                     'circle-stroke-width': 1,
                     'circle-stroke-color': '#fff'
                 }
             });
 
-
             map.addLayer({
-                id: 'storeLogo',
+                id: 'storeLogo-name',
                 type: 'symbol',
                 source: 'store',
-                filter: ['!', ['has', 'point_count']],
-                'layout': {
-                    'icon-image': ['get', 'logo'], // reference the image
-                    'icon-size': 1,
-                    'icon-allow-overlap': true,
-                }
+                layout: {
+                    'text-field': '{Agency Name}',
+                    'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                    'text-size': 12,
+                    'text-allow-overlap': true,
+                    "text-offset": [0, 1]
+                },
+                'paint': {
+                    'text-color': '#202',
+                    "text-halo-color": "#fff",
+                    "text-halo-width": 2
+                },
+                'filter': ['==', '$type', 'Point']
             });
+
+
+            // map.addLayer({
+            //     id: 'storeLogo',
+            //     type: 'symbol',
+            //     source: 'store',
+            //     filter: ['!', ['has', 'point_count']],
+            //     'layout': {
+            //         'icon-image': ['get', 'logo'], // reference the image
+            //         'icon-size': 1,
+            //         'icon-allow-overlap': true,
+            //     }
+            // });
 
 
             //================MEASURE LINE =====================
