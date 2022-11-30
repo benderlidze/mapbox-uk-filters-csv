@@ -135,8 +135,8 @@
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/light-v10',
-            center: { lng: -5.38319371390287, lat: 54.328587368249714 },
-            zoom: 5
+            center: { lng: -0.13930945451909338, lat: 51.511421048916986 },
+            zoom: 15
         });
         map.addControl(new mapboxgl.NavigationControl());
 
@@ -293,8 +293,11 @@
                     'features': []
                 },
                 cluster: true,
-                clusterMaxZoom: 14, // Max zoom to cluster points on
-                clusterRadius: 50 // Radius of each cluster when clustering points 
+                // clusterMaxZoom: 14, // Max zoom to cluster points on
+                clusterRadius: 50, // Radius of each cluster when clustering points 
+                clusterProperties: {
+                    names: ['concat', ['concat', ['get', "Agency Name"], '\n ']]
+                },
             });
 
             map.addLayer({
@@ -333,6 +336,21 @@
                     'text-field': '{point_count_abbreviated}',
                     'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
                     'text-size': 12
+                }
+            });
+
+            map.addLayer({
+                id: 'store-cluster-names',
+                type: 'symbol',
+                source: 'store',
+                // filter: ['has', 'point_count'],
+                filter: ['all', ['has', 'point_count'], ['<', 'point_count', 3]],
+                layout: {
+                    'text-field': '{names}',
+                    'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                    'text-size': 12,
+                    'text-allow-overlap': true,
+                    "text-offset": [0, 3.5]
                 }
             });
 
