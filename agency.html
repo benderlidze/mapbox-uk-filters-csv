@@ -491,10 +491,12 @@
                     <h2>${name}</h2>
                     <div><b>${about}</b></div>
                     <div>${addr}</div>
-                    <div>${agencyPage}</div>
+                    <div>
+                        <a target="_blank" class="web-link" href="${agencyPage}">Agency Page</a>
+                    </div>
                     `
                     return description
-                }).join("hr")
+                }).join("")
 
                 new mapboxgl.Popup({ className: "popup" })
                     .setLngLat(e.lngLat)
@@ -529,7 +531,9 @@
                 <h2>${name}</h2>
                 <div><b>${about}</b></div>
                 <div>${addr}</div>
-                <div>${agencyPage}</div>
+                <div>
+                    <a target="_blank" class="web-link" href="${agencyPage}">Agency Page</a>
+                </div>
                 `
                 new mapboxgl.Popup({ className: "popup" })
                     .setLngLat(e.lngLat)
