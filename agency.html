@@ -39,7 +39,7 @@
 
 
     <div id="filters">
-        <span class="small-text">Enter a postcode of the property or site.</span>
+        <span class="small-text">Search Box.</span>
         <div id="address">
             <input type="text" id="search" placeholder="Enter a Town, City or Postcode">
         </div>
@@ -124,6 +124,11 @@
         const userPosition = {
             lat: undefined,
             lng: undefined
+        }
+
+        const mainData = {
+            agencyInfo: [],
+            agencyPins: []
         }
 
         const increment = document.getElementById('increment');
@@ -251,17 +256,21 @@
                 // });
                 console.log('data', data);
 
-                const pinsData = data[1]
+
+                mainData.agencyInfo = data[0]
+                mainData.agencyPins = data[1]
+
                 const logoData = data[0]
+                const pinsData = data[1]
 
                 uploadPhotosBuildLayer(logoData)
 
                 const pins = pinsData
-                    .map(pin => {
+                    .map((pin, key) => {
                         const { Lat, Long } = pin
                         return {
                             "type": "Feature", "properties": {
-                                ...pin, logo: pin['Agency Name'].toLowerCase()
+                                id: key, ...pin, logo: pin['Agency Name'].toLowerCase()
                             },
                             "geometry": {
                                 "type": "Point", "coordinates": [+Long, +Lat]
@@ -293,10 +302,11 @@
                     'features': []
                 },
                 cluster: true,
-                 clusterMaxZoom: 22, // Max zoom to cluster points on
+                clusterMaxZoom: 22, // Max zoom to cluster points on
                 clusterRadius: 50, // Radius of each cluster when clustering points 
                 clusterProperties: {
-                    names: ['concat', ['concat', ['get', "Agency Name"], '\n ']]
+                    names: ['concat', ['concat', ['get', "Agency Name"], '\n']],
+                    id: ['concat', ['concat', ['get', "id"], ',']],
                 },
             });
 
@@ -459,15 +469,69 @@
             //================MEASURE LINE =====================
 
 
+            map.on('click', 'store-clusters', (e) => {
+
+                const point_count = e.features[0].properties.point_count
+                if (point_count > 4) return;
+
+                const ids = e.features[0].properties.id
+                const namesList = ids.split(',').filter(d => d !== "").map(d => {
+
+                    const agency = mainData.agencyPins[+d]
+
+                    const name = agency['Agency Name']
+                    const addr = agency['Address']
+
+                    const agencyInfo = mainData.agencyInfo.find(d => d.Agency.toLowerCase().trim() === name.toLowerCase().trim())
+
+                    const about = agencyInfo['About']
+                    const agencyPage = agencyInfo['Agency Page']
+
+                    const description = `
+                    <h2>${name}</h2>
+                    <div><b>${about}</b></div>
+                    <div>${addr}</div>
+                    <div>${agencyPage}</div>
+                    `
+                    return description
+                }).join("hr")
+
+                new mapboxgl.Popup({ className: "popup" })
+                    .setLngLat(e.lngLat)
+                    .setHTML(namesList)
+                    .addTo(map);
+
+            })
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'store-clusters', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'store-clusters', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+
             map.on('click', 'storeLogo', (e) => {
-                console.log('e', e);
+                console.log('e', e.features[0].properties);
                 // Copy coordinates array.
                 const name = e.features[0].properties['Agency Name']
                 const addr = e.features[0].properties.Address;
+
+                const agencyInfo = mainData.agencyInfo.find(d => d.Agency.toLowerCase().trim() === name.toLowerCase().trim())
+                console.log('agencyInfo', agencyInfo);
+                const about = agencyInfo['About']
+                const agencyPage = agencyInfo['Agency Page']
+
+
                 const description = `
-                <h2>${name}</h2>${addr}
+                <h2>${name}</h2>
+                <div><b>${about}</b></div>
+                <div>${addr}</div>
+                <div>${agencyPage}</div>
                 `
-                new mapboxgl.Popup()
+                new mapboxgl.Popup({ className: "popup" })
                     .setLngLat(e.lngLat)
                     .setHTML(description)
                     .addTo(map);
@@ -518,10 +582,8 @@
             const names = [...new Set(data.map(store => store.company_name).sort())]
 
             data.forEach(agency => {
-                console.log('Logo:', agency['Agency']);
 
                 const agencyName = agency['Agency'].toLowerCase()
-
 
                 if (agency['Logo'].trim() === '') {
                     map.loadImage(`logos/small/default.png`, (error, image) => {
