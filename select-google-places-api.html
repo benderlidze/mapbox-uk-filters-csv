@@ -185,33 +185,6 @@
             const service = new google.maps.places.PlacesService(mapgoogle);
 
 
-            // var request = {
-            //     query: '200 Degrees Coffee',
-            //     fields: ['name', 'geometry'],
-            // };
-
-            // service.findPlaceFromQuery(request, function (results, status) {
-            //     console.log('results', results);
-            //     if (status === google.maps.places.PlacesServiceStatus.OK) {
-            //         const pins = results
-            //             .map(pin => {
-            //                 const lat = pin.geometry.location.lat()
-            //                 const lng = pin.geometry.location.lng()
-            //                 return {
-            //                     "type": "Feature", "properties": { ...pin },
-            //                     "geometry": {
-            //                         "type": "Point", "coordinates": [+lng, +lat]
-            //                     }
-            //                 }
-            //             })
-            //         const featureCollection = turf.featureCollection(pins)
-            //         map.getSource("store").setData(featureCollection)
-            //         console.log('featureCollection', featureCollection);
-            //     }
-            // });
-
-
-
             const search_request = {
                 location: new google.maps.LatLng(53.38165598921814, -1.454064302311017),
                 radius: '1000000',
@@ -247,7 +220,7 @@
 
     </script>
 
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDl9Fj-Keo_cuciw_-Hrl2MtlS4uNcKLxE&libraries=places"
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOU_API_KEY&libraries=places"
         defer></script>
 
 </body>
