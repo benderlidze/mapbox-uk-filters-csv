@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Draw a polygon and calculate its area</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.2.2/mapbox-gl-draw.js"></script>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.2.2/mapbox-gl-draw.css"
+        type="text/css">
+    <script type="text/javascript"
+        src="https://rawgit.com/mapstertech/mapbox-gl-draw-rotate-mode/master/dist/mapbox-gl-draw-rotate-mode.min.js"></script>
+    <script src="https://unpkg.com/mapbox-gl-draw-scale-rotate-mode"></script>
+
+
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .draw {
+            top: 20px;
+            left: 20px;
+            position: absolute;
+            z-index: 10;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="draw">
+        <button id="draw">Draw</button>
+        <button id="rotate">Rotate</button>
+    </div>
+    <div id="map"></div>
+    <script>
+
+        const drawButton = document.getElementById("draw");
+        const rotateButton = document.getElementById("rotate");
+
+        mapboxgl.accessToken = 'pk.eyJ1Ijoic2VyZ2JlciIsImEiOiJja3dwOWgzeGQwYWdyMm9xb2pkMDFvYmNuIn0.H9AJ_NLmDNYMed6dvu_Q0A';
+        const map = new mapboxgl.Map({
+            container: 'map', // container ID
+            // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+            style: 'mapbox://styles/mapbox/satellite-v9', // style URL
+            center: { lng: -73.72293956121996, lat: 40.66386852588303 }, // starting position [lng, lat]
+            zoom: 19 // starting zoom
+        });
+
+        const draw = new MapboxDraw({
+            displayControlsDefault: false,
+            // Select which mapbox-gl-draw control buttons to add to the map.
+            controls: {
+                polygon: true,
+                trash: true
+            },
+            modes: Object.assign({
+                RotateMode: RotateMode,
+            }, MapboxDraw.modes),
+            // Set mapbox-gl-draw to draw by default.
+            // The user does not have to click the polygon control button first.
+            // defaultMode: 'draw_polygon'
+        });
+
+        map.addControl(draw);
+        map.on('draw.create', updateArea);
+        map.on('draw.delete', updateArea);
+        map.on('draw.update', updateArea);
+        RotateMode.rotateend = function (selectedFeature) {
+            console.log('ROTATEEND');
+            console.log('feature: ', selectedFeature);
+            draw.changeMode('simple_select');
+            updateArea()
+        }
+
+        drawButton.addEventListener("click", () => {
+            draw.changeMode('draw_polygon');
+        })
+        rotateButton.addEventListener("click", () => {
+            draw.changeMode('RotateMode');
+        })
+
+        map.on('load', () => {
+
+            const coords = [
+                [-73.72272957361969, 40.66389640678605],
+                [-73.72253486559555, 40.66389640678605],
+                [-73.72253443766567, 40.66373150775527],
+                [-73.72272957361969, 40.66373150775527],
+
+            ];
+
+            map.addSource('parking', {
+                'type': 'image',
+                'url': 'parking-lot.png',
+                'coordinates': coords
+            });
+            map.addLayer({
+                'id': 'parking',
+                'type': 'raster',
+                'source': 'parking',
+                'paint': {
+                    'raster-fade-duration': 0,
+                    'raster-opacity': 0.95
+                }
+            });
+
+            map.on('click', (e) => {
+                console.log('e', e);
+                const features = map.queryRenderedFeatures(e.point);
+                console.log('relatedCounties', features);
+            })
+            map.on('mouseenter', 'parking', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'parking', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+        })
+
+
+        function updateArea(e) {
+            const data = draw.getAll();
+            console.log('data', ...data.features[0].geometry.coordinates);
+            const square = data.features[0].geometry.coordinates[0]
+            square.pop()
+            map.getSource("parking").setCoordinates(square)
+        }
+    </script>
+
+</body>
+
+</html>

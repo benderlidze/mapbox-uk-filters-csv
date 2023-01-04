@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Add multiple geometries from one GeoJSON source</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <link href="css/main.css" rel="stylesheet">
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+</head>
+
+<body>
+
+    <div id="map"></div>
+
+    <script>
+
+        const url = new URL(window.location)
+        const brand = url.searchParams.get("brand")
+
+        mapboxgl.accessToken = 'pk.eyJ1Ijoic3VqYW5jaGFrcmFib3J0eSIsImEiOiJja2Q5MzBuc3owenplMnBzY2I0eDYwdDhvIn0.imItePLDlYNF2BGVde_mkw';
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/light-v10',
+            center: { lng: -5.38319371390287, lat: 54.328587368249714 },
+            zoom: 5
+        });
+        map.addControl(new mapboxgl.NavigationControl());
+
+        map.on('load', () => {
+
+
+            initPlacesService()
+
+            if (brand && brand !== "") {
+
+                d3.csv("data/SHOP DATA.csv")
+                    .then(data => {
+
+                        map.loadImage(`logos/${brand.toLowerCase()}.png`, (error, image) => {
+                            if (error) {
+                                throw error;
+                            }
+                            map.addImage(brand.toLowerCase(), image);
+
+                            const pins = data
+                                .filter(pin => pin.company_name.toLowerCase() === brand.toLocaleLowerCase())
+                                .map(pin => {
+                                    const { property_latitude, property_longitude } = pin
+                                    return {
+                                        "type": "Feature", "properties": { ...pin, image: pin.company_name.toLowerCase() },
+                                        "geometry": {
+                                            "type": "Point", "coordinates": [+property_longitude, +property_latitude]
+                                        }
+                                    }
+                                })
+                            const featureCollection = turf.featureCollection(pins)
+                            map.getSource("store").setData(featureCollection)
+                            console.log('featureCollection', featureCollection);
+                        });
+                    })
+            }
+
+
+            map.addSource('store', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                },
+                cluster: true,
+                clusterMaxZoom: 14, // Max zoom to cluster points on
+                clusterRadius: 50 // Radius of each cluster when clustering points 
+            });
+
+            map.addLayer({
+                id: 'store-clusters',
+                type: 'circle',
+                source: 'store',
+                filter: ['has', 'point_count'],
+                paint: {
+                    'circle-color': [
+                        'step',
+                        ['get', 'point_count'],
+                        '#51bbd6',
+                        100,
+                        '#f1f075',
+                        750,
+                        '#f28cb1'
+                    ],
+                    'circle-radius': [
+                        'step',
+                        ['get', 'point_count'],
+                        20,
+                        100,
+                        30,
+                        750,
+                        40
+                    ]
+                }
+            });
+
+            map.addLayer({
+                id: 'store-cluster-count',
+                type: 'symbol',
+                source: 'store',
+                filter: ['has', 'point_count'],
+                layout: {
+                    'text-field': '{point_count_abbreviated}',
+                    'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                    'text-size': 12
+                }
+            });
+
+            map.addLayer({
+                id: 'storeLogo',
+                'type': 'symbol',
+                source: 'store',
+                filter: ['!', ['has', 'point_count']],
+                'layout': {
+                    'icon-image': ['get', 'image'], // reference the image
+                    'icon-size': 0.15,
+                    'icon-allow-overlap': true,
+                }
+            });
+
+
+
+            map.addLayer({
+                id: 'unclustered-point',
+                type: 'circle',
+                source: 'store',
+                filter: ['!', ['has', 'point_count']],
+                paint: {
+                    'circle-color': '#11b4da',
+                    'circle-radius': 7,
+                    'circle-stroke-width': 1,
+                    'circle-stroke-color': '#fff'
+                }
+            });
+
+
+            map.on('click', 'storeLogo', (e) => {
+                console.log('e', e);
+                // Copy coordinates array.
+                const name = e.features[0].properties.company_name;
+                const addr = e.features[0].properties.property_address;
+                const description = `<h2>${name}</h2>${addr}`
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(description)
+                    .addTo(map);
+
+                e.originalEvent.cancelBubble = true;
+            });
+
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'storeLogo', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'storeLogo', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+        });
+
+
+
+
+
+        function initPlacesService() {
+
+            const mapgoogle = new google.maps.Map(document.createElement("div"), {
+                center: new google.maps.LatLng(-33.867, 151.195),
+            });
+
+            const service = new google.maps.places.PlacesService(mapgoogle);
+
+
+            // var request = {
+            //     query: '200 Degrees Coffee',
+            //     fields: ['name', 'geometry'],
+            // };
+
+            // service.findPlaceFromQuery(request, function (results, status) {
+            //     console.log('results', results);
+            //     if (status === google.maps.places.PlacesServiceStatus.OK) {
+            //         const pins = results
+            //             .map(pin => {
+            //                 const lat = pin.geometry.location.lat()
+            //                 const lng = pin.geometry.location.lng()
+            //                 return {
+            //                     "type": "Feature", "properties": { ...pin },
+            //                     "geometry": {
+            //                         "type": "Point", "coordinates": [+lng, +lat]
+            //                     }
+            //                 }
+            //             })
+            //         const featureCollection = turf.featureCollection(pins)
+            //         map.getSource("store").setData(featureCollection)
+            //         console.log('featureCollection', featureCollection);
+            //     }
+            // });
+
+
+
+            const search_request = {
+                location: new google.maps.LatLng(53.38165598921814, -1.454064302311017),
+                radius: '1000000',
+                //type: ['restaurant']
+                keyword: "200 Degrees Coffee"
+            };
+            service.nearbySearch(search_request, function callback(results, status) {
+                if (status == google.maps.places.PlacesServiceStatus.OK) {
+                    console.log('results', results);
+
+
+                    const pins = results
+                        .map(pin => {
+                            const lat = pin.geometry.location.lat()
+                            const lng = pin.geometry.location.lng()
+                            return {
+                                "type": "Feature", "properties": { ...pin },
+                                "geometry": {
+                                    "type": "Point", "coordinates": [+lng, +lat]
+                                }
+                            }
+                        })
+                    const featureCollection = turf.featureCollection(pins)
+                    map.getSource("store").setData(featureCollection)
+                    console.log('featureCollection', featureCollection);
+
+                }
+            });
+
+        }
+
+
+
+    </script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDl9Fj-Keo_cuciw_-Hrl2MtlS4uNcKLxE&libraries=places"
+        defer></script>
+
+</body>
+
+</html>
