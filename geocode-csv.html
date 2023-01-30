@@ -35,6 +35,11 @@
     .highlight {
         border-color: purple !important;
     }
+
+    #log-area {
+        border: 1px dashed #ccc;
+        padding: 10px;
+    }
 </style>
 
 <body>
@@ -43,8 +48,11 @@
     <div id="drop-area">
         + Drop CSV file here
     </div>
+    <div id="log-area"></div>
 
     <script>
+        const logAreaDiv = document.getElementById('log-area');
+
         const all = [];
         //drag and drop csv file here
         var dropArea = document.getElementById('drop-area');
@@ -120,6 +128,8 @@
                                 all.push({ ...splittedData[index] })
                             }
                         })
+
+                    logAreaDiv.innerHTML = `Geocoding ${index + 1} of ${splittedData.length}...`
                 }
 
                 downloadCSVFromJson("geocoded-data" + new Date().toISOString() + ".csv", all)
