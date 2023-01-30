@@ -94,7 +94,7 @@
             const splittedData = [];
 
             d3.csvParse(csv, function (data) {
-                console.log('data', data);
+                //console.log('data', data);
 
                 data['Locations V2'].split(';').forEach(d => {
                     splittedData.push({
@@ -110,14 +110,14 @@
 
             (async () => {
                 for (let index = 0; index < splittedData.length; index++) {
-                    console.log('data[index]', splittedData[index]);
+                    //console.log('data[index]', splittedData[index]);
                     //if (data[index].lat === "" || data[index].lng === "") {
                     const addr = `${splittedData[index]['name']}, ${splittedData[index]['address']}`
 
                     await fetch(`https://maps.googleapis.com/maps/api/geocode/json?&address=${addr}&key=AIzaSyB8B04MTIk7abJDVESr6SUF6f3Hgt1DPAY`)
                         .then(i => i.json())
                         .then(res => {
-                            console.log(index, ' - ', res);
+                            //console.log(index, ' - ', res);
                             if (res.status && res.status === "OK") {
                                 const { lat, lng } = res.results[0].geometry.location
                                 splittedData[index].lat = lat
