@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>GEOCODE CSV FILE</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <link href="css/toggle.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+</head>
+
+<style>
+    html,
+    body {
+        background-color: #f1f1f1;
+    }
+
+    #drop-area {
+        border: 2px dashed #ccc;
+        border-radius: 20px;
+        width: 480px;
+        height: 480px;
+        margin: 100px auto;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .highlight {
+        border-color: purple !important;
+    }
+</style>
+
+<body>
+
+
+    <div id="drop-area">
+        + Drop CSV file here
+    </div>
+
+    <script>
+        const all = [];
+        //drag and drop csv file here
+        var dropArea = document.getElementById('drop-area');
+        dropArea.addEventListener('dragenter', handleDragEnter, false);
+        dropArea.addEventListener('dragleave', handleDragLeave, false);
+        dropArea.addEventListener('dragover', handleDragOver, false);
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDragEnter(e) {
+            console.log('handleDragEnter', this);
+            this.classList.add('highlight');
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('highlight');
+        }
+
+        function handleDragOver(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            this.classList.add('highlight');
+        }
+
+        function handleFiles(files) {
+            ([...files]).forEach(uploadFile);
+        }
+
+        function uploadFile(file) {
+            var reader = new FileReader();
+            reader.readAsText(file);
+            reader.onload = function (e) {
+                var csv = e.target.result;
+                processData(csv);
+            };
+        }
+
+        function processData(csv) {
+
+            const splittedData = [];
+
+            d3.csvParse(csv, function (data) {
+                console.log('data', data);
+
+                data['Locations V2'].split(';').forEach(d => {
+                    splittedData.push({
+                        "name": data.Name,
+                        "address": d.trim(),
+                        "description": data.Description,
+                        "Flyer link new": data['Flyer link new'],
+                        "Image 1": data["Image 1"]
+                    })
+                })
+            });
+
+
+            (async () => {
+                for (let index = 0; index < splittedData.length; index++) {
+                    console.log('data[index]', splittedData[index]);
+                    //if (data[index].lat === "" || data[index].lng === "") {
+                    const addr = `${splittedData[index]['name']}, ${splittedData[index]['address']}`
+
+                    await fetch(`https://maps.googleapis.com/maps/api/geocode/json?&address=${addr}&key=AIzaSyB8B04MTIk7abJDVESr6SUF6f3Hgt1DPAY`)
+                        .then(i => i.json())
+                        .then(res => {
+                            console.log(index, ' - ', res);
+                            if (res.status && res.status === "OK") {
+                                const { lat, lng } = res.results[0].geometry.location
+                                splittedData[index].lat = lat
+                                splittedData[index].lng = lng
+
+                                all.push({ ...splittedData[index], lat, lng })
+                            } else {
+                                all.push({ ...splittedData[index] })
+                            }
+                        })
+                }
+
+                downloadCSVFromJson("geocoded-data" + new Date().toISOString() + ".csv", all)
+            })()
+        }
+
+        function handleDrop(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            this.classList.remove('highlight');
+            var dt = e.dataTransfer;
+            var files = dt.files;
+            handleFiles(files);
+        }
+
+
+
+        downloadCSVFromJson = (filename, arrayOfJson) => {
+            // Create link and download
+            var link = document.createElement('a');
+            link.setAttribute('href', 'data:text/csv;charset=utf-8,%EF%BB%BF' + encodeURIComponent(d3.csvFormat(arrayOfJson)));
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+    </script>
+
+</body>
+
+</html>
