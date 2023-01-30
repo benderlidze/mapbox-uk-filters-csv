@@ -126,7 +126,7 @@
                     //if (data[index].lat === "" || data[index].lng === "") {
                     const addr = cityArray[index]
 
-                    await fetch(`https://maps.googleapis.com/maps/api/geocode/json?&address=${addr}&key=AIzaSyB8B04MTIk7abJDVESr6SUF6f3Hgt1DPAY`)
+                    await fetch(`https://maps.googleapis.com/maps/api/geocode/json?&address=${addr} United Kingdom&key=AIzaSyB8B04MTIk7abJDVESr6SUF6f3Hgt1DPAY`)
                         .then(i => i.json())
                         .then(res => {
                             //console.log(index, ' - ', res);
