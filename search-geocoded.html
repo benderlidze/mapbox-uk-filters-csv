@@ -369,7 +369,9 @@
         const printBrands = (list) => {
             const results = []
             list.forEach((pin, key) => {
-                const { name, description, website, city } = pin.properties
+                console.log('pin', pin);
+                const { name, description, city } = pin.properties
+                const website = pin.properties['Flyer link new']
                 results.push(`
                         <div class="list-item" style="font-size:0.9rem">
                             ${name} 
