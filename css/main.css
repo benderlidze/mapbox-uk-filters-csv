@@ -192,6 +192,16 @@ input[type="submit"] {
     cursor: pointer;
 }
 
+input[type="range"] {
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+}
+
+input[type="range"]:hover {
+    box-shadow: none;
+}
+
 .autocomplete-items {
     position: absolute;
     border: 1px solid #757575;
@@ -442,6 +452,18 @@ input[type="submit"] {
 }
 
 #resetSectors {
+    cursor: pointer;
+    display: flex;
+    /* border: 1px solid #5699a2; */
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin: 5px 0px;
+    width: fit-content;
+    background-color: #004cff;
+    color: white;
+}
+
+#distanceReport {
     cursor: pointer;
     display: flex;
     /* border: 1px solid #5699a2; */

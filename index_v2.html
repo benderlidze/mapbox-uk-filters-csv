@@ -27,7 +27,17 @@
             <p id="retailers">Loading...</p>
             <div id="button-request">Request another retailer(s)</div>
         </div>
+    </div>
 
+    <div id="report-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-report-modal">&times;</span>
+            <input type="range" id="distanceSlider" name="cowbell" min="0" max="100" value="5" step="1">
+            <label id="distance-range-label" for=""></label>km
+
+            <div id="distance-repot"></div>
+
+        </div>
     </div>
 
     <div id="filters">
@@ -177,8 +187,13 @@
         </div>
         <hr>
         <div class="item-header">
+            <span id="distanceReport">Distance report</span>
+        </div>
+        <hr>
+        <div class="item-header">
             <span id="resetSectors">Reset</span>
         </div>
+
     </div>
 
     <div id="map"></div>
@@ -192,6 +207,12 @@
         const closeRetailersModal = document.getElementById('close-retailers-modal');
         const retailers = document.getElementById('retailers');
 
+        const distanceReport = document.getElementById('distanceReport');
+        const reportModal = document.getElementById('report-modal');
+        const closeReportModal = document.getElementById('close-report-modal');
+        const distanceSlider = document.getElementById('distanceSlider');
+        const rangeLabel = document.getElementById('distance-range-label');
+        const distanceRepot = document.getElementById('distance-repot');
 
         const input = document.getElementById("searchInput")
         const search = document.getElementById("search")
@@ -213,6 +234,10 @@
 
         const shopData = [];
         const sectorBoxes = [];
+        const distanceData = {
+            shops: [],
+            cities: []
+        };
 
         let userMarker;
 
@@ -273,6 +298,47 @@
             const visible = trafficOnOff.checked ? 'visible' : 'none'
             //map.setLayoutProperty('traffic', 'visibility', visible);
             map.setLayoutProperty('trafficText', 'visibility', visible);
+        })
+
+        distanceReport.addEventListener("click", () => {
+            console.log('123', 123);
+            reportModal.style.display = 'block'
+        })
+        closeReportModal.addEventListener("click", () => {
+            reportModal.style.display = 'none'
+        })
+
+        distanceSlider.addEventListener("input", () => {
+            const distance = +distanceSlider.value
+            rangeLabel.textContent = distance
+
+            const min = gbSliderMin.value
+            const max = gbSliderMax.value
+            const excludeCities = new Set();
+
+            const filteredCities = distanceData.cities
+                .filter(city => city.properties.population > min && city.properties.population < max)
+
+            distanceData.shops.forEach(shop => {
+                const shopPoint = turf.point(shop.geometry.coordinates)
+                const filtered = filteredCities
+                    .forEach(city => {
+                        const cityPoint = turf.point(city.geometry.coordinates)
+                        const shopDistance = turf.distance(shopPoint, cityPoint, { units: 'kilometers' })
+                        if (shopDistance <= distance) {
+                            excludeCities.add(city.properties.city)
+                        }
+                    })
+            })
+            console.log('excludeCities', excludeCities);
+
+
+            const report = filteredCities
+                .filter(c => !excludeCities.has(c.properties.city))
+                .map(c => c.properties.city)
+
+            distanceRepot.innerHTML = report.join("<br>")
+
         })
 
         const clearInput = () => {
@@ -434,6 +500,7 @@
                             }
                         }
                     })
+                    distanceData.cities = pins
                     const featureCollection = turf.featureCollection(pins)
                     map.getSource("gb").setData(featureCollection)
                 })
@@ -941,7 +1008,6 @@
         }
 
         function filterByShopNameS(shopNameArray) {
-
             console.log('shopNameArray', shopNameArray);
             const pins = shopData
                 .filter(pin => shopNameArray.includes(pin.company_name))
@@ -954,6 +1020,9 @@
                         }
                     }
                 })
+
+            distanceData.shops = pins
+
             const featureCollection = turf.featureCollection(pins)
             map.getSource("store").setData(featureCollection)
         }
