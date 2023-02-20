@@ -33,6 +33,13 @@
             <input type="text" id="search">
         </div>
 
+
+        <span class="small-text bold">Filter by Applicant or Agent</span>
+        <div id="">
+            <input type="text" id="filterByAgent">
+        </div>
+
+
         <!-- 
             <div class="autocomplete">
                 <h1 id="propName"></h1>
@@ -89,6 +96,7 @@
         const shopData = [];
         const selectedSectors = [];
 
+        const filterByAgent = document.getElementById('filterByAgent');
         const copy = document.getElementById('copytoclipboard');
         const exportResults = document.getElementById('exportResults');
         exportResults.style.display = 'none';
@@ -100,8 +108,11 @@
 
         let userMarker;
 
+        const mainData = [];
+
         const filters = {
-            byYear: new Set()
+            byYear: new Set(),
+            byAgentAndApplicant: "",
         }
 
         mapboxgl.accessToken = 'pk.eyJ1Ijoic3VqYW5jaGFrcmFib3J0eSIsImEiOiJja2Q5MzBuc3owenplMnBzY2I0eDYwdDhvIn0.imItePLDlYNF2BGVde_mkw';
@@ -125,6 +136,13 @@
                 map.setLayoutProperty('satellite', 'visibility', 'none');
             }
         });
+
+        filterByAgent.addEventListener("input", function () {
+            filters.byAgentAndApplicant = filterByAgent.value;
+            filterItemsByCategory()
+        });
+
+
 
         // --------------------- MODAL -----------------
         copy.addEventListener("click", () => {
@@ -185,6 +203,7 @@
                                 }
                             }
                         })
+                    //mainData.push(...pins)
                     const featureCollection = turf.featureCollection(pins)
                     map.getSource("traffic").setData(featureCollection)
 
@@ -496,6 +515,14 @@
                 })
                 .filter(pin => { //filter by YEAR
                     return filters.byYear.has(+pin.year)
+                })
+                .filter(pin => { //filter by YEAR
+                    if (filters.byAgentAndApplicant.length > 0) {
+                        return pin.Applicant.toLowerCase().includes(filters.byAgentAndApplicant.toLowerCase())
+                            ||
+                            pin.Agent.toLowerCase().includes(filters.byAgentAndApplicant.toLowerCase())
+                    }
+                    return pin
                 })
                 .map(pin => {
                     const { lat, lng, all } = pin
