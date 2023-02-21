@@ -129,7 +129,7 @@
             shopList.innerHTML = '';
 
             filterByAgent.value = '';
-            filterByAgent.dispatchEvent(new Event('input'));
+            filterByAgent.dispatchEvent(new Event('input'), { 'bubbles': true });
         })
 
         satelliteLayer.addEventListener("input", function () {
