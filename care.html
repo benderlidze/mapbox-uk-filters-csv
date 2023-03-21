@@ -10,6 +10,8 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
+    <script src="https://d3js.org/topojson.v1.min.js"></script>
+
     <script src="js/shp.js"></script>
     <link href="css/toggle.css" rel="stylesheet">
     <link href="css/main.css" rel="stylesheet">
@@ -212,7 +214,48 @@
 
                 })
 
+            Promise.all([
+                fetch('data/LPA_APR_2020_UK_BGC.topojson').then(d => d.json()),
+                d3.csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vRFzPhfkaSbyOBjEzJsNDbav27-6EKXmfsMPSb-9AOzEGza6pDMdYbjq0MIKLRnU71nW594SfURdfQT/pub?output=csv')
+            ]).then(data => {
+                console.log('data', data);
 
+                const xlsData = data[1]
+                const locals = xlsData.reduce((acc, item) => {
+                    const name = item['Local Council']
+                    const value = item['No. of units']
+                    if (!acc.get(name)) {
+                        acc.set(name, value)
+                    }
+                    acc.set(name, parseInt(acc.get(name)) + parseInt(value))
+                    return acc
+                }, new Map())
+
+                console.log('locals', locals);
+                const centers = []
+                const states = topojson.feature(data[0], data[0].objects['LPA_APR_2020_UK_BGC'])
+                states.features.forEach((el, key) => {
+                    el.id = key
+                    el.properties.id = key
+                    //calculate centroid of each polygon
+                    const center = turf.centroid(el)
+
+                    const name = el.properties.LPA19NM.replace(" LPA", "")
+                    //create a point feature from the centroid
+                    const point = turf.point([center.geometry.coordinates[0], center.geometry.coordinates[1]], {
+                        name,
+                        value: locals.get(name) || 0
+                    })
+                    centers.push(point)
+                });
+                mainData.push(...states.features)
+                map.getSource('states').setData(states)
+                map.getSource('states-count').setData(turf.featureCollection(centers))
+
+
+                console.log('centers', centers);
+
+            })
 
             // fetch("data/geocoded.json")
             //     .then(data => data.json())
@@ -237,7 +280,6 @@
             //             })
             //         const featureCollection = turf.featureCollection(pins)
             //         map.getSource("traffic").setData(featureCollection)
-
             //     })
 
             map.addLayer({
@@ -249,6 +291,39 @@
                 }
             });
 
+            map.addSource('states', {
+                'type': 'geojson',
+                'data': { type: 'FeatureCollection', features: Array(0) }
+            });
+            map.addLayer({
+                'id': 'states-fills',
+                'type': 'fill',
+                'source': 'states',
+                'layout': {},
+                'paint': {
+                    'fill-color': 'gray',
+                    'fill-opacity': 0.3,
+                    'fill-outline-color': 'white'
+                }
+            });
+
+            map.addSource('states-count', {
+                'type': 'geojson',
+                'data': { type: 'FeatureCollection', features: Array(0) }
+            });
+            map.addLayer({
+                id: 'states-count',
+                type: 'symbol',
+                source: 'states-count',
+                layout: {
+                    'text-field': ['get', 'value'],
+                    'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                    'text-size': 10
+                },
+                paint: {
+                    'text-color': 'red'
+                }
+            });
 
             map.addSource('traffic', {
                 type: 'geojson',
@@ -316,6 +391,7 @@
                     'circle-stroke-color': '#fff'
                 }
             });
+
 
             // inspect a cluster on click
             map.on('click', 'clusters', (e) => {
