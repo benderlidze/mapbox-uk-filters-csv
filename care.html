@@ -65,6 +65,8 @@
             <div id="filters-residental" class="sectors"></div>
             <div class="item-header bold">Filters by year</div>
             <div id="filter-year" class="years"></div>
+            <div class="item-header bold">Local authorities</div>
+            <div id="local-authorities" class="years"></div>
         </div>
         <hr>
         <div class="switch-item">
@@ -94,6 +96,7 @@
         const shopList = document.getElementById("prop-list");
         const filtersCommercial = document.getElementById("filters-commercial");
         const filtersResidental = document.getElementById("filters-residental");
+        const localAuthorities = document.getElementById("local-authorities");
         const filterYear = document.getElementById("filter-year");
         const shopData = [];
         const selectedSectors = [];
@@ -253,8 +256,12 @@
                 map.getSource('states-count').setData(turf.featureCollection(centers))
 
 
-                console.log('centers', centers);
+                localAuthorities.appendChild(buildCheckBox("Borders", true, e => {
+                    map.setLayoutProperty('states-fills', 'visibility', e.target.checked ? 'visible' : 'none');
+                    map.setLayoutProperty('states-count', 'visibility', e.target.checked ? 'visible' : 'none');
+                }))
 
+                console.log('centers', centers);
             })
 
             // fetch("data/geocoded.json")
@@ -299,7 +306,9 @@
                 'id': 'states-fills',
                 'type': 'fill',
                 'source': 'states',
-                'layout': {},
+                layout: {
+                    visibility: 'visible'
+                },
                 'paint': {
                     'fill-color': 'gray',
                     'fill-opacity': 0.3,
@@ -318,7 +327,8 @@
                 layout: {
                     'text-field': ['get', 'value'],
                     'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-                    'text-size': 10
+                    'text-size': 10,
+                    'visibility': 'visible'
                 },
                 paint: {
                     'text-color': 'red'
