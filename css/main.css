@@ -712,3 +712,7 @@ tr:nth-child(even) {
 .mapboxgl-popup {
     min-width: 300px !important;
 }
+
+.popup-count {
+    min-width: none;
+}

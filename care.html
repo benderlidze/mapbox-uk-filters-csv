@@ -258,6 +258,8 @@
 
                 localAuthorities.appendChild(buildCheckBox("Borders", true, e => {
                     map.setLayoutProperty('states-fills', 'visibility', e.target.checked ? 'visible' : 'none');
+                }))
+                localAuthorities.appendChild(buildCheckBox("no. of proposed units in each LPA", false, e => {
                     map.setLayoutProperty('states-count', 'visibility', e.target.checked ? 'visible' : 'none');
                 }))
 
@@ -328,7 +330,7 @@
                     'text-field': ['get', 'value'],
                     'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
                     'text-size': 10,
-                    'visibility': 'visible'
+                    'visibility': 'none'
                 },
                 paint: {
                     'text-color': 'red'
@@ -458,15 +460,37 @@
                 e.originalEvent.cancelBubble = true;
             });
 
-            // Change the cursor to a pointer when the mouse is over the places layer.
-            map.on('mouseenter', 'traffic', () => {
-                map.getCanvas().style.cursor = 'pointer';
+            map.on('mouseenter', 'traffic', cursorPointer);
+            map.on('mouseleave', 'traffic', cursorDefault);
+
+            map.on('mouseenter', 'states-count', cursorPointer);
+            map.on('mouseleave', 'states-count', cursorDefault);
+            map.on('click', 'states-count', (e) => {
+
+                const props = e.features[0].properties;
+                console.log('props', props);
+
+                const text = `
+                    <div>Local Planning Authority: ${props['name']}</div>
+                    <div>Total number of proposed units since 2019 - ${props['value']}</div>
+                    <small>*We track applications that comprise 50 units or more</small>
+                    `
+                // <div>${cat}</div>
+                new mapboxgl.Popup({ className: 'popup-count' })
+                    .setLngLat(e.lngLat)
+                    .setHTML(text)
+                    .addTo(map);
+
+                e.originalEvent.cancelBubble = true;
             });
 
-            // Change it back to a pointer when it leaves.
-            map.on('mouseleave', 'traffic', () => {
+
+            function cursorPointer() {
+                map.getCanvas().style.cursor = 'pointer';
+            }
+            function cursorDefault() {
                 map.getCanvas().style.cursor = '';
-            });
+            }
 
         });
 
