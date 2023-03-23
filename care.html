@@ -211,8 +211,8 @@
                                 }
                             }
                         })
-                    //mainData.push(...pins)
-                    const featureCollection = turf.featureCollection(pins)
+
+                    const featureCollection = turf.featureCollection([])
                     map.getSource("traffic").setData(featureCollection)
 
                 })
@@ -699,8 +699,8 @@
             const years = [...new Set(yearArr)].sort()
 
             const checkboxes = years.map(name => {
-                filters.byYear.add(name)//init val
-                const checkbox = buildCheckBox(name, true, e => {
+                //filters.byYear.add(name)//init val
+                const checkbox = buildCheckBox(name, false, e => {
                     const checked = e.target.checked
                     const value = e.target.id
                     if (checked) {
@@ -712,6 +712,7 @@
                 })
                 return checkbox
             })
+
             return checkboxes
         }
 
