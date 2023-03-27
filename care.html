@@ -218,7 +218,7 @@
                 })
 
             Promise.all([
-                fetch('data/LPA_APR_2020_UK_BGC.topojson').then(d => d.json()),
+                fetch('data/LGPA_NEW_NAMES.topojson').then(d => d.json()),
                 d3.csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vRFzPhfkaSbyOBjEzJsNDbav27-6EKXmfsMPSb-9AOzEGza6pDMdYbjq0MIKLRnU71nW594SfURdfQT/pub?output=csv')
             ]).then(data => {
                 console.log('data', data);
