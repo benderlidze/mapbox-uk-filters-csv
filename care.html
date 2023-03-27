@@ -489,6 +489,7 @@
                             <td>${d['Agent']}</td>
                             <td>${d['Applicant']}</td>
                             <td>${d['Proposal']}</td>
+                            <td><a href="${d['Website-Button']}" target="_blank">Link</a></td>
                         </tr>`
                     })
                     resultsDiv.innerHTML = `<table class='customers-table'>` + modalText.join("") + `</table>`;
