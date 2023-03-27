@@ -440,6 +440,20 @@
             });
 
 
+            const namePopup = new mapboxgl.Popup()
+            namePopup.on('close', function (e) {
+                map.setPaintProperty('states-fills', 'fill-color', ['match', ['get', 'LPA19NM'], name, "red", '#b9fcf2'])
+            })
+            map.on('click', 'states-fills', (e) => {
+                const props = e.features[0].properties
+                const name = props['LPA19NM']
+                console.log('props', props);
+
+                namePopup.setLngLat(e.lngLat)
+                    .setHTML(name)
+                    .addTo(map);
+                map.setPaintProperty('states-fills', 'fill-color', ['match', ['get', 'LPA19NM'], name, "red", '#b9fcf2'])
+            })
 
             map.on('click', 'traffic', (e) => {
                 // Copy coordinates array.
