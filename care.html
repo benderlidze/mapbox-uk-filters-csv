@@ -113,7 +113,10 @@
 
         let userMarker;
 
-        const mainData = [];
+        const mainData = {
+            states: [],
+            xlsx: [],
+        };
 
         const filters = {
             byYear: new Set(),
@@ -224,6 +227,7 @@
                 console.log('data', data);
 
                 const xlsData = data[1]
+                mainData.xlsx.push(...xlsData)
                 const locals = xlsData.reduce((acc, item) => {
                     const name = item['Local Council']
                     const value = item['No. of units']
@@ -251,7 +255,7 @@
                     })
                     centers.push(point)
                 });
-                mainData.push(...states.features)
+                mainData.states.push(...states.features)
                 map.getSource('states').setData(states)
                 map.getSource('states-count').setData(turf.featureCollection(centers))
 
@@ -470,15 +474,40 @@
                 const props = e.features[0].properties;
                 console.log('props', props);
 
+                const button = document.createElement('button');
+                button.className = 'buttons';
+                button.innerHTML = 'View applications';
+                button.addEventListener('click', () => {
+                    console.log('e', e);
+                    modal.style.display = "block"
+
+                    const modalData = mainData.xlsx.filter(i => i['Local Council'] === props['name']);
+                    console.log('modalData', modalData);
+                    const modalText = modalData.map(d => {
+                        return `<tr>
+                            <td>${d['Site address']}</td>
+                            <td>${d['Agent']}</td>
+                            <td>${d['Applicant']}</td>
+                            <td>${d['Proposal']}</td>
+                        </tr>`
+                    })
+                    resultsDiv.innerHTML = `<table class='customers-table'>` + modalText.join("") + `</table>`;
+                });
+
+
                 const text = `
                     <div>Local Planning Authority: ${props['name']}</div>
                     <div>Total number of proposed units since 2019 - ${props['value']}</div>
                     <small>*We track applications that comprise 50 units or more</small>
                     `
-                // <div>${cat}</div>
+                const DOMcontent = document.createElement('div');
+                DOMcontent.innerHTML = text;
+                DOMcontent.appendChild(button);
+
+
                 new mapboxgl.Popup({ className: 'popup-count' })
                     .setLngLat(e.lngLat)
-                    .setHTML(text)
+                    .setDOMContent(DOMcontent)
                     .addTo(map);
 
                 e.originalEvent.cancelBubble = true;
