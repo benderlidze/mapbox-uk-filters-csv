@@ -463,11 +463,13 @@
                 const website = e.features[0].properties['Website-Button'];
                 const validated = e.features[0].properties['Validated'];
                 const cat = e.features[0].properties['Category-Hide'];
+                const applicant = e.features[0].properties['Applicant'];
 
                 const text = `
                     <h3>${title}</h3>
                     <div>${proposal}</div>
                     <div>Date: ${validated}</div>
+                    <div>Applicant: ${applicant}</div>
                     <div><a href="${website}" class="web-link" target="_blank">Website</a></div>
                     `
                 // <div>${cat}</div>
