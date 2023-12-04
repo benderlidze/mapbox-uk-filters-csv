@@ -124,7 +124,7 @@
         }
 
         mapboxgl.accessToken = 'pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZzhodzAwcTAzYm41cHFmMG1qYnEifQ.hyQMLL4YFjo7FfoJuD73jA'
-      
+
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/light-v10',
@@ -700,7 +700,7 @@
             //     return store['Category-Hide'].split(",").map(i => i.trim())
             // }).flat()
             //const sector = [...new Set(sectorsArr), 'Care']
-            const sector = ['Care', 'Foodstore', 'Drive-thru', 'Petrol', 'EV']
+            const sector = ['Care', 'Foodstore', 'Drive-thru', 'Petrol']
             const checkboxes = sector.map(name => {
                 const checkbox = buildDivBox(name, false, sectorName => {
                     var index = selectedSectors.indexOf(sectorName);
@@ -720,7 +720,7 @@
             //     return store['Category-Hide'].split(",").map(i => i.trim())
             // }).flat()
             //const sector = [...new Set(sectorsArr), 'Care']
-            const sector = ['50-99 units', '100-249 units', '250-499 units', '1000+ units', '500-999 units']
+            const sector = ['15-49 units', '50-99 units', '100-249 units', '250-499 units', '500-999 units', '1000+ units',]
             const checkboxes = sector.map(name => {
                 const checkbox = buildDivBox(name, false, sectorName => {
                     var index = selectedSectors.indexOf(sectorName);
