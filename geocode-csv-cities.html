@@ -95,28 +95,29 @@
             const cities = new Set();
 
             d3.csvParse(csv, function (data) {
-                //console.log('data', data);
+                console.log('data', data);
 
-                // data['Locations V2'].split(';').forEach(d => {
-                //     splittedData.push({
-                //         "name": data.Name,
-                //         "address": d.trim(),
-                //         "description": data.Description,
-                //         "Flyer link new": data['Flyer link new'],
-                //         "Image 1": data["Image 1"]
-                //     })
+                data['Locations V2'].split(';').forEach(d => {
+                    splittedData.push({
+                        "name": data.Name,
+                        "address": d.trim(),
+                        "description": data.Description,
+                        "Flyer link new": data['Flyer link new'],
+                        "Image 1": data["Image 1"]
+                    })
 
-                //     cities.add(d.trim())
-                // })
-
-                splittedData.push({
-                    "name": data.name,
-                    "address": data.address.trim(),
-                    "description": data.description,
-                    "Flyer link new": data['Flyer link new'],
-                    "Image 1": data["Image 1"]
+                    cities.add(d.trim())
                 })
-                cities.add(data.address.trim())
+
+
+                // splittedData.push({
+                //     "name": data.name,
+                //     "address": data.address.trim(),
+                //     "description": data.description,
+                //     "Flyer link new": data['Flyer link new'],
+                //     "Image 1": data["Image 1"]
+                // })
+                // cities.add(data.address.trim())
             });
 
 
