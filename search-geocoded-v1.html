@@ -14,6 +14,22 @@
     <link href="css/toggle.css" rel="stylesheet">
     <link href="css/main.css" rel="stylesheet">
 
+    <style>
+        #search-div {
+            position: absolute;
+            left: 50%;
+            transform: translate(-50%, 0);
+            z-index: 1000;
+            top:10px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        #search-div input {
+            font-size: 14px;
+        }
+    </style>
 </head>
 
 <body>
@@ -26,8 +42,7 @@
         </div>
     </div>
 
-    <div id="filters" style="min-width: 250px;">
-
+    <div id="search-div">
         <div class="autocomplete">
             <h1 id="propName"></h1>
             <div id="clear">
@@ -35,6 +50,11 @@
             </div>
             <input id="myInput" class="clearable" type="text" name="myCountry" placeholder="Search Town or City">
         </div>
+    </div>
+
+
+    <div id="filters" style="min-width: 250px;">
+
 
         <div class="autocomplete" style="display: none;">
             <h1 id="propName"></h1>
@@ -377,13 +397,16 @@
                 const { name, description, city } = pin.properties
                 const website = pin.properties['Flyer link new']
                 let link = `<a href="${website}" class="web-link" target="_blank">Flyer</a>`
+                let nameDiv = `${name}`
+
                 if (key > 1) {
                     link = `<a href="https://www.therequirementlist.com/pricing"  class="web-link" target="_blank">Sign up to view</a>`
+                    nameDiv = ``
                 }
 
                 results.push(`
                         <div class="list-item" style="font-size:0.9rem">
-                            <!-- ${name} -->
+                            ${nameDiv} 
                             <!-- <div>${city}</div> -->
                             ${link}
                         </div>
