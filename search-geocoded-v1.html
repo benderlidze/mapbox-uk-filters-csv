@@ -70,8 +70,8 @@
             <span id="exportResults">Export results</span>
         </div>
 
-        Requirements in that location:
-        <div>
+        <div id="prop-list-container">
+            Requirements in that location:
             <!-- <input type="text" id="shop" placeholder="shop name" /><button onclick="filterByShopName()">Filter</button> -->
             <div id="prop-list"></div>
         </div>
@@ -88,6 +88,10 @@
         const clear = document.getElementById("clear")
         const clearRetailer = document.getElementById("clear-retailer")
         const shopName = document.getElementById("shop");
+
+        const filters = document.getElementById("filters");
+        filters.style.display = 'none'    
+
         const shopList = document.getElementById("prop-list");
         const shopData = [];
 
@@ -344,6 +348,7 @@
             map.getSource("traffic").setData(featureCollection)
 
             shopList.innerHTML = '';
+            filters.style.display = 'none'
 
             exportResults.style.display = 'none'
         }
@@ -418,7 +423,7 @@
             const text = results.join("")
             shopList.innerHTML = text
 
-
+            filters.style.display = 'block'
 
             //--------------- MODAL --------------------------------
             //--------------- MODAL --------------------------------
