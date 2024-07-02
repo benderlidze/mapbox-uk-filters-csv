@@ -35,7 +35,8 @@
             </div>
             <input id="myInput" class="clearable" type="text" name="myCountry" placeholder="Search Town or City">
         </div>
-        <div class="autocomplete">
+
+        <div class="autocomplete" style="display: none;">
             <h1 id="propName"></h1>
             <div class="clear-input" id="clear-retailer">
                 <div class="close-x"></div>
@@ -43,7 +44,8 @@
             <input id="inputRetailer" class="clearable" type="text" name="myCountry"
                 placeholder="Search by retailer name">
         </div>
-        <div class="item-header">
+
+        <div class="item-header" style="display: none;">
             <span id="exportResults">Export results</span>
         </div>
         <div>
@@ -279,7 +281,8 @@
                 console.log('e', e);
                 console.log('e', e.features[0]);
                 // Copy coordinates array.
-                const description = e.features[0].properties.name;
+                // const description = e.features[0].properties.name;
+                const description = '<a href="https://www.therequirementlist.com/pricing"  class="web-link" target="_blank">Sign up to view</a>';
                 new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
                     .setHTML(description)
@@ -374,13 +377,13 @@
                 const { name, description, city } = pin.properties
                 const website = pin.properties['Flyer link new']
                 let link = `<a href="${website}" class="web-link" target="_blank">Flyer</a>`
-                if (key > 2) {
+                if (key > 1) {
                     link = `<a href="https://www.therequirementlist.com/pricing"  class="web-link" target="_blank">Sign up to view</a>`
                 }
 
                 results.push(`
                         <div class="list-item" style="font-size:0.9rem">
-                            ${name} 
+                            <!-- ${name} -->
                             <!-- <div>${city}</div> -->
                             ${link}
                         </div>
