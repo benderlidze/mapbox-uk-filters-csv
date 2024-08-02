@@ -56,6 +56,11 @@
     <div id="map"></div>
 
     <script>
+        //get search params from the url 
+        const urlParams = new URLSearchParams(window.location.search);
+        const filterURL = urlParams.get('filter');
+
+
         let modalText;
         const selectedShops = ["Tesco", "Coop"];
         const input = document.getElementById("myInput")
@@ -75,7 +80,7 @@
         const resultsDiv = document.getElementById("results");
 
         mapboxgl.accessToken = 'pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZzhodzAwcTAzYm41cHFmMG1qYnEifQ.hyQMLL4YFjo7FfoJuD73jA'
-      
+
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/light-v10',
@@ -111,10 +116,13 @@
         map.on('load', () => {
 
             d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRumNOc4iA8NYyt4ncnESF_IRalNmvTJyHE30STfsBqKzzERKH_wd_wV3cJxjuAi_G8Zq7AaKfwGwiI/pub?output=csv")
-                .then(data => {
-                    console.log('Store', data);
-                    shopData.push(...data)
+                .then(json => {
 
+                    
+                    const data = !filterURL ? json : json.filter(d => d.name === filterURL)
+                    console.log('Store', data);
+
+                    shopData.push(...data)
 
                     autocomplete(input, [...new Set(data.map(i => i.address.toLowerCase()))].map((i, key) => {
                         return {
@@ -129,8 +137,6 @@
                             text: `${i}`
                         }
                     }), setByRetailerName);
-
-
 
                     //get unique
                     // const reduced = data
