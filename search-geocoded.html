@@ -28,20 +28,22 @@
 
     <div id="filters" style="min-width: 250px;">
 
-        <div class="autocomplete">
-            <h1 id="propName"></h1>
-            <div id="clear">
-                <div class="close-x"></div>
+        <div id="search-div">
+            <div class="autocomplete">
+                <h1 id="propName"></h1>
+                <div id="clear">
+                    <div class="close-x"></div>
+                </div>
+                <input id="myInput" class="clearable" type="text" name="myCountry" placeholder="Search Town or City">
             </div>
-            <input id="myInput" class="clearable" type="text" name="myCountry" placeholder="Search Town or City">
-        </div>
-        <div class="autocomplete">
-            <h1 id="propName"></h1>
-            <div class="clear-input" id="clear-retailer">
-                <div class="close-x"></div>
+            <div class="autocomplete">
+                <h1 id="propName"></h1>
+                <div class="clear-input" id="clear-retailer">
+                    <div class="close-x"></div>
+                </div>
+                <input id="inputRetailer" class="clearable" type="text" name="myCountry"
+                    placeholder="Search by retailer name">
             </div>
-            <input id="inputRetailer" class="clearable" type="text" name="myCountry"
-                placeholder="Search by retailer name">
         </div>
         <div class="item-header">
             <span id="exportResults">Export results</span>
@@ -56,10 +58,14 @@
     <div id="map"></div>
 
     <script>
+        const searchDiv = document.getElementById("search-div");
+
         //get search params from the url 
         const urlParams = new URLSearchParams(window.location.search);
         const filterURL = urlParams.get('filter');
-
+        if (filterURL && filterURL !== "") {
+            searchDiv.style.display = 'none';
+        }
 
         let modalText;
         const selectedShops = ["Tesco", "Coop"];
@@ -118,7 +124,7 @@
             d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRumNOc4iA8NYyt4ncnESF_IRalNmvTJyHE30STfsBqKzzERKH_wd_wV3cJxjuAi_G8Zq7AaKfwGwiI/pub?output=csv")
                 .then(json => {
 
-                    
+
                     const data = !filterURL ? json : json.filter(d => d.name === filterURL)
                     console.log('Store', data);
 
@@ -251,12 +257,12 @@
                 // );
 
                 var features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+
                 var clusterId = features[0].properties.cluster_id,
                     point_count = features[0].properties.point_count,
                     clusterSource = map.getSource('traffic');
 
                 clusterSource.getClusterLeaves(clusterId, point_count, 0, function (err, features) {
-                    console.log('features', features);
                     printBrands(features)
 
 
@@ -279,13 +285,11 @@
                 map.getCanvas().style.cursor = '';
             });
 
-
-
             map.on('click', 'traffic', (e) => {
                 console.log('e', e);
                 console.log('e', e.features[0]);
                 // Copy coordinates array.
-                const description = e.features[0].properties.name;
+                const description = e.features[0].properties.address;
                 new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
                     .setHTML(description)
