@@ -58,13 +58,14 @@
     <div id="map"></div>
 
     <script>
-        const searchDiv = document.getElementById("search-div");
+        //const searchDiv = document.getElementById("search-div");
+        const filtersDiv = document.getElementById("filters");
 
         //get search params from the url 
         const urlParams = new URLSearchParams(window.location.search);
         const filterURL = urlParams.get('filter');
         if (filterURL && filterURL !== "") {
-            searchDiv.style.display = 'none';
+            filtersDiv.style.display = 'none';
         }
 
         let modalText;
