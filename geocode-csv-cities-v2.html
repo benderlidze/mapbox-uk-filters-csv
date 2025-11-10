@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>GEOCODE CSV FILE</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <!-- Added Google Maps JavaScript API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBrK7zAmbEFKIyv_g6XOE3WpSq34nOYuEI&libraries=places"></script>
+    <link href="css/toggle.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+</head>
+
+<style>
+    html,
+    body {
+        background-color: #f1f1f1;
+    }
+
+    #drop-area {
+        border: 2px dashed #ccc;
+        border-radius: 20px;
+        width: 480px;
+        height: 480px;
+        margin: 100px auto;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .highlight {
+        border-color: purple !important;
+    }
+
+    #log-area {
+        border: 1px dashed #ccc;
+        padding: 10px;
+        margin: 20px auto;
+        max-width: 480px;
+    }
+</style>
+
+<body>
+
+    <div id="drop-area">
+        + Drop CSV file here
+    </div>
+    <div id="log-area"></div>
+
+    <script>
+        const logAreaDiv = document.getElementById('log-area');
+        const all = [];
+        
+        // Initialize Google Maps Geocoder
+        let geocoder;
+        
+        function initGeocoder() {
+            geocoder = new google.maps.Geocoder();
+        }
+        
+        window.addEventListener('load', initGeocoder);
+
+        // Drag and drop setup
+        var dropArea = document.getElementById('drop-area');
+        dropArea.addEventListener('dragenter', handleDragEnter, false);
+        dropArea.addEventListener('dragleave', handleDragLeave, false);
+        dropArea.addEventListener('dragover', handleDragOver, false);
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDragEnter(e) {
+            this.classList.add('highlight');
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('highlight');
+        }
+
+        function handleDragOver(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            this.classList.add('highlight');
+        }
+
+        function handleFiles(files) {
+            ([...files]).forEach(uploadFile);
+        }
+
+        function uploadFile(file) {
+            var reader = new FileReader();
+            reader.readAsText(file);
+            reader.onload = function (e) {
+                var csv = e.target.result;
+                processData(csv);
+            };
+        }
+
+        // Geocode using Google Maps Geocoder API
+        function geocodeAddress(address) {
+            return new Promise((resolve, reject) => {
+                if (!geocoder) {
+                    reject(new Error('Geocoder not initialized'));
+                    return;
+                }
+                
+                geocoder.geocode(
+                    { 
+                        address: `${address}, United Kingdom`,
+                        region: 'uk'
+                    },
+                    (results, status) => {
+                        if (status === 'OK' && results[0]) {
+                            const location = results[0].geometry.location;
+                            resolve({
+                                lat: location.lat(),
+                                lng: location.lng()
+                            });
+                        } else if (status === 'OVER_QUERY_LIMIT') {
+                            reject(new Error('OVER_QUERY_LIMIT'));
+                        } else {
+                            resolve({ lat: '', lng: '' });
+                        }
+                    }
+                );
+            });
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function processData(csv) {
+            if (!geocoder) {
+                logAreaDiv.innerHTML = 'Error: Google Maps not loaded yet. Please wait and try again.';
+                return;
+            }
+
+            const splittedData = [];
+            const cities = new Set();
+
+            d3.csvParse(csv, function (data) {
+                data['Locations V2'].split(';').forEach(d => {
+                    splittedData.push({
+                        "name": data.Name,
+                        "address": d.trim(),
+                        "description": data.Description,
+                        "Flyer link new": data['Flyer link new'],
+                        "Image 1": data["Image 1"]
+                    });
+                    cities.add(d.trim());
+                });
+            });
+
+            const geocodedCities = new Map();
+            const cityArray = Array.from(cities);
+
+            logAreaDiv.innerHTML = 'Starting geocoding...';
+
+            for (let index = 0; index < cityArray.length; index++) {
+                const addr = cityArray[index];
+                
+                try {
+                    const coordinates = await geocodeAddress(addr);
+                    geocodedCities.set(addr, coordinates);
+                    
+                    logAreaDiv.innerHTML = `Geocoded ${index + 1} of ${cityArray.length}: ${addr}`;
+                    
+                    // Delay to respect rate limits
+                    await delay(250);
+                    
+                } catch (error) {
+                    if (error.message === 'OVER_QUERY_LIMIT') {
+                        logAreaDiv.innerHTML = `Rate limit reached at ${index + 1}. Waiting...`;
+                        await delay(2000);
+                        index--; // Retry
+                    } else {
+                        geocodedCities.set(addr, { lat: '', lng: '' });
+                    }
+                }
+            }
+
+            splittedData.forEach(d => {
+                if (!geocodedCities.has(d.address)) return;
+                const { lat, lng } = geocodedCities.get(d.address);
+                d.lat = lat;
+                d.lng = lng;
+                all.push(d);
+            });
+
+            logAreaDiv.innerHTML = `Complete! Downloaded ${all.length} geocoded addresses.`;
+            downloadCSVFromJson("geocoded-data-" + new Date().toISOString() + ".csv", all);
+        }
+
+        function handleDrop(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            this.classList.remove('highlight');
+            var dt = e.dataTransfer;
+            var files = dt.files;
+            handleFiles(files);
+        }
+
+        function downloadCSVFromJson(filename, arrayOfJson) {
+            var link = document.createElement('a');
+            link.setAttribute('href', 'data:text/csv;charset=utf-8,%EF%BB%BF' + encodeURIComponent(d3.csvFormat(arrayOfJson)));
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+
+</body>
+
+</html>
