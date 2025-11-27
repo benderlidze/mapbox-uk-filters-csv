@@ -77,6 +77,7 @@
         const shopName = document.getElementById("shop");
         const shopList = document.getElementById("prop-list");
         const shopData = [];
+        let londonPolygon = null; // Store the Greater London polygon
 
         const copy = document.getElementById('copytoclipboard');
         const exportResults = document.getElementById('exportResults');
@@ -91,8 +92,8 @@
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/propertyadam/cmifz2fvw000a01r1hu4m6drw',
-            center: { lng: -2.774533172216252, lat: 54.12181638598531 },
-            zoom: 7
+            center: { lng: -0.1276, lat: 51.5074 }, // Center on London
+            zoom: 9
         });
 
         // --------------------- MODAL -----------------
@@ -122,23 +123,65 @@
 
         map.on('load', () => {
 
-            d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRumNOc4iA8NYyt4ncnESF_IRalNmvTJyHE30STfsBqKzzERKH_wd_wV3cJxjuAi_G8Zq7AaKfwGwiI/pub?output=csv")
+            // Load Greater London polygon first
+            d3.json("data/greater-london.geo.json")
+                .then(geojson => {
+                    londonPolygon = geojson;
+                    console.log('Greater London polygon loaded:', londonPolygon);
+
+                    // Optionally add the polygon as a layer for visualization
+                    map.addSource('london-boundary', {
+                        type: 'geojson',
+                        data: londonPolygon
+                    });
+
+                    // map.addLayer({
+                    //     id: 'london-boundary-fill',
+                    //     type: 'fill',
+                    //     source: 'london-boundary',
+                    //     paint: {
+                    //         'fill-color': '#088',
+                    //         'fill-opacity': 0.1
+                    //     }
+                    // });
+
+                    map.addLayer({
+                        id: 'london-boundary-line',
+                        type: 'line',
+                        source: 'london-boundary',
+                        paint: {
+                            'line-color': '#088',
+                            'line-width': 2
+                        }
+                    });
+
+                    // Now load the CSV data
+                    return d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRumNOc4iA8NYyt4ncnESF_IRalNmvTJyHE30STfsBqKzzERKH_wd_wV3cJxjuAi_G8Zq7AaKfwGwiI/pub?output=csv");
+                })
                 .then(json => {
+                    const data = !filterURL ? json : json.filter(d => d.name === filterURL);
+                    
+                    // Filter data to only include points within Greater London polygon
+                    const filteredData = data.filter(d => {
+                        if (!d.lat || !d.lng) return false;
+                        const point = turf.point([+d.lng, +d.lat]);
+                        return turf.booleanPointInPolygon(point, londonPolygon);
+                    });
 
+                    console.log('Total stores:', data.length);
+                    console.log('Stores in Greater London:', filteredData.length);
+                    console.log('Filtered data:', filteredData);
 
-                    const data = !filterURL ? json : json.filter(d => d.name === filterURL)
-                    console.log('Store', data);
+                    shopData.push(...filteredData)
 
-                    shopData.push(...data)
-
-                    autocomplete(input, [...new Set(data.map(i => i.address.toLowerCase()))].map((i, key) => {
+                    autocomplete(input, [...new Set(filteredData.map(i => i.address.toLowerCase()))].map((i, key) => {
                         return {
                             index: key,
                             text: `${i}`
                         }
                     }), setShops);
 
-                    autocomplete(inputRetailer, [...new Set(data.map(i => i.name.toLowerCase()))].map((i, key) => {
+                    autocomplete(inputRetailer, [...new Set(filteredData.map(i => i.name.toLowerCase()))].map((i, key) => {
                         return {
                             index: key,
                             text: `${i}`
@@ -146,13 +189,13 @@
                     }), setByRetailerName);
 
                     //get unique
-                    // const reduced = data
+                    // const reduced = filteredData
                     //     .filter(i => +i.all_motor_vehicles > 4999)
                     //     .map(i => {
                     //         return { lat: +i.latitude, lon: +i.longitude, year: +i.year, all: +i.all_motor_vehicles, road_name: i.road_name }
                     //     })
 
-                    const pins = data
+                    const pins = filteredData
                         //.sort((a, b) => a.lat - b.lat)
                         .map(pin => {
                             const { lat, lng, all } = pin
@@ -167,6 +210,9 @@
                     map.getSource("traffic").setData(featureCollection)
                     console.log('featureCollection', featureCollection);
                 })
+                .catch(error => {
+                    console.error('Error loading data:', error);
+                });
 
 
 
