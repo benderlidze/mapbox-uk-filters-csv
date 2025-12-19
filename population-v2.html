@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>UK LSOA map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Mapbox GL JS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.js"></script>
+
+    <!-- Mapbox Geocoder plugin -->
+    <link rel="stylesheet"
+        href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css"
+        type="text/css" />
+    <script
+        src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+
+    <!-- Turf.js for circle geometry -->
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .search-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+            padding: 15px;
+            width: 320px;
+            z-index: 1;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .search-panel .mapboxgl-ctrl-geocoder {
+            min-width: 100%;
+            max-width: 100%;
+            width: 100%;
+            box-shadow: none;
+        }
+
+        .slider-container {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .slider-value {
+            font-weight: 600;
+            color: #0080ff;
+        }
+
+        #radius-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        #radius-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #0080ff;
+            cursor: pointer;
+        }
+
+        #radius-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #0080ff;
+            cursor: pointer;
+            border: none;
+        }
+
+        .population-display {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .population-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0080ff;
+            margin-top: 5px;
+        }
+
+        .age-bands-table {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+        }
+
+        .age-bands-table h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .age-bands-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .age-bands-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .age-bands-table td:first-child {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .age-bands-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+            color: #0080ff;
+        }
+
+        .age-bands-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 16px;
+            font-weight: 500;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .loading-overlay.active {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+
+    <div class="search-panel">
+        <div id="geocoder"></div>
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Radius</span>
+                <span class="slider-value"><span id="radius-value">25</span> miles</span>
+            </div>
+            <input type="range" min="0" max="50" value="25" id="radius-slider" />
+        </div>
+        <div class="population-display">
+            <div>Total Population</div>
+            <div class="population-value" id="population-total">-</div>
+        </div>
+        <div class="age-bands-table">
+            <h4>Age Bands</h4>
+            <table id="age-bands-table">
+                <tr>
+                    <td>Children (0–14)</td>
+                    <td id="band-children">-</td>
+                </tr>
+                <tr>
+                    <td>Young adults (15–24)</td>
+                    <td id="band-young">-</td>
+                </tr>
+                <tr>
+                    <td>Early professionals (25–34)</td>
+                    <td id="band-early">-</td>
+                </tr>
+                <tr>
+                    <td>Family builders (35–49)</td>
+                    <td id="band-family">-</td>
+                </tr>
+                <tr>
+                    <td>Mature adults (50–64)</td>
+                    <td id="band-mature">-</td>
+                </tr>
+                <tr>
+                    <td>Older (65+)</td>
+                    <td id="band-older">-</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loading">
+        <span class="spinner"></span>
+        Calculating population...
+    </div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZXdpNDBieTUzanMyN2J3NW1sMHUifQ.m5BpgLHVufA0nzdFvCpTVg';
+
+        // Global state for CSV data
+        const csvData = {};
+        let csvLoaded = false;
+
+        // Load CSV data
+        async function loadCSVData() {
+            try {
+                const response = await fetch('population_data/lsoa_age_bands.csv');
+                const csvText = await response.text();
+                const lines = csvText.trim().split('\n');
+
+                // Skip header
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = lines[i].split(',');
+                    if (cols.length >= 8) {
+                        const lsoaCode = cols[0].trim();
+                        csvData[lsoaCode] = {
+                            Total: parseInt(cols[1]) || 0,
+                            Children: parseInt(cols[2]) || 0,
+                            YoungAdults: parseInt(cols[3]) || 0,
+                            EarlyProfessionals: parseInt(cols[4]) || 0,
+                            FamilyBuilders: parseInt(cols[5]) || 0,
+                            MatureAdults: parseInt(cols[6]) || 0,
+                            Older: parseInt(cols[7]) || 0
+                        };
+                    }
+                }
+                csvLoaded = true;
+                console.log('CSV loaded:', Object.keys(csvData).length, 'records');
+            } catch (err) {
+                console.error('Error loading CSV:', err);
+            }
+        }
+
+        // Load CSV on page load
+        loadCSVData();
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: { lng: -2.774533172216252, lat: 54.12181638598531 },
+            zoom: 7
+        });
+
+        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+        let currentCenter = null;
+        let currentRadius = 5;
+        let currentCircle = null;
+        let selectedLSOAs = [];
+        const AREA_THRESHOLD = 0.10;
+
+        const geocoder = new MapboxGeocoder({
+            accessToken: mapboxgl.accessToken,
+            mapboxgl: mapboxgl,
+            marker: false,
+            countries: 'gb',
+            placeholder: 'Search UK address…',
+            types: 'address,place,locality,neighborhood,postcode'
+        });
+
+        document.getElementById('geocoder').appendChild(geocoder.onAdd(map));
+
+        geocoder.on('result', (e) => {
+            const center = e.result.center;
+            if (center && center.length === 2) {
+                currentCenter = center;
+                map.flyTo({ center, zoom: 12 });
+                updateCircle();
+            }
+        });
+
+        const slider = document.getElementById('radius-slider');
+        const radiusValue = document.getElementById('radius-value');
+        const populationTotal = document.getElementById('population-total');
+        const loading = document.getElementById('loading');
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        const debouncedUpdate = debounce(() => {
+            if (currentCenter) {
+                loading.classList.add('active');
+                setTimeout(() => {
+                    updateCircle();
+                    loading.classList.remove('active');
+                }, 50);
+            }
+        }, 300);
+
+        slider.addEventListener('input', (e) => {
+            currentRadius = parseInt(e.target.value);
+            radiusValue.textContent = currentRadius;
+            debouncedUpdate();
+        });
+
+        function updateCircle() {
+            if (!currentCenter || currentRadius === 0) {
+                if (map.getLayer('radius-outline')) {
+                    map.removeLayer('radius-outline');
+                }
+                if (map.getSource('radius')) {
+                    map.removeSource('radius');
+                }
+                currentCircle = null;
+                selectedLSOAs = [];
+                updateSelection();
+                return;
+            }
+
+            currentCircle = turf.circle(currentCenter, currentRadius, {
+                steps: 64,
+                units: 'miles'
+            });
+
+            if (map.getSource('radius')) {
+                map.getSource('radius').setData(currentCircle);
+            } else {
+                map.addSource('radius', {
+                    type: 'geojson',
+                    data: currentCircle
+                });
+
+                map.addLayer({
+                    id: 'radius-outline',
+                    type: 'line',
+                    source: 'radius',
+                    paint: {
+                        'line-color': 'red',
+                        'line-width': 5,
+                    }
+                });
+            }
+
+            selectFeaturesInCircle();
+        }
+
+        function selectFeaturesInCircle() {
+            if (!currentCircle || !map.getSource('population-lsoa')) {
+                selectedLSOAs = [];
+                updateSelection();
+                return;
+            }
+
+            const features = map.querySourceFeatures('population-lsoa', {
+                sourceLayer: 'clean_enriched_LSOA-5ty98a'
+            });
+
+            selectedLSOAs = [];
+            const ageBandTotals = {
+                Total: 0,
+                Children: 0,
+                YoungAdults: 0,
+                EarlyProfessionals: 0,
+                FamilyBuilders: 0,
+                MatureAdults: 0,
+                Older: 0
+            };
+            const processedCodes = new Set();
+
+            features.forEach(feature => {
+                if (!feature.geometry || !feature.properties) return;
+
+                const lsoaCode = feature.properties.LSOA21CD;
+                if (!lsoaCode || processedCodes.has(lsoaCode)) return;
+
+                try {
+                    const intersection = turf.intersect(
+                        turf.featureCollection([feature, currentCircle])
+                    );
+
+                    if (!intersection) return;
+
+                    const polygonArea = turf.area(feature);
+                    const intersectionArea = turf.area(intersection);
+                    const percentageInside = intersectionArea / polygonArea;
+
+                    if (percentageInside >= AREA_THRESHOLD) {
+                        selectedLSOAs.push(lsoaCode);
+                        processedCodes.add(lsoaCode);
+
+                        // Get data from CSV
+                        const data = csvData[lsoaCode];
+                        if (data) {
+                            ageBandTotals.Total += data.Total;
+                            ageBandTotals.Children += data.Children;
+                            ageBandTotals.YoungAdults += data.YoungAdults;
+                            ageBandTotals.EarlyProfessionals += data.EarlyProfessionals;
+                            ageBandTotals.FamilyBuilders += data.FamilyBuilders;
+                            ageBandTotals.MatureAdults += data.MatureAdults;
+                            ageBandTotals.Older += data.Older;
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Geometry error for LSOA:', lsoaCode, err);
+                }
+            });
+
+            // Update display
+            populationTotal.textContent = ageBandTotals.Total.toLocaleString();
+            document.getElementById('band-children').textContent = ageBandTotals.Children.toLocaleString();
+            document.getElementById('band-young').textContent = ageBandTotals.YoungAdults.toLocaleString();
+            document.getElementById('band-early').textContent = ageBandTotals.EarlyProfessionals.toLocaleString();
+            document.getElementById('band-family').textContent = ageBandTotals.FamilyBuilders.toLocaleString();
+            document.getElementById('band-mature').textContent = ageBandTotals.MatureAdults.toLocaleString();
+            document.getElementById('band-older').textContent = ageBandTotals.Older.toLocaleString();
+
+            updateSelection();
+        }
+
+        function updateSelection() {
+            if (map.getLayer('population-lsoa-fill')) {
+                map.setPaintProperty('population-lsoa-fill', 'fill-color', [
+                    'case',
+                    ['in', ['get', 'LSOA21CD'], ['literal', selectedLSOAs]],
+                    '#0080ff',
+                    'transparent'
+                ]);
+
+                map.setPaintProperty('population-lsoa-fill', 'fill-opacity', [
+                    'case',
+                    ['in', ['get', 'LSOA21CD'], ['literal', selectedLSOAs]],
+                    0.7,
+                    0
+                ]);
+            }
+        }
+
+        map.on('load', () => {
+            map.addSource('population-lsoa', {
+                type: 'vector',
+                url: 'mapbox://propertyadam.ccvo5o03'
+            });
+
+            map.addLayer({
+                id: 'population-lsoa-fill',
+                type: 'fill',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'fill-color': 'transparent',
+                    'fill-opacity': 0
+                }
+            });
+
+            map.addLayer({
+                id: 'population-lsoa-outline',
+                type: 'line',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'line-color': '#000000',
+                    'line-width': 1,
+                    'line-opacity': 0.3
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
