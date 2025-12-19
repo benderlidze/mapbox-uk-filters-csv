@@ -271,7 +271,7 @@
         // Load CSV data
         async function loadCSVData() {
             try {
-                const response = await fetch('population_data/lsoa_age_bands_imd.csv');
+                const response = await fetch('population_data/lsoa_age_bands_imd_ts017_ts066.csv');
                 const csvText = await response.text();
                 const lines = csvText.trim().split('\n');
 
@@ -333,8 +333,8 @@
             const center = e.result.center;
             if (center && center.length === 2) {
                 currentCenter = center;
-                map.flyTo({ center, zoom: 12 });
-                updateCircle();
+                // Use the same flow as slider: circle -> fitBounds -> wait -> calc
+                debouncedUpdate();
             }
         });
 
@@ -355,14 +355,44 @@
             };
         }
 
+        // CHANGED: debouncedUpdate now:
+        // 1) draws/updates circle
+        // 2) fits map to circle with padding
+        // 3) waits for map to go idle
+        // 4) then calls selectFeaturesInCircle()
         const debouncedUpdate = debounce(() => {
-            if (currentCenter) {
-                loading.classList.add('active');
-                setTimeout(() => {
-                    updateCircle();
+            if (!currentCenter) return;
+
+            loading.classList.add('active');
+
+            // Allow overlay to paint
+            setTimeout(() => {
+                // Draw / update circle but do NOT compute yet
+                updateCircleGeometry();
+
+                if (!currentCircle) {
+                    // nothing to fit, just clear
+                    selectFeaturesInCircle();
                     loading.classList.remove('active');
-                }, 50);
-            }
+                    return;
+                }
+
+                // Fit map to circle bbox with 30px padding
+                const bbox = turf.bbox(currentCircle);
+                map.fitBounds(
+                    [
+                        [bbox[0], bbox[1]],
+                        [bbox[2], bbox[3]]
+                    ],
+                    { padding: 30 }
+                );
+
+                // Wait until tiles + layers are rendered, then query features [web:147]
+                map.once('idle', () => {
+                    selectFeaturesInCircle();
+                    loading.classList.remove('active');
+                });
+            }, 50);
         }, 300);
 
         slider.addEventListener('input', (e) => {
@@ -371,7 +401,8 @@
             debouncedUpdate();
         });
 
-        function updateCircle() {
+        // CHANGED: split circle drawing from selection
+        function updateCircleGeometry() {
             if (!currentCenter || currentRadius === 0) {
                 if (map.getLayer('radius-outline')) {
                     map.removeLayer('radius-outline');
@@ -408,10 +439,9 @@
                     }
                 });
             }
-
-            selectFeaturesInCircle();
         }
 
+        // Kept: selection logic, but now only called after map idle
         function selectFeaturesInCircle() {
             if (!currentCircle || !map.getSource('population-lsoa')) {
                 selectedLSOAs = [];
@@ -493,7 +523,7 @@
             document.getElementById('band-mature').textContent = ageBandTotals.MatureAdults.toLocaleString();
             document.getElementById('band-older').textContent = ageBandTotals.Older.toLocaleString();
 
-            // Added IMD display (averages)
+            // IMD averages
             if (ageBandTotals.IMDCount > 0) {
                 const avgRank = Math.round(ageBandTotals.IMDRankSum / ageBandTotals.IMDCount);
                 const avgDecile = (ageBandTotals.IMDDecileSum / ageBandTotals.IMDCount).toFixed(1);
@@ -555,6 +585,7 @@
             });
         });
     </script>
+
 </body>
 
 </html>
