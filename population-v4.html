@@ -74,7 +74,7 @@
             color: #0080ff;
         }
 
-        #radius-slider {
+        input[type="range"] {
             width: 100%;
             height: 6px;
             border-radius: 3px;
@@ -83,7 +83,7 @@
             -webkit-appearance: none;
         }
 
-        #radius-slider::-webkit-slider-thumb {
+        input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: 18px;
@@ -93,7 +93,7 @@
             cursor: pointer;
         }
 
-        #radius-slider::-moz-range-thumb {
+        input[type="range"]::-moz-range-thumb {
             width: 18px;
             height: 18px;
             border-radius: 50%;
@@ -115,8 +115,8 @@
         }
 
         .population-value {
-
             color: #0080ff;
+            font-weight: 600;
         }
 
         .age-bands-table {
@@ -156,6 +156,37 @@
 
         .age-bands-table tr:last-child td {
             border-bottom: none;
+        }
+
+        .imd-list {
+            margin-top: 8px;
+            padding: 8px;
+            border: 1px solid #f0f0f0;
+            border-radius: 8px;
+            font-size: 11px;
+            line-height: 1.4;
+            word-break: break-all;
+            max-height: 100px;
+            overflow-y: auto;
+            color: #555;
+        }
+
+        .checkbox-container {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
         }
 
         .loading-overlay {
@@ -204,6 +235,7 @@
 
     <div class="search-panel">
         <div id="geocoder"></div>
+        
         <div class="slider-container">
             <div class="slider-label">
                 <span>Radius</span>
@@ -211,10 +243,33 @@
             </div>
             <input type="range" min="0" max="50" value="5" id="radius-slider" />
         </div>
+
+        <!-- NEW: Enable IMD checkbox -->
+        <div class="checkbox-container">
+            <input type="checkbox" id="imd-enable" />
+            <label for="imd-enable">Enable IMD viewport highlighting</label>
+        </div>
+
+        <!-- IMD slider (only active when checkbox is checked) -->
+        <div class="slider-container" id="imd-slider-container" style="opacity: 0.4; pointer-events: none;">
+            <div class="slider-label">
+                <span>Most deprived</span>
+                <span class="slider-value"><span id="imd-value">10</span>%</span>
+            </div>
+            <input type="range" min="10" max="100" step="10" value="10" id="imd-slider" />
+        </div>
+
         <div class="population-display">
             <div>Total Population</div>
             <div class="population-value" id="population-total">-</div>
         </div>
+
+        <!-- IMD match count -->
+        <div class="population-display">
+            <div>IMD matches (orange)</div>
+            <div class="population-value" id="imd-count">0</div>
+        </div>
+
         <div class="age-bands-table">
             <h4>Age Bands</h4>
             <table id="age-bands-table">
@@ -242,8 +297,6 @@
                     <td>Older (65+)</td>
                     <td id="band-older">-</td>
                 </tr>
-
-                <!-- Added IMD rows -->
                 <tr>
                     <td>IMD Rank (avg)</td>
                     <td id="band-imd-rank">-</td>
@@ -253,6 +306,12 @@
                     <td id="band-imd-decile">-</td>
                 </tr>
             </table>
+        </div>
+
+        <!-- List of IMD codes -->
+        <div class="age-bands-table">
+            <h4>Highlighted LSOAs (IMD in view)</h4>
+            <div id="imd-list" class="imd-list">-</div>
         </div>
     </div>
 
@@ -264,18 +323,15 @@
     <script>
         mapboxgl.accessToken = 'pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZXdpNDBieTUzanMyN2J3NW1sMHUifQ.m5BpgLHVufA0nzdFvCpTVg';
 
-        // Global state for CSV data
         const csvData = {};
         let csvLoaded = false;
 
-        // Load CSV data
         async function loadCSVData() {
             try {
                 const response = await fetch('population_data/lsoa_age_bands_imd_ts017_ts066.csv');
                 const csvText = await response.text();
                 const lines = csvText.trim().split('\n');
 
-                // Skip header
                 for (let i = 1; i < lines.length; i++) {
                     const cols = lines[i].split(',');
                     if (cols.length >= 10) {
@@ -300,7 +356,6 @@
             }
         }
 
-        // Load CSV on page load
         loadCSVData();
 
         const map = new mapboxgl.Map({
@@ -316,6 +371,9 @@
         let currentRadius = 5;
         let currentCircle = null;
         let selectedLSOAs = [];
+        let currentImdPercent = 10;
+        let imdEnabled = false;  // NEW: track if IMD is enabled
+        let imdSelectedLSOAs = [];
         const AREA_THRESHOLD = 0.10;
 
         const geocoder = new MapboxGeocoder({
@@ -333,7 +391,6 @@
             const center = e.result.center;
             if (center && center.length === 2) {
                 currentCenter = center;
-                // Use the same flow as slider: circle -> fitBounds -> wait -> calc
                 debouncedUpdate();
             }
         });
@@ -342,6 +399,13 @@
         const radiusValue = document.getElementById('radius-value');
         const populationTotal = document.getElementById('population-total');
         const loading = document.getElementById('loading');
+
+        const imdEnableCheckbox = document.getElementById('imd-enable');
+        const imdSliderContainer = document.getElementById('imd-slider-container');
+        const imdSlider = document.getElementById('imd-slider');
+        const imdValue = document.getElementById('imd-value');
+        const imdCount = document.getElementById('imd-count');
+        const imdList = document.getElementById('imd-list');
 
         function debounce(func, wait) {
             let timeout;
@@ -355,29 +419,20 @@
             };
         }
 
-        // CHANGED: debouncedUpdate now:
-        // 1) draws/updates circle
-        // 2) fits map to circle with padding
-        // 3) waits for map to go idle
-        // 4) then calls selectFeaturesInCircle()
         const debouncedUpdate = debounce(() => {
             if (!currentCenter) return;
 
             loading.classList.add('active');
 
-            // Allow overlay to paint
             setTimeout(() => {
-                // Draw / update circle but do NOT compute yet
                 updateCircleGeometry();
 
                 if (!currentCircle) {
-                    // nothing to fit, just clear
                     selectFeaturesInCircle();
                     loading.classList.remove('active');
                     return;
                 }
 
-                // Fit map to circle bbox with 30px padding
                 const bbox = turf.bbox(currentCircle);
                 map.fitBounds(
                     [
@@ -387,7 +442,6 @@
                     { padding: 30 }
                 );
 
-                // Wait until tiles + layers are rendered, then query features [web:147]
                 map.once('idle', () => {
                     selectFeaturesInCircle();
                     loading.classList.remove('active');
@@ -395,13 +449,46 @@
             }, 50);
         }, 300);
 
+        // NEW: debounced IMD viewport update on map move
+        const debouncedImdUpdate = debounce(() => {
+            if (imdEnabled) {
+                updateImdFromViewport();
+            }
+        }, 200);
+
         slider.addEventListener('input', (e) => {
             currentRadius = parseInt(e.target.value);
             radiusValue.textContent = currentRadius;
             debouncedUpdate();
         });
 
-        // CHANGED: split circle drawing from selection
+        // NEW: Enable/disable IMD checkbox
+        imdEnableCheckbox.addEventListener('change', (e) => {
+            imdEnabled = e.target.checked;
+            
+            if (imdEnabled) {
+                imdSliderContainer.style.opacity = '1';
+                imdSliderContainer.style.pointerEvents = 'auto';
+                updateImdFromViewport();
+            } else {
+                imdSliderContainer.style.opacity = '0.4';
+                imdSliderContainer.style.pointerEvents = 'none';
+                clearImdHighlight();
+            }
+        });
+
+        // NEW: IMD slider change
+        imdSlider.addEventListener('input', (e) => {
+            currentImdPercent = parseInt(e.target.value, 10);
+            imdValue.textContent = currentImdPercent;
+            if (imdEnabled) {
+                updateImdFromViewport();
+            }
+        });
+
+        // NEW: Listen to map moveend to update IMD highlights
+        map.on('moveend', debouncedImdUpdate);
+
         function updateCircleGeometry() {
             if (!currentCenter || currentRadius === 0) {
                 if (map.getLayer('radius-outline')) {
@@ -441,7 +528,6 @@
             }
         }
 
-        // Kept: selection logic, but now only called after map idle
         function selectFeaturesInCircle() {
             if (!currentCircle || !map.getSource('population-lsoa')) {
                 selectedLSOAs = [];
@@ -489,7 +575,6 @@
                         selectedLSOAs.push(lsoaCode);
                         processedCodes.add(lsoaCode);
 
-                        // Get data from CSV
                         const data = csvData[lsoaCode];
                         if (data) {
                             ageBandTotals.Total += data.Total;
@@ -514,7 +599,6 @@
                 }
             });
 
-            // Update display
             populationTotal.textContent = ageBandTotals.Total.toLocaleString();
             document.getElementById('band-children').textContent = ageBandTotals.Children.toLocaleString();
             document.getElementById('band-young').textContent = ageBandTotals.YoungAdults.toLocaleString();
@@ -523,7 +607,6 @@
             document.getElementById('band-mature').textContent = ageBandTotals.MatureAdults.toLocaleString();
             document.getElementById('band-older').textContent = ageBandTotals.Older.toLocaleString();
 
-            // IMD averages
             if (ageBandTotals.IMDCount > 0) {
                 const avgRank = Math.round(ageBandTotals.IMDRankSum / ageBandTotals.IMDCount);
                 const avgDecile = (ageBandTotals.IMDDecileSum / ageBandTotals.IMDCount).toFixed(1);
@@ -535,6 +618,56 @@
             }
 
             updateSelection();
+        }
+
+        // NEW: Query all rendered features in viewport and highlight by IMD
+        function updateImdFromViewport() {
+            if (!map.getLayer('population-lsoa-outline')) return;
+
+            const maxDecile = Math.round(currentImdPercent / 10);
+
+            const features = map.queryRenderedFeatures({
+                layers: ['population-lsoa-outline']
+            });
+
+            const matchingCodes = new Set();
+            features.forEach(f => {
+                const code = f?.properties?.LSOA21CD;
+                if (!code) return;
+
+                const row = csvData[code];
+                if (row && row.IMDDecile > 0 && row.IMDDecile <= maxDecile) {
+                    matchingCodes.add(code);
+                }
+            });
+
+            imdSelectedLSOAs = Array.from(matchingCodes);
+
+            imdCount.textContent = imdSelectedLSOAs.length.toLocaleString();
+            imdList.textContent = imdSelectedLSOAs.length ? imdSelectedLSOAs.join(', ') : '-';
+
+            if (map.getLayer('population-lsoa-imd-highlight')) {
+                map.setFilter('population-lsoa-imd-highlight', [
+                    'in',
+                    ['get', 'LSOA21CD'],
+                    ['literal', imdSelectedLSOAs]
+                ]);
+            }
+        }
+
+        // NEW: Clear IMD highlight when disabled
+        function clearImdHighlight() {
+            imdSelectedLSOAs = [];
+            imdCount.textContent = '0';
+            imdList.textContent = '-';
+
+            if (map.getLayer('population-lsoa-imd-highlight')) {
+                map.setFilter('population-lsoa-imd-highlight', [
+                    'in',
+                    ['get', 'LSOA21CD'],
+                    ['literal', []]
+                ]);
+            }
         }
 
         function updateSelection() {
@@ -570,6 +703,19 @@
                     'fill-color': 'transparent',
                     'fill-opacity': 0
                 }
+            });
+
+            // Orange highlight layer for IMD matches
+            map.addLayer({
+                id: 'population-lsoa-imd-highlight',
+                type: 'fill',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'fill-color': '#ff8800',
+                    'fill-opacity': 0.7
+                },
+                filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
             });
 
             map.addLayer({
