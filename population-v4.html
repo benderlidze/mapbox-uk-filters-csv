@@ -119,6 +119,92 @@
             font-weight: 600;
         }
 
+        /* IMD Section Container */
+        .imd-section {
+            border-top: 1px solid #e0e0e0;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        .imd-section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .imd-section-header input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .imd-section-header label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .imd-controls {
+            opacity: 0.4;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .imd-controls.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .imd-slider-row {
+            margin-bottom: 12px;
+        }
+
+        .imd-match-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .imd-match-value {
+            font-weight: 700;
+        }
+
+        /* NEW: LSOA list section inside IMD block */
+        .imd-list-section {
+            margin-top: 12px;
+            padding-top: 12px;
+
+        }
+
+        .imd-list-section h5 {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .imd-list {
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: white;
+            font-size: 11px;
+            line-height: 1.4;
+            word-break: break-all;
+            max-height: 100px;
+            overflow-y: auto;
+            color: #555;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+        }
+
         .age-bands-table {
             padding-top: 15px;
             border-top: 1px solid #e0e0e0;
@@ -156,37 +242,6 @@
 
         .age-bands-table tr:last-child td {
             border-bottom: none;
-        }
-
-        .imd-list {
-            margin-top: 8px;
-            padding: 8px;
-            border: 1px solid #f0f0f0;
-            border-radius: 8px;
-            font-size: 11px;
-            line-height: 1.4;
-            word-break: break-all;
-            max-height: 100px;
-            overflow-y: auto;
-            color: #555;
-        }
-
-        .checkbox-container {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-size: 13px;
-            color: #333;
-        }
-
-        .checkbox-container input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
         }
 
         .loading-overlay {
@@ -235,7 +290,7 @@
 
     <div class="search-panel">
         <div id="geocoder"></div>
-        
+
         <div class="slider-container">
             <div class="slider-label">
                 <span>Radius</span>
@@ -244,30 +299,9 @@
             <input type="range" min="0" max="50" value="5" id="radius-slider" />
         </div>
 
-        <!-- NEW: Enable IMD checkbox -->
-        <div class="checkbox-container">
-            <input type="checkbox" id="imd-enable" />
-            <label for="imd-enable">Enable IMD viewport highlighting</label>
-        </div>
-
-        <!-- IMD slider (only active when checkbox is checked) -->
-        <div class="slider-container" id="imd-slider-container" style="opacity: 0.4; pointer-events: none;">
-            <div class="slider-label">
-                <span>Most deprived</span>
-                <span class="slider-value"><span id="imd-value">10</span>%</span>
-            </div>
-            <input type="range" min="10" max="100" step="10" value="10" id="imd-slider" />
-        </div>
-
         <div class="population-display">
             <div>Total Population</div>
             <div class="population-value" id="population-total">-</div>
-        </div>
-
-        <!-- IMD match count -->
-        <div class="population-display">
-            <div>IMD matches (orange)</div>
-            <div class="population-value" id="imd-count">0</div>
         </div>
 
         <div class="age-bands-table">
@@ -308,10 +342,33 @@
             </table>
         </div>
 
-        <!-- List of IMD codes -->
-        <div class="age-bands-table">
-            <h4>Highlighted LSOAs (IMD in view)</h4>
-            <div id="imd-list" class="imd-list">-</div>
+        <!-- IMD Section - All grouped together -->
+        <div class="imd-section">
+            <div class="imd-section-header">
+                <input type="checkbox" id="imd-enable" />
+                <label for="imd-enable">Enable IMD viewport highlighting</label>
+            </div>
+
+            <div class="imd-controls" id="imd-controls">
+                <div class="imd-slider-row">
+                    <div class="slider-label">
+                        <span>Most deprived</span>
+                        <span class="slider-value"><span id="imd-value">10</span>%</span>
+                    </div>
+                    <input type="range" min="10" max="100" step="10" value="10" id="imd-slider" />
+                </div>
+
+                <div class="imd-match-row">
+                    <div>IMD matches (orange)</div>
+                    <div class="imd-match-value" id="imd-count">0</div>
+                </div>
+
+                <!-- NEW: LSOA list moved inside IMD section -->
+                <div class="imd-list-section">
+                    <h5>Highlighted LSOAs in view</h5>
+                    <div id="imd-list" class="imd-list">-</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -372,7 +429,7 @@
         let currentCircle = null;
         let selectedLSOAs = [];
         let currentImdPercent = 10;
-        let imdEnabled = false;  // NEW: track if IMD is enabled
+        let imdEnabled = false;
         let imdSelectedLSOAs = [];
         const AREA_THRESHOLD = 0.10;
 
@@ -401,7 +458,7 @@
         const loading = document.getElementById('loading');
 
         const imdEnableCheckbox = document.getElementById('imd-enable');
-        const imdSliderContainer = document.getElementById('imd-slider-container');
+        const imdControls = document.getElementById('imd-controls');
         const imdSlider = document.getElementById('imd-slider');
         const imdValue = document.getElementById('imd-value');
         const imdCount = document.getElementById('imd-count');
@@ -449,7 +506,6 @@
             }, 50);
         }, 300);
 
-        // NEW: debounced IMD viewport update on map move
         const debouncedImdUpdate = debounce(() => {
             if (imdEnabled) {
                 updateImdFromViewport();
@@ -462,22 +518,18 @@
             debouncedUpdate();
         });
 
-        // NEW: Enable/disable IMD checkbox
         imdEnableCheckbox.addEventListener('change', (e) => {
             imdEnabled = e.target.checked;
-            
+
             if (imdEnabled) {
-                imdSliderContainer.style.opacity = '1';
-                imdSliderContainer.style.pointerEvents = 'auto';
+                imdControls.classList.add('active');
                 updateImdFromViewport();
             } else {
-                imdSliderContainer.style.opacity = '0.4';
-                imdSliderContainer.style.pointerEvents = 'none';
+                imdControls.classList.remove('active');
                 clearImdHighlight();
             }
         });
 
-        // NEW: IMD slider change
         imdSlider.addEventListener('input', (e) => {
             currentImdPercent = parseInt(e.target.value, 10);
             imdValue.textContent = currentImdPercent;
@@ -486,7 +538,6 @@
             }
         });
 
-        // NEW: Listen to map moveend to update IMD highlights
         map.on('moveend', debouncedImdUpdate);
 
         function updateCircleGeometry() {
@@ -620,7 +671,6 @@
             updateSelection();
         }
 
-        // NEW: Query all rendered features in viewport and highlight by IMD
         function updateImdFromViewport() {
             if (!map.getLayer('population-lsoa-outline')) return;
 
@@ -655,7 +705,6 @@
             }
         }
 
-        // NEW: Clear IMD highlight when disabled
         function clearImdHighlight() {
             imdSelectedLSOAs = [];
             imdCount.textContent = '0';
@@ -705,7 +754,6 @@
                 }
             });
 
-            // Orange highlight layer for IMD matches
             map.addLayer({
                 id: 'population-lsoa-imd-highlight',
                 type: 'fill',
