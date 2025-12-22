@@ -381,6 +381,20 @@
                 </div>
             </div>
         </div>
+
+        <!-- Deprivation filters -->
+        <div style="margin-top:15px; padding-top:15px; border-top:1px solid #e0e0e0;">
+            <div style="display:flex; flex-direction:column; gap:8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size:13px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="show-most-deprived" style="width:18px; height:18px;" />
+                    <span>Show most deprived (bottom 10%)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="show-least-deprived" style="width:18px; height:18px;" />
+                    <span>Show least deprived (top 10%)</span>
+                </label>
+            </div>
+        </div>
     </div>
 
     <div class="loading-overlay" id="loading">
@@ -442,6 +456,8 @@
         let currentImdPercent = 10;
         let imdEnabled = false;
         let imdSelectedLSOAs = [];
+        let showMostDeprived = false;
+        let showLeastDeprived = false;
         const AREA_THRESHOLD = 0.10;
 
         const geocoder = new MapboxGeocoder({
@@ -554,6 +570,23 @@
         const resetBtn = document.getElementById('reset-btn');
         if (resetBtn) {
             resetBtn.addEventListener('click', resetApp);
+        }
+
+        const mostDeprivedCheckbox = document.getElementById('show-most-deprived');
+        const leastDeprivedCheckbox = document.getElementById('show-least-deprived');
+
+        if (mostDeprivedCheckbox) {
+            mostDeprivedCheckbox.addEventListener('change', (e) => {
+                showMostDeprived = e.target.checked;
+                updateDeprivationHighlights();
+            });
+        }
+
+        if (leastDeprivedCheckbox) {
+            leastDeprivedCheckbox.addEventListener('change', (e) => {
+                showLeastDeprived = e.target.checked;
+                updateDeprivationHighlights();
+            });
         }
 
         function updateCircleGeometry() {
@@ -703,6 +736,7 @@
             // }
 
             updateSelection();
+            updateDeprivationHighlights();
         }
 
         function updateImdFromViewport() {
@@ -749,6 +783,47 @@
                     'in',
                     ['get', 'LSOA21CD'],
                     ['literal', []]
+                ]);
+            }
+        }
+
+        function updateDeprivationHighlights() {
+            if (!map.getSource('population-lsoa')) return;
+
+            const mostDeprivedLSOAs = [];
+            const leastDeprivedLSOAs = [];
+
+            // Only filter LSOAs inside the circle/radius
+            selectedLSOAs.forEach(code => {
+                const row = csvData[code];
+                if (!row || !row.IMDDecile) return;
+
+                // Most deprived: IMDDecile <= 1
+                if (showMostDeprived && row.IMDDecile <= 1) {
+                    mostDeprivedLSOAs.push(code);
+                }
+
+                // Least deprived: IMDDecile >= 9
+                if (showLeastDeprived && row.IMDDecile >= 9) {
+                    leastDeprivedLSOAs.push(code);
+                }
+            });
+
+            // Update layers for most deprived (red)
+            if (map.getLayer('population-lsoa-most-deprived')) {
+                map.setFilter('population-lsoa-most-deprived', [
+                    'in',
+                    ['get', 'LSOA21CD'],
+                    ['literal', mostDeprivedLSOAs]
+                ]);
+            }
+
+            // Update layers for least deprived (green)
+            if (map.getLayer('population-lsoa-least-deprived')) {
+                map.setFilter('population-lsoa-least-deprived', [
+                    'in',
+                    ['get', 'LSOA21CD'],
+                    ['literal', leastDeprivedLSOAs]
                 ]);
             }
         }
@@ -800,6 +875,13 @@
             clearImdHighlight();
             imdControls.classList.remove('active');
 
+            // Reset deprivation filters
+            showMostDeprived = false;
+            showLeastDeprived = false;
+            if (mostDeprivedCheckbox) mostDeprivedCheckbox.checked = false;
+            if (leastDeprivedCheckbox) leastDeprivedCheckbox.checked = false;
+            updateDeprivationHighlights();
+
             // Recenter map to UK default
             map.easeTo({ center: { lng: -2.774533172216252, lat: 54.12181638598531 }, zoom: 7 });
         }
@@ -847,6 +929,30 @@
                 paint: {
                     'fill-color': '#ff8800',
                     'fill-opacity': 0.7
+                },
+                filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
+            });
+
+            map.addLayer({
+                id: 'population-lsoa-most-deprived',
+                type: 'fill',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'fill-color': '#ff0000',
+                    'fill-opacity': 0.6
+                },
+                filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
+            });
+
+            map.addLayer({
+                id: 'population-lsoa-least-deprived',
+                type: 'fill',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'fill-color': '#00ff00',
+                    'fill-opacity': 0.6
                 },
                 filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
             });
