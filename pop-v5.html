@@ -283,6 +283,90 @@
                 transform: rotate(360deg);
             }
         }
+
+        .info-popup {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            width: 320px;
+            max-height: 500px;
+            overflow-y: auto;
+            z-index: 10;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: none;
+        }
+
+        .info-popup.active {
+            display: block;
+        }
+
+        .info-popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #0080ff;
+        }
+
+        .info-popup-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .info-popup-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+        }
+
+        .info-popup-close:hover {
+            color: #333;
+        }
+
+        .info-popup-section {
+            margin-bottom: 15px;
+        }
+
+        .info-popup-section h4 {
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .info-popup-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+
+        .info-popup-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-popup-label {
+            color: #666;
+        }
+
+        .info-popup-value {
+            color: #333;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -353,38 +437,10 @@
             </table>
         </div>
 
-        <!-- IMD Section - All grouped together -->
-        <div class="imd-section">
-            <div class="imd-section-header">
-                <input type="checkbox" id="imd-enable" />
-                <label for="imd-enable">Enable IMD viewport highlighting</label>
-            </div>
-
-            <div class="imd-controls" id="imd-controls">
-                <div class="imd-slider-row">
-                    <div class="slider-label">
-                        <span>Most deprived</span>
-                        <span class="slider-value"><span id="imd-value">10</span>%</span>
-                    </div>
-                    <input type="range" min="10" max="100" step="10" value="10" id="imd-slider" />
-                </div>
-
-                <div class="imd-match-row">
-                    <div>IMD matches (orange)</div>
-                    <div class="imd-match-value" id="imd-count">0</div>
-                </div>
-
-                <!-- NEW: LSOA list moved inside IMD section -->
-                <div class="imd-list-section">
-                    <h5>Highlighted LSOAs in view</h5>
-                    <div id="imd-list" class="imd-list">-</div>
-                </div>
-            </div>
-        </div>
-
         <!-- Deprivation filters -->
         <div style="margin-top:15px; padding-top:15px; border-top:1px solid #e0e0e0;">
-            <div style="display:flex; flex-direction:column; gap:8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size:13px;">
+            <div
+                style="display:flex; flex-direction:column; gap:8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size:13px;">
                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                     <input type="checkbox" id="show-most-deprived" style="width:18px; height:18px;" />
                     <span>Show most deprived (bottom 10%)</span>
@@ -400,6 +456,14 @@
     <div class="loading-overlay" id="loading">
         <span class="spinner"></span>
         Calculating population...
+    </div>
+
+    <div class="info-popup" id="info-popup">
+        <div class="info-popup-header">
+            <h3>LSOA Information</h3>
+            <button class="info-popup-close" id="info-popup-close">×</button>
+        </div>
+        <div id="info-popup-content"></div>
     </div>
 
     <script>
@@ -453,9 +517,6 @@
         let currentRadius = 5;
         let currentCircle = null;
         let selectedLSOAs = [];
-        let currentImdPercent = 10;
-        let imdEnabled = false;
-        let imdSelectedLSOAs = [];
         let showMostDeprived = false;
         let showLeastDeprived = false;
         const AREA_THRESHOLD = 0.10;
@@ -483,13 +544,6 @@
         const radiusValue = document.getElementById('radius-value');
         const populationTotal = document.getElementById('population-total');
         const loading = document.getElementById('loading');
-
-        const imdEnableCheckbox = document.getElementById('imd-enable');
-        const imdControls = document.getElementById('imd-controls');
-        const imdSlider = document.getElementById('imd-slider');
-        const imdValue = document.getElementById('imd-value');
-        const imdCount = document.getElementById('imd-count');
-        const imdList = document.getElementById('imd-list');
 
         function debounce(func, wait) {
             let timeout;
@@ -533,39 +587,11 @@
             }, 50);
         }, 300);
 
-        const debouncedImdUpdate = debounce(() => {
-            if (imdEnabled) {
-                updateImdFromViewport();
-            }
-        }, 200);
-
         slider.addEventListener('input', (e) => {
             currentRadius = parseInt(e.target.value);
             radiusValue.textContent = currentRadius;
             debouncedUpdate();
         });
-
-        imdEnableCheckbox.addEventListener('change', (e) => {
-            imdEnabled = e.target.checked;
-
-            if (imdEnabled) {
-                imdControls.classList.add('active');
-                updateImdFromViewport();
-            } else {
-                imdControls.classList.remove('active');
-                clearImdHighlight();
-            }
-        });
-
-        imdSlider.addEventListener('input', (e) => {
-            currentImdPercent = parseInt(e.target.value, 10);
-            imdValue.textContent = currentImdPercent;
-            if (imdEnabled) {
-                updateImdFromViewport();
-            }
-        });
-
-        map.on('moveend', debouncedImdUpdate);
 
         const resetBtn = document.getElementById('reset-btn');
         if (resetBtn) {
@@ -739,54 +765,6 @@
             updateDeprivationHighlights();
         }
 
-        function updateImdFromViewport() {
-            if (!map.getLayer('population-lsoa-outline')) return;
-
-            const maxDecile = Math.round(currentImdPercent / 10);
-
-            const features = map.queryRenderedFeatures({
-                layers: ['population-lsoa-outline']
-            });
-
-            const matchingCodes = new Set();
-            features.forEach(f => {
-                const code = f?.properties?.LSOA21CD;
-                if (!code) return;
-
-                const row = csvData[code];
-                if (row && row.IMDDecile > 0 && row.IMDDecile <= maxDecile) {
-                    matchingCodes.add(code);
-                }
-            });
-
-            imdSelectedLSOAs = Array.from(matchingCodes);
-
-            imdCount.textContent = imdSelectedLSOAs.length.toLocaleString();
-            imdList.textContent = imdSelectedLSOAs.length ? imdSelectedLSOAs.join(', ') : '-';
-
-            if (map.getLayer('population-lsoa-imd-highlight')) {
-                map.setFilter('population-lsoa-imd-highlight', [
-                    'in',
-                    ['get', 'LSOA21CD'],
-                    ['literal', imdSelectedLSOAs]
-                ]);
-            }
-        }
-
-        function clearImdHighlight() {
-            imdSelectedLSOAs = [];
-            imdCount.textContent = '0';
-            imdList.textContent = '-';
-
-            if (map.getLayer('population-lsoa-imd-highlight')) {
-                map.setFilter('population-lsoa-imd-highlight', [
-                    'in',
-                    ['get', 'LSOA21CD'],
-                    ['literal', []]
-                ]);
-            }
-        }
-
         function updateDeprivationHighlights() {
             if (!map.getSource('population-lsoa')) return;
 
@@ -869,12 +847,6 @@
             document.getElementById('band-mature-pct').textContent = '-';
             document.getElementById('band-older-pct').textContent = '-';
 
-            // Reset IMD controls
-            imdEnabled = false;
-            imdEnableCheckbox.checked = false;
-            clearImdHighlight();
-            imdControls.classList.remove('active');
-
             // Reset deprivation filters
             showMostDeprived = false;
             showLeastDeprived = false;
@@ -922,18 +894,6 @@
             });
 
             map.addLayer({
-                id: 'population-lsoa-imd-highlight',
-                type: 'fill',
-                source: 'population-lsoa',
-                'source-layer': 'clean_enriched_LSOA-5ty98a',
-                paint: {
-                    'fill-color': '#ff8800',
-                    'fill-opacity': 0.7
-                },
-                filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
-            });
-
-            map.addLayer({
                 id: 'population-lsoa-most-deprived',
                 type: 'fill',
                 source: 'population-lsoa',
@@ -968,7 +928,121 @@
                     'line-opacity': 0.3
                 }
             });
+
+            // Add click handler for polygons
+            map.on('click', 'population-lsoa-fill', (e) => {
+                if (e.features && e.features.length > 0) {
+                    showPolygonInfo(e.features[0]);
+                }
+            });
+
+            map.on('click', 'population-lsoa-outline', (e) => {
+                if (e.features && e.features.length > 0) {
+                    showPolygonInfo(e.features[0]);
+                }
+            });
+
+            // Change cursor on hover
+            map.on('mouseenter', 'population-lsoa-outline', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            map.on('mouseleave', 'population-lsoa-outline', () => {
+                map.getCanvas().style.cursor = '';
+            });
         });
+
+        // Info popup functionality
+        const infoPopup = document.getElementById('info-popup');
+        const infoPopupContent = document.getElementById('info-popup-content');
+        const infoPopupClose = document.getElementById('info-popup-close');
+
+        if (infoPopupClose) {
+            infoPopupClose.addEventListener('click', () => {
+                infoPopup.classList.remove('active');
+            });
+        }
+
+        function showPolygonInfo(feature) {
+            const lsoaCode = feature.properties.LSOA21CD;
+            const csvInfo = csvData[lsoaCode];
+
+            let html = '<div class="info-popup-section">';
+            html += '<h4>Feature Properties</h4>';
+            
+            // Display all feature properties
+            for (const [key, value] of Object.entries(feature.properties)) {
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">${key}</span>`;
+                html += `<span class="info-popup-value">${value || '-'}</span>`;
+                html += `</div>`;
+            }
+            html += '</div>';
+
+            // Display CSV data if available
+            if (csvInfo) {
+                html += '<div class="info-popup-section">';
+                html += '<h4>Population Data</h4>';
+                
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Total Population</span>`;
+                html += `<span class="info-popup-value">${csvInfo.Total.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Children (0-14)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.Children.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Young Adults (15-24)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.YoungAdults.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Early Professionals (25-34)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.EarlyProfessionals.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Family Builders (35-49)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.FamilyBuilders.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Mature Adults (50-64)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.MatureAdults.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Older (65+)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.Older.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                if (csvInfo.IMDRank) {
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">IMD Rank</span>`;
+                    html += `<span class="info-popup-value">${csvInfo.IMDRank.toLocaleString()}</span>`;
+                    html += `</div>`;
+                }
+
+                if (csvInfo.IMDDecile) {
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">IMD Decile</span>`;
+                    html += `<span class="info-popup-value">${csvInfo.IMDDecile}</span>`;
+                    html += `</div>`;
+                }
+
+                html += '</div>';
+            } else {
+                html += '<div class="info-popup-section">';
+                html += '<p style="color: #999; font-size: 13px; margin: 0;">No CSV data available for this LSOA.</p>';
+                html += '</div>';
+            }
+
+            infoPopupContent.innerHTML = html;
+            infoPopup.classList.add('active');
+        }
     </script>
 
 </body>
