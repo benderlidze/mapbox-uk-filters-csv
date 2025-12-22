@@ -52,7 +52,7 @@
             max-width: 100%;
             width: 100%;
             box-shadow: none;
-            border:1px solid #ddd;
+            border: 1px solid #ddd;
         }
 
         .slider-container {
@@ -688,19 +688,19 @@
             document.getElementById('band-mature-pct').textContent = formatPct(ageBandTotals.MatureAdults, ageBandTotals.Total);
             document.getElementById('band-older-pct').textContent = formatPct(ageBandTotals.Older, ageBandTotals.Total);
 
-            if (ageBandTotals.IMDCount > 0) {
-                const avgRank = Math.round(ageBandTotals.IMDRankSum / ageBandTotals.IMDCount);
-                const avgDecile = (ageBandTotals.IMDDecileSum / ageBandTotals.IMDCount).toFixed(1);
-                document.getElementById('band-imd-rank').textContent = avgRank.toLocaleString();
-                document.getElementById('band-imd-decile').textContent = avgDecile;
-                document.getElementById('band-imd-rank-pct').textContent = formatPct(avgRank, 1); // not meaningful, keep for layout
-                document.getElementById('band-imd-decile-pct').textContent = formatPct(parseFloat(avgDecile), 1);
-            } else {
-                document.getElementById('band-imd-rank').textContent = '-';
-                document.getElementById('band-imd-decile').textContent = '-';
-                document.getElementById('band-imd-rank-pct').textContent = '-';
-                document.getElementById('band-imd-decile-pct').textContent = '-';
-            }
+            // if (ageBandTotals.IMDCount > 0) {
+            //     const avgRank = Math.round(ageBandTotals.IMDRankSum / ageBandTotals.IMDCount);
+            //     const avgDecile = (ageBandTotals.IMDDecileSum / ageBandTotals.IMDCount).toFixed(1);
+            //     document.getElementById('band-imd-rank').textContent = avgRank.toLocaleString();
+            //     document.getElementById('band-imd-decile').textContent = avgDecile;
+            //     document.getElementById('band-imd-rank-pct').textContent = formatPct(avgRank, 1); // not meaningful, keep for layout
+            //     document.getElementById('band-imd-decile-pct').textContent = formatPct(parseFloat(avgDecile), 1);
+            // } else {
+            //     document.getElementById('band-imd-rank').textContent = '-';
+            //     document.getElementById('band-imd-decile').textContent = '-';
+            //     document.getElementById('band-imd-rank-pct').textContent = '-';
+            //     document.getElementById('band-imd-decile-pct').textContent = '-';
+            // }
 
             updateSelection();
         }
@@ -786,8 +786,6 @@
             document.getElementById('band-family').textContent = '-';
             document.getElementById('band-mature').textContent = '-';
             document.getElementById('band-older').textContent = '-';
-            document.getElementById('band-imd-rank').textContent = '-';
-            document.getElementById('band-imd-decile').textContent = '-';
             // reset percentage columns
             document.getElementById('band-children-pct').textContent = '-';
             document.getElementById('band-young-pct').textContent = '-';
@@ -795,8 +793,6 @@
             document.getElementById('band-family-pct').textContent = '-';
             document.getElementById('band-mature-pct').textContent = '-';
             document.getElementById('band-older-pct').textContent = '-';
-            document.getElementById('band-imd-rank-pct').textContent = '-';
-            document.getElementById('band-imd-decile-pct').textContent = '-';
 
             // Reset IMD controls
             imdEnabled = false;
