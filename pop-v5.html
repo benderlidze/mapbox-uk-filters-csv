@@ -52,6 +52,7 @@
             max-width: 100%;
             width: 100%;
             box-shadow: none;
+            border:1px solid #ddd;
         }
 
         .slider-container {
@@ -289,6 +290,12 @@
     <div id="map"></div>
 
     <div class="search-panel">
+        <div style="margin-bottom:10px; display:flex; gap:8px;">
+            <button id="reset-btn"
+                style="flex:1; padding:8px 10px; background:#f5f5f5; border:1px solid #ddd; border-radius:6px; cursor:pointer;">Reset
+                map</button>
+        </div>
+
         <div id="geocoder"></div>
 
         <div class="slider-container">
@@ -308,37 +315,41 @@
             <h4>Age Bands</h4>
             <table id="age-bands-table">
                 <tr>
+                    <td></td>
+                    <td style="font-weight:600; text-align:right;">Count</td>
+                    <td style="font-weight:600; text-align:right;">%</td>
+                </tr>
+                <tr>
                     <td>Children (0–14)</td>
                     <td id="band-children">-</td>
+                    <td id="band-children-pct">-</td>
                 </tr>
                 <tr>
                     <td>Young adults (15–24)</td>
                     <td id="band-young">-</td>
+                    <td id="band-young-pct">-</td>
                 </tr>
                 <tr>
                     <td>Early professionals (25–34)</td>
                     <td id="band-early">-</td>
+                    <td id="band-early-pct">-</td>
                 </tr>
                 <tr>
                     <td>Family builders (35–49)</td>
                     <td id="band-family">-</td>
+                    <td id="band-family-pct">-</td>
                 </tr>
                 <tr>
                     <td>Mature adults (50–64)</td>
                     <td id="band-mature">-</td>
+                    <td id="band-mature-pct">-</td>
                 </tr>
                 <tr>
                     <td>Older (65+)</td>
                     <td id="band-older">-</td>
+                    <td id="band-older-pct">-</td>
                 </tr>
-                <tr>
-                    <td>IMD Rank (avg)</td>
-                    <td id="band-imd-rank">-</td>
-                </tr>
-                <tr>
-                    <td>IMD Decile (avg)</td>
-                    <td id="band-imd-decile">-</td>
-                </tr>
+                <!-- IMD rank/decile rows removed -->
             </table>
         </div>
 
@@ -540,6 +551,11 @@
 
         map.on('moveend', debouncedImdUpdate);
 
+        const resetBtn = document.getElementById('reset-btn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', resetApp);
+        }
+
         function updateCircleGeometry() {
             if (!currentCenter || currentRadius === 0) {
                 if (map.getLayer('radius-outline')) {
@@ -658,14 +674,32 @@
             document.getElementById('band-mature').textContent = ageBandTotals.MatureAdults.toLocaleString();
             document.getElementById('band-older').textContent = ageBandTotals.Older.toLocaleString();
 
+            // Helper to format percentage
+            function formatPct(part, total) {
+                if (!total || total === 0) return '-';
+                return ((part / total) * 100).toFixed(1) + '%';
+            }
+
+            // Set percentage columns
+            document.getElementById('band-children-pct').textContent = formatPct(ageBandTotals.Children, ageBandTotals.Total);
+            document.getElementById('band-young-pct').textContent = formatPct(ageBandTotals.YoungAdults, ageBandTotals.Total);
+            document.getElementById('band-early-pct').textContent = formatPct(ageBandTotals.EarlyProfessionals, ageBandTotals.Total);
+            document.getElementById('band-family-pct').textContent = formatPct(ageBandTotals.FamilyBuilders, ageBandTotals.Total);
+            document.getElementById('band-mature-pct').textContent = formatPct(ageBandTotals.MatureAdults, ageBandTotals.Total);
+            document.getElementById('band-older-pct').textContent = formatPct(ageBandTotals.Older, ageBandTotals.Total);
+
             if (ageBandTotals.IMDCount > 0) {
                 const avgRank = Math.round(ageBandTotals.IMDRankSum / ageBandTotals.IMDCount);
                 const avgDecile = (ageBandTotals.IMDDecileSum / ageBandTotals.IMDCount).toFixed(1);
                 document.getElementById('band-imd-rank').textContent = avgRank.toLocaleString();
                 document.getElementById('band-imd-decile').textContent = avgDecile;
+                document.getElementById('band-imd-rank-pct').textContent = formatPct(avgRank, 1); // not meaningful, keep for layout
+                document.getElementById('band-imd-decile-pct').textContent = formatPct(parseFloat(avgDecile), 1);
             } else {
                 document.getElementById('band-imd-rank').textContent = '-';
                 document.getElementById('band-imd-decile').textContent = '-';
+                document.getElementById('band-imd-rank-pct').textContent = '-';
+                document.getElementById('band-imd-decile-pct').textContent = '-';
             }
 
             updateSelection();
@@ -717,6 +751,61 @@
                     ['literal', []]
                 ]);
             }
+        }
+
+        function resetApp() {
+            // Clear geocoder input if supported
+            try {
+                if (geocoder && typeof geocoder.clear === 'function') geocoder.clear();
+            } catch (e) {
+                console.warn('Geocoder clear failed', e);
+            }
+
+            // Reset circle and its source/layer
+            currentCenter = null;
+            currentRadius = 5;
+            slider.value = currentRadius;
+            radiusValue.textContent = currentRadius;
+
+            if (map.getLayer('radius-outline')) {
+                map.removeLayer('radius-outline');
+            }
+            if (map.getSource('radius')) {
+                map.removeSource('radius');
+            }
+            currentCircle = null;
+
+            // Clear selections and UI values
+            selectedLSOAs = [];
+            updateSelection();
+
+            populationTotal.textContent = '-';
+            document.getElementById('band-children').textContent = '-';
+            document.getElementById('band-young').textContent = '-';
+            document.getElementById('band-early').textContent = '-';
+            document.getElementById('band-family').textContent = '-';
+            document.getElementById('band-mature').textContent = '-';
+            document.getElementById('band-older').textContent = '-';
+            document.getElementById('band-imd-rank').textContent = '-';
+            document.getElementById('band-imd-decile').textContent = '-';
+            // reset percentage columns
+            document.getElementById('band-children-pct').textContent = '-';
+            document.getElementById('band-young-pct').textContent = '-';
+            document.getElementById('band-early-pct').textContent = '-';
+            document.getElementById('band-family-pct').textContent = '-';
+            document.getElementById('band-mature-pct').textContent = '-';
+            document.getElementById('band-older-pct').textContent = '-';
+            document.getElementById('band-imd-rank-pct').textContent = '-';
+            document.getElementById('band-imd-decile-pct').textContent = '-';
+
+            // Reset IMD controls
+            imdEnabled = false;
+            imdEnableCheckbox.checked = false;
+            clearImdHighlight();
+            imdControls.classList.remove('active');
+
+            // Recenter map to UK default
+            map.easeTo({ center: { lng: -2.774533172216252, lat: 54.12181638598531 }, zoom: 7 });
         }
 
         function updateSelection() {
