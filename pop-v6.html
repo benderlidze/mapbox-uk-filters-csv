@@ -771,41 +771,71 @@
         function updateDeprivationHighlights() {
             if (!map.getSource('population-lsoa')) return;
 
-            const mostDeprivedLSOAs = [];
-            const leastDeprivedLSOAs = [];
+            // Simple logic: no radius = show globally, with radius = filter within radius
+            if (selectedLSOAs.length === 0) {
+                // No radius - build list from all CSV data
+                const mostDeprivedLSOAs = [];
+                const leastDeprivedLSOAs = [];
 
-            // Only filter LSOAs inside the circle/radius
-            selectedLSOAs.forEach(code => {
-                const row = csvData[code];
-                if (!row || !row.IMDDecile) return;
+                if (showMostDeprived || showLeastDeprived) {
+                    Object.keys(csvData).forEach(code => {
+                        const row = csvData[code];
+                        if (!row || !row.IMDDecile) return;
 
-                // Most deprived: IMDDecile <= 1
-                if (showMostDeprived && row.IMDDecile <= 1) {
-                    mostDeprivedLSOAs.push(code);
+                        if (showMostDeprived && row.IMDDecile <= 1) {
+                            mostDeprivedLSOAs.push(code);
+                        }
+                        if (showLeastDeprived && row.IMDDecile >= 9) {
+                            leastDeprivedLSOAs.push(code);
+                        }
+                    });
                 }
 
-                // Least deprived: IMDDecile >= 9
-                if (showLeastDeprived && row.IMDDecile >= 9) {
-                    leastDeprivedLSOAs.push(code);
+                if (map.getLayer('population-lsoa-most-deprived')) {
+                    map.setFilter('population-lsoa-most-deprived', [
+                        'in',
+                        ['get', 'LSOA21CD'],
+                        ['literal', mostDeprivedLSOAs]
+                    ]);
                 }
-            });
+                if (map.getLayer('population-lsoa-least-deprived')) {
+                    map.setFilter('population-lsoa-least-deprived', [
+                        'in',
+                        ['get', 'LSOA21CD'],
+                        ['literal', leastDeprivedLSOAs]
+                    ]);
+                }
+            } else {
+                // Radius active - filter within selected LSOAs
+                const mostDeprivedLSOAs = [];
+                const leastDeprivedLSOAs = [];
 
-            // Update layers for most deprived (red)
-            if (map.getLayer('population-lsoa-most-deprived')) {
-                map.setFilter('population-lsoa-most-deprived', [
-                    'in',
-                    ['get', 'LSOA21CD'],
-                    ['literal', mostDeprivedLSOAs]
-                ]);
-            }
+                selectedLSOAs.forEach(code => {
+                    const row = csvData[code];
+                    if (!row || !row.IMDDecile) return;
 
-            // Update layers for least deprived (green)
-            if (map.getLayer('population-lsoa-least-deprived')) {
-                map.setFilter('population-lsoa-least-deprived', [
-                    'in',
-                    ['get', 'LSOA21CD'],
-                    ['literal', leastDeprivedLSOAs]
-                ]);
+                    if (showMostDeprived && row.IMDDecile <= 1) {
+                        mostDeprivedLSOAs.push(code);
+                    }
+                    if (showLeastDeprived && row.IMDDecile >= 9) {
+                        leastDeprivedLSOAs.push(code);
+                    }
+                });
+
+                if (map.getLayer('population-lsoa-most-deprived')) {
+                    map.setFilter('population-lsoa-most-deprived', [
+                        'in',
+                        ['get', 'LSOA21CD'],
+                        ['literal', mostDeprivedLSOAs]
+                    ]);
+                }
+                if (map.getLayer('population-lsoa-least-deprived')) {
+                    map.setFilter('population-lsoa-least-deprived', [
+                        'in',
+                        ['get', 'LSOA21CD'],
+                        ['literal', leastDeprivedLSOAs]
+                    ]);
+                }
             }
         }
 
