@@ -517,6 +517,7 @@
         let currentRadius = 5;
         let currentCircle = null;
         let selectedLSOAs = [];
+        let clickedLSOA = null;
         let showMostDeprived = false;
         let showLeastDeprived = false;
         const AREA_THRESHOLD = 0.10;
@@ -929,15 +930,49 @@
                 }
             });
 
+            map.addLayer({
+                id: 'population-lsoa-selected-outline',
+                type: 'line',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'line-color': '#ff6600',
+                    'line-width': 4
+                },
+                filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
+            });
+
             // Add click handler for polygons
             map.on('click', 'population-lsoa-fill', (e) => {
                 if (e.features && e.features.length > 0) {
+                    const lsoaCode = e.features[0].properties.LSOA21CD;
+                    if (lsoaCode) {
+                        clickedLSOA = lsoaCode;
+                        if (map.getLayer('population-lsoa-selected-outline')) {
+                            map.setFilter('population-lsoa-selected-outline', [
+                                '==',
+                                ['get', 'LSOA21CD'],
+                                lsoaCode
+                            ]);
+                        }
+                    }
                     showPolygonInfo(e.features[0]);
                 }
             });
 
             map.on('click', 'population-lsoa-outline', (e) => {
                 if (e.features && e.features.length > 0) {
+                    const lsoaCode = e.features[0].properties.LSOA21CD;
+                    if (lsoaCode) {
+                        clickedLSOA = lsoaCode;
+                        if (map.getLayer('population-lsoa-selected-outline')) {
+                            map.setFilter('population-lsoa-selected-outline', [
+                                '==',
+                                ['get', 'LSOA21CD'],
+                                lsoaCode
+                            ]);
+                        }
+                    }
                     showPolygonInfo(e.features[0]);
                 }
             });
@@ -964,14 +999,27 @@
         }
 
         function showPolygonInfo(feature) {
+
+            const excludePropsNames = ['LSOA21CD', "TotalMF"];
+            const DISPLAY_NAME_MAP = {
+                LSOA21NM: 'LSOA Name',
+            };
+            const filteredAndMappedProps =
+                Object.entries(feature.properties)
+                    .filter(([prop]) => !excludePropsNames.includes(prop))
+                    .map(([prop, value]) => {
+                        return prop === "LSOA21NM" ? ["Name", value] : [displayName, value];
+                    })
+
+
             const lsoaCode = feature.properties.LSOA21CD;
             const csvInfo = csvData[lsoaCode];
 
             let html = '<div class="info-popup-section">';
             html += '<h4>Feature Properties</h4>';
-            
+
             // Display all feature properties
-            for (const [key, value] of Object.entries(feature.properties)) {
+            for (const [key, value] of filteredAndMappedProps) {
                 html += `<div class="info-popup-row">`;
                 html += `<span class="info-popup-label">${key}</span>`;
                 html += `<span class="info-popup-value">${value || '-'}</span>`;
@@ -983,7 +1031,7 @@
             if (csvInfo) {
                 html += '<div class="info-popup-section">';
                 html += '<h4>Population Data</h4>';
-                
+
                 html += `<div class="info-popup-row">`;
                 html += `<span class="info-popup-label">Total Population</span>`;
                 html += `<span class="info-popup-value">${csvInfo.Total.toLocaleString()}</span>`;
