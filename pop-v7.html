@@ -473,6 +473,8 @@
 
         const csvData = {};
         let csvLoaded = false;
+        const employmentData = {};
+        let employmentLoaded = false;
 
         async function loadCSVData() {
             try {
@@ -516,6 +518,34 @@
         }
 
         loadCSVData();
+
+        async function loadEmploymentData() {
+            try {
+                const response = await fetch('population_data/TS066-2021-1-filtered-2025-12-18T16_13_05Z_collapsed.csv');
+                const csvText = await response.text();
+                const lines = csvText.trim().split('\n');
+
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = lines[i].split(',');
+                    if (cols.length >= 6) {
+                        const code = cols[0].trim();
+                        employmentData[code] = {
+                            Employed: parseInt(cols[1]) || 0,
+                            Unemployed: parseInt(cols[2]) || 0,
+                            StudentsInactive: parseInt(cols[3]) || 0,
+                            Retired: parseInt(cols[4]) || 0,
+                            OtherInactive: parseInt(cols[5]) || 0
+                        };
+                    }
+                }
+                employmentLoaded = true;
+                console.log('Employment CSV loaded:', Object.keys(employmentData).length, 'records');
+            } catch (err) {
+                console.error('Error loading employment CSV:', err);
+            }
+        }
+
+        loadEmploymentData();
 
         const map = new mapboxgl.Map({
             container: 'map',
@@ -1051,7 +1081,7 @@
                 Object.entries(feature.properties)
                     .filter(([prop]) => !excludePropsNames.includes(prop))
                     .map(([prop, value]) => {
-                        return prop === "LSOA21NM" ? ["Name", value] : [displayName, value];
+                        return prop === "LSOA21NM" ? ["Name", value] : [prop, value];
                     })
 
 
@@ -1199,6 +1229,40 @@
                         html += `<span class="info-popup-value">${csvInfo.HH_AvgSizeApprox}</span>`;
                         html += `</div>`;
                     }
+
+                    html += '</div>';
+                }
+
+                // Employment Data
+                const empInfo = employmentData[lsoaCode];
+                if (empInfo) {
+                    html += '<div class="info-popup-section">';
+                    html += '<h4>Employment Status</h4>';
+
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">Employed</span>`;
+                    html += `<span class="info-popup-value">${empInfo.Employed.toLocaleString()}</span>`;
+                    html += `</div>`;
+
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">Unemployed</span>`;
+                    html += `<span class="info-popup-value">${empInfo.Unemployed.toLocaleString()}</span>`;
+                    html += `</div>`;
+
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">Students (inactive)</span>`;
+                    html += `<span class="info-popup-value">${empInfo.StudentsInactive.toLocaleString()}</span>`;
+                    html += `</div>`;
+
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">Retired</span>`;
+                    html += `<span class="info-popup-value">${empInfo.Retired.toLocaleString()}</span>`;
+                    html += `</div>`;
+
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">Other inactive</span>`;
+                    html += `<span class="info-popup-value">${empInfo.OtherInactive.toLocaleString()}</span>`;
+                    html += `</div>`;
 
                     html += '</div>';
                 }
