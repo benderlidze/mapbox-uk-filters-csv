@@ -482,7 +482,7 @@
 
                 for (let i = 1; i < lines.length; i++) {
                     const cols = lines[i].split(',');
-                    if (cols.length >= 10) {
+                    if (cols.length >= 21) {
                         const lsoaCode = cols[0].trim();
                         csvData[lsoaCode] = {
                             Total: parseInt(cols[1]) || 0,
@@ -493,7 +493,18 @@
                             MatureAdults: parseInt(cols[6]) || 0,
                             Older: parseInt(cols[7]) || 0,
                             IMDRank: parseInt(cols[8]) || 0,
-                            IMDDecile: parseInt(cols[9]) || 0
+                            IMDDecile: parseInt(cols[9]) || 0,
+                            HH_0: parseInt(cols[10]) || 0,
+                            HH_1: parseInt(cols[11]) || 0,
+                            HH_2: parseInt(cols[12]) || 0,
+                            HH_3: parseInt(cols[13]) || 0,
+                            HH_4: parseInt(cols[14]) || 0,
+                            HH_5: parseInt(cols[15]) || 0,
+                            HH_6: parseInt(cols[16]) || 0,
+                            HH_7: parseInt(cols[17]) || 0,
+                            HH_8plus: parseInt(cols[18]) || 0,
+                            HH_Total: parseInt(cols[19]) || 0,
+                            HH_AvgSizeApprox: parseFloat(cols[20]) || 0
                         };
                     }
                 }
@@ -1114,6 +1125,83 @@
                 }
 
                 html += '</div>';
+
+                console.log('csvInfo', csvInfo);
+                // Household Size Data
+                if (csvInfo.HH_Total) {
+                    html += '<div class="info-popup-section">';
+                    html += '<h4>Household Size Distribution</h4>';
+
+                    if (csvInfo.HH_1) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Single-person household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_1.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_2) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Two-person household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_2.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_3) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Small family / shared household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_3.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_4) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Family household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_4.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_5) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Large family / shared household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_5.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_6) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Very large household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_6.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_7) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Very large household (7)</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_7.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_8plus) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Extremely large household (8+)</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_8plus.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label"><b>Total Households</b></span>`;
+                    html += `<span class="info-popup-value">${csvInfo.HH_Total.toLocaleString()}</span>`;
+                    html += `</div>`;
+
+                    if (csvInfo.HH_AvgSizeApprox) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Average Household Size</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_AvgSizeApprox}</span>`;
+                        html += `</div>`;
+                    }
+
+                    html += '</div>';
+                }
             } else {
                 html += '<div class="info-popup-section">';
                 html += '<p style="color: #999; font-size: 13px; margin: 0;">No CSV data available for this LSOA.</p>';
