@@ -245,6 +245,84 @@
             border-bottom: none;
         }
 
+        .household-table {
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+        }
+
+        .household-table h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .household-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .household-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .household-table td:first-child {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .household-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+            color: #0080ff;
+        }
+
+        .household-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .employment-table {
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+        }
+
+        .employment-table h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .employment-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .employment-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .employment-table td:first-child {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .employment-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+            color: #0080ff;
+        }
+
+        .employment-table tr:last-child td {
+            border-bottom: none;
+        }
+
         .loading-overlay {
             position: absolute;
             top: 50%;
@@ -282,6 +360,77 @@
             to {
                 transform: rotate(360deg);
             }
+        }
+
+        .info-icon {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            background: #0080ff;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 14px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 4px;
+            cursor: help;
+            position: relative;
+        }
+
+        .info-icon .tooltip-text {
+            visibility: hidden;
+            background-color: #333;
+            color: white;
+            text-align: left;
+            padding: 8px 10px;
+            border-radius: 6px;
+            position: fixed;
+            z-index: 10000;
+            min-width: 200px;
+            max-width: 250px;
+            font-size: 11px;
+            font-weight: normal;
+            line-height: 1.4;
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: normal;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+        }
+
+        .info-icon .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+
+        .info-icon {
+            position: relative;
+        }
+
+        .info-icon:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Position tooltip dynamically with JavaScript */
+        @supports (position: fixed) {
+            .info-icon:hover .tooltip-text {
+                bottom: auto;
+                left: auto;
+                transform: translate(-50%, -100%) translateY(-10px);
+            }
+        }
+
+        .info-icon:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
         }
 
         .info-popup {
@@ -429,6 +578,70 @@
                     <td id="band-older-pct">-</td>
                 </tr>
                 <!-- IMD rank/decile rows removed -->
+            </table>
+        </div>
+
+        <div class="household-table">
+            <h4>Household Size Distribution</h4>
+            <table>
+                <tr>
+                    <td>Single-person household</td>
+                    <td id="hh-single">-</td>
+                </tr>
+                <tr>
+                    <td>Two-person household</td>
+                    <td id="hh-two">-</td>
+                </tr>
+                <tr>
+                    <td>Small family / shared</td>
+                    <td id="hh-small">-</td>
+                </tr>
+                <tr>
+                    <td>Family household</td>
+                    <td id="hh-family">-</td>
+                </tr>
+                <tr>
+                    <td>Large family / shared</td>
+                    <td id="hh-large">-</td>
+                </tr>
+                <tr>
+                    <td>Very large household</td>
+                    <td id="hh-very-large">-</td>
+                </tr>
+                <tr style="border-top: 1px solid #ddd;">
+                    <td><strong>Total Households</strong></td>
+                    <td id="hh-total">-</td>
+                </tr>
+                <tr>
+                    <td><strong>Average Household Size</strong></td>
+                    <td id="hh-avg-size">-</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="employment-table">
+            <h4>Employment Status</h4>
+            <table>
+                <tr>
+                    <td>Employed</td>
+                    <td id="emp-employed">-</td>
+                </tr>
+                <tr>
+                    <td>Unemployed</td>
+                    <td id="emp-unemployed">-</td>
+                </tr>
+                <tr>
+                    <td>Students (inactive)</td>
+                    <td id="emp-students">-</td>
+                </tr>
+                <tr>
+                    <td>Retired</td>
+                    <td id="emp-retired">-</td>
+                </tr>
+                <tr>
+                    <td>Other inactive</td>
+                    <td id="emp-other">-</td>
+                </tr>
             </table>
         </div>
 
@@ -720,7 +933,21 @@
                 Older: 0,
                 IMDRankSum: 0,
                 IMDDecileSum: 0,
-                IMDCount: 0
+                IMDCount: 0,
+                HH_1: 0,
+                HH_2: 0,
+                HH_3: 0,
+                HH_4: 0,
+                HH_5: 0,
+                HH_6: 0,
+                HH_Total: 0,
+                HH_AvgSizeSum: 0,
+                HH_Count: 0,
+                Employed: 0,
+                Unemployed: 0,
+                StudentsInactive: 0,
+                Retired: 0,
+                OtherInactive: 0
             };
             const processedCodes = new Set();
 
@@ -762,6 +989,29 @@
                             if (data.IMDDecile > 0) {
                                 ageBandTotals.IMDDecileSum += data.IMDDecile;
                             }
+
+                            // Aggregate household data
+                            ageBandTotals.HH_1 += data.HH_1 || 0;
+                            ageBandTotals.HH_2 += data.HH_2 || 0;
+                            ageBandTotals.HH_3 += data.HH_3 || 0;
+                            ageBandTotals.HH_4 += data.HH_4 || 0;
+                            ageBandTotals.HH_5 += data.HH_5 || 0;
+                            ageBandTotals.HH_6 += data.HH_6 || 0;
+                            ageBandTotals.HH_Total += data.HH_Total || 0;
+                            if (data.HH_AvgSizeApprox > 0) {
+                                ageBandTotals.HH_AvgSizeSum += data.HH_AvgSizeApprox;
+                                ageBandTotals.HH_Count += 1;
+                            }
+                        }
+
+                        // Aggregate employment data
+                        const empData = employmentData[lsoaCode];
+                        if (empData) {
+                            ageBandTotals.Employed += empData.Employed || 0;
+                            ageBandTotals.Unemployed += empData.Unemployed || 0;
+                            ageBandTotals.StudentsInactive += empData.StudentsInactive || 0;
+                            ageBandTotals.Retired += empData.Retired || 0;
+                            ageBandTotals.OtherInactive += empData.OtherInactive || 0;
                         }
                     }
                 } catch (err) {
@@ -790,6 +1040,28 @@
             document.getElementById('band-family-pct').textContent = formatPct(ageBandTotals.FamilyBuilders, ageBandTotals.Total);
             document.getElementById('band-mature-pct').textContent = formatPct(ageBandTotals.MatureAdults, ageBandTotals.Total);
             document.getElementById('band-older-pct').textContent = formatPct(ageBandTotals.Older, ageBandTotals.Total);
+
+            // Update household data
+            document.getElementById('hh-single').textContent = ageBandTotals.HH_1.toLocaleString();
+            document.getElementById('hh-two').textContent = ageBandTotals.HH_2.toLocaleString();
+            document.getElementById('hh-small').textContent = ageBandTotals.HH_3.toLocaleString();
+            document.getElementById('hh-family').textContent = ageBandTotals.HH_4.toLocaleString();
+            document.getElementById('hh-large').textContent = ageBandTotals.HH_5.toLocaleString();
+            document.getElementById('hh-very-large').textContent = ageBandTotals.HH_6.toLocaleString();
+            document.getElementById('hh-total').textContent = ageBandTotals.HH_Total.toLocaleString();
+
+            // Calculate average household size
+            const avgHHSize = ageBandTotals.HH_Count > 0
+                ? (ageBandTotals.HH_AvgSizeSum / ageBandTotals.HH_Count).toFixed(3)
+                : '-';
+            document.getElementById('hh-avg-size').textContent = avgHHSize;
+
+            // Update employment data
+            document.getElementById('emp-employed').textContent = ageBandTotals.Employed.toLocaleString();
+            document.getElementById('emp-unemployed').textContent = ageBandTotals.Unemployed.toLocaleString();
+            document.getElementById('emp-students').textContent = ageBandTotals.StudentsInactive.toLocaleString();
+            document.getElementById('emp-retired').textContent = ageBandTotals.Retired.toLocaleString();
+            document.getElementById('emp-other').textContent = ageBandTotals.OtherInactive.toLocaleString();
 
             // if (ageBandTotals.IMDCount > 0) {
             //     const avgRank = Math.round(ageBandTotals.IMDRankSum / ageBandTotals.IMDCount);
@@ -906,6 +1178,18 @@
             selectedLSOAs = [];
             updateSelection();
 
+            // Close info popup and clear clicked LSOA
+            clickedLSOA = null;
+            const infoPopup = document.getElementById('info-popup');
+            if (infoPopup) {
+                infoPopup.classList.remove('active');
+            }
+
+            // Clear the selected polygon outline
+            if (map.getLayer('population-lsoa-selected-outline')) {
+                map.setFilter('population-lsoa-selected-outline', ['==', ['get', 'LSOA21CD'], '']);
+            }
+
             populationTotal.textContent = '-';
             document.getElementById('band-children').textContent = '-';
             document.getElementById('band-young').textContent = '-';
@@ -920,6 +1204,23 @@
             document.getElementById('band-family-pct').textContent = '-';
             document.getElementById('band-mature-pct').textContent = '-';
             document.getElementById('band-older-pct').textContent = '-';
+
+            // Reset household data
+            document.getElementById('hh-single').textContent = '-';
+            document.getElementById('hh-two').textContent = '-';
+            document.getElementById('hh-small').textContent = '-';
+            document.getElementById('hh-family').textContent = '-';
+            document.getElementById('hh-large').textContent = '-';
+            document.getElementById('hh-very-large').textContent = '-';
+            document.getElementById('hh-total').textContent = '-';
+            document.getElementById('hh-avg-size').textContent = '-';
+
+            // Reset employment data
+            document.getElementById('emp-employed').textContent = '-';
+            document.getElementById('emp-unemployed').textContent = '-';
+            document.getElementById('emp-students').textContent = '-';
+            document.getElementById('emp-retired').textContent = '-';
+            document.getElementById('emp-other').textContent = '-';
 
             // Reset deprivation filters
             showMostDeprived = false;
@@ -1142,14 +1443,14 @@
 
                 if (csvInfo.IMDRank) {
                     html += `<div class="info-popup-row">`;
-                    html += `<span class="info-popup-label">IMD Rank</span>`;
+                    html += `<span class="info-popup-label">IMD Rank<span class="info-icon">i<span class="tooltip-text">National deprivation rank from 1 (most) to 32,844 (least)</span></span></span>`;
                     html += `<span class="info-popup-value">${csvInfo.IMDRank.toLocaleString()}</span>`;
                     html += `</div>`;
                 }
 
                 if (csvInfo.IMDDecile) {
                     html += `<div class="info-popup-row">`;
-                    html += `<span class="info-popup-label">IMD Decile</span>`;
+                    html += `<span class="info-popup-label">IMD Decile<span class="info-icon">i<span class="tooltip-text">Ten national deprivation bands; 1 is most deprived.</span></span></span>`;
                     html += `<span class="info-popup-value">${csvInfo.IMDDecile}</span>`;
                     html += `</div>`;
                 }
@@ -1274,6 +1575,21 @@
 
             infoPopupContent.innerHTML = html;
             infoPopup.classList.add('active');
+
+            // Position tooltips dynamically after content is rendered
+            setTimeout(() => {
+                const infoIcons = infoPopup.querySelectorAll('.info-icon');
+                infoIcons.forEach(icon => {
+                    icon.addEventListener('mouseenter', function (e) {
+                        const tooltip = this.querySelector('.tooltip-text');
+                        if (tooltip) {
+                            const rect = this.getBoundingClientRect();
+                            tooltip.style.left = rect.left + (rect.width / 2) + 'px';
+                            tooltip.style.top = (rect.top) + 'px';
+                        }
+                    });
+                });
+            }, 10);
         }
     </script>
 
