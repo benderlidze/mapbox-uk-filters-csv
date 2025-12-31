@@ -44,7 +44,7 @@
             width: 320px;
             z-index: 1;
             max-height: 90vh;
-            overflow-y: auto;
+            overflow: visible;
         }
 
         .search-panel .mapboxgl-ctrl-geocoder {
@@ -53,6 +53,10 @@
             width: 100%;
             box-shadow: none;
             border: 1px solid #ddd;
+        }
+
+        .search-panel .mapboxgl-ctrl-geocoder .suggestions {
+            z-index: 2;
         }
 
         .slider-container {
@@ -533,139 +537,140 @@
             </div>
             <input type="range" min="0" max="50" value="5" id="radius-slider" />
         </div>
-
-        <div class="population-display">
-            <div>Total Population</div>
-            <div class="population-value" id="population-total">-</div>
-        </div>
-
-        <div class="age-bands-table">
-            <h4>Age Bands</h4>
-            <table id="age-bands-table">
-                <tr>
-                    <td></td>
-                    <td style="font-weight:600; text-align:right;">Count</td>
-                    <td style="font-weight:600; text-align:right;">%</td>
-                </tr>
-                <tr>
-                    <td>Children (0–14)</td>
-                    <td id="band-children">-</td>
-                    <td id="band-children-pct">-</td>
-                </tr>
-                <tr>
-                    <td>Young adults (15–24)</td>
-                    <td id="band-young">-</td>
-                    <td id="band-young-pct">-</td>
-                </tr>
-                <tr>
-                    <td>Early professionals (25–34)</td>
-                    <td id="band-early">-</td>
-                    <td id="band-early-pct">-</td>
-                </tr>
-                <tr>
-                    <td>Family builders (35–49)</td>
-                    <td id="band-family">-</td>
-                    <td id="band-family-pct">-</td>
-                </tr>
-                <tr>
-                    <td>Mature adults (50–64)</td>
-                    <td id="band-mature">-</td>
-                    <td id="band-mature-pct">-</td>
-                </tr>
-                <tr>
-                    <td>Older (65+)</td>
-                    <td id="band-older">-</td>
-                    <td id="band-older-pct">-</td>
-                </tr>
-                <!-- IMD rank/decile rows removed -->
-            </table>
-        </div>
-
-        <div class="household-table">
-            <h4>Household Size Distribution</h4>
-            <table>
-                <tr>
-                    <td>Single-person household</td>
-                    <td id="hh-single">-</td>
-                </tr>
-                <tr>
-                    <td>Two-person household</td>
-                    <td id="hh-two">-</td>
-                </tr>
-                <tr>
-                    <td>Small family / shared</td>
-                    <td id="hh-small">-</td>
-                </tr>
-                <tr>
-                    <td>Family household</td>
-                    <td id="hh-family">-</td>
-                </tr>
-                <tr>
-                    <td>Large family / shared</td>
-                    <td id="hh-large">-</td>
-                </tr>
-                <tr>
-                    <td>Very large household</td>
-                    <td id="hh-very-large">-</td>
-                </tr>
-                <tr style="border-top: 1px solid #ddd;">
-                    <td><strong>Total Households</strong></td>
-                    <td id="hh-total">-</td>
-                </tr>
-                <tr>
-                    <td><strong>Average Household Size</strong></td>
-                    <td id="hh-avg-size">-</td>
-                </tr>
-            </table>
-        </div>
-
-        <div class="employment-table">
-            <h4>Employment Status</h4>
-            <table>
-                <tr>
-                    <td>Employed</td>
-                    <td id="emp-employed">-</td>
-                </tr>
-                <tr>
-                    <td>Unemployed</td>
-                    <td id="emp-unemployed">-</td>
-                </tr>
-                <tr>
-                    <td>Students (inactive)</td>
-                    <td id="emp-students">-</td>
-                </tr>
-                <tr>
-                    <td>Retired</td>
-                    <td id="emp-retired">-</td>
-                </tr>
-                <tr>
-                    <td>Other inactive</td>
-                    <td id="emp-other">-</td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- Deprivation filters -->
-        <div style="margin-top:15px; padding-top:15px; border-top:1px solid #e0e0e0;">
-            <div
-                style="display:flex; flex-direction:column; gap:8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size:13px;">
-                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                    <input type="checkbox" id="show-most-deprived" style="width:18px; height:18px;" />
-                    <span>Show most deprived (bottom 10%)</span>
-                </label>
-                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                    <input type="checkbox" id="show-least-deprived" style="width:18px; height:18px;" />
-                    <span>Show least deprived (top 10%)</span>
-                </label>
+        <div id="main-data-section" style="display: none;">
+            <div class="population-display">
+                <div>Total Population</div>
+                <div class="population-value" id="population-total">-</div>
             </div>
-        </div>
 
-        <div style="margin-top:10px; display:flex; gap:8px;">
-            <button id="reset-btn"
-                style="flex:1; padding:8px 10px; background:#f5f5f5; border:1px solid #ddd; border-radius:6px; cursor:pointer;">Reset
-                map</button>
-        </div>
+            <div class="age-bands-table">
+                <h4>Age Bands</h4>
+                <table id="age-bands-table">
+                    <tr>
+                        <td></td>
+                        <td style="font-weight:600; text-align:right;">Count</td>
+                        <td style="font-weight:600; text-align:right;">%</td>
+                    </tr>
+                    <tr>
+                        <td>Children (0–14)</td>
+                        <td id="band-children">-</td>
+                        <td id="band-children-pct">-</td>
+                    </tr>
+                    <tr>
+                        <td>Young adults (15–24)</td>
+                        <td id="band-young">-</td>
+                        <td id="band-young-pct">-</td>
+                    </tr>
+                    <tr>
+                        <td>Early professionals (25–34)</td>
+                        <td id="band-early">-</td>
+                        <td id="band-early-pct">-</td>
+                    </tr>
+                    <tr>
+                        <td>Family builders (35–49)</td>
+                        <td id="band-family">-</td>
+                        <td id="band-family-pct">-</td>
+                    </tr>
+                    <tr>
+                        <td>Mature adults (50–64)</td>
+                        <td id="band-mature">-</td>
+                        <td id="band-mature-pct">-</td>
+                    </tr>
+                    <tr>
+                        <td>Older (65+)</td>
+                        <td id="band-older">-</td>
+                        <td id="band-older-pct">-</td>
+                    </tr>
+                    <!-- IMD rank/decile rows removed -->
+                </table>
+            </div>
 
+            <div class="household-table">
+                <h4>Household Size Distribution</h4>
+                <table>
+                    <tr>
+                        <td>Single-person household</td>
+                        <td id="hh-single">-</td>
+                    </tr>
+                    <tr>
+                        <td>Two-person household</td>
+                        <td id="hh-two">-</td>
+                    </tr>
+                    <tr>
+                        <td>Small family / shared</td>
+                        <td id="hh-small">-</td>
+                    </tr>
+                    <tr>
+                        <td>Family household</td>
+                        <td id="hh-family">-</td>
+                    </tr>
+                    <tr>
+                        <td>Large family / shared</td>
+                        <td id="hh-large">-</td>
+                    </tr>
+                    <tr>
+                        <td>Very large household</td>
+                        <td id="hh-very-large">-</td>
+                    </tr>
+                    <tr style="border-top: 1px solid #ddd;">
+                        <td><strong>Total Households</strong></td>
+                        <td id="hh-total">-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Average Household Size</strong></td>
+                        <td id="hh-avg-size">-</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="employment-table">
+                <h4>Employment Status</h4>
+                <table>
+                    <tr>
+                        <td>Employed</td>
+                        <td id="emp-employed">-</td>
+                    </tr>
+                    <tr>
+                        <td>Unemployed</td>
+                        <td id="emp-unemployed">-</td>
+                    </tr>
+                    <tr>
+                        <td>Students (inactive)</td>
+                        <td id="emp-students">-</td>
+                    </tr>
+                    <tr>
+                        <td>Retired</td>
+                        <td id="emp-retired">-</td>
+                    </tr>
+                    <tr>
+                        <td>Other inactive</td>
+                        <td id="emp-other">-</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Deprivation filters -->
+            <div style="margin-top:15px; padding-top:15px; border-top:1px solid #e0e0e0;">
+                <div
+                    style="display:flex; flex-direction:column; gap:8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size:13px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="show-most-deprived" style="width:18px; height:18px;" />
+                        <span>Show most deprived (bottom 10%)</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="show-least-deprived" style="width:18px; height:18px;" />
+                        <span>Show least deprived (top 10%)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div style="margin-top:10px; display:flex; gap:8px;">
+                <button id="reset-btn"
+                    style="flex:1; padding:8px 10px; background:#f5f5f5; border:1px solid #ddd; border-radius:6px; cursor:pointer;">Reset
+                    map</button>
+            </div>
+
+        </div>
     </div>
 
     <div class="loading-overlay" id="loading">
@@ -792,6 +797,8 @@
         geocoder.on('result', (e) => {
             const center = e.result.center;
             if (center && center.length === 2) {
+                const mainDataSection = document.getElementById('main-data-section');
+                if (mainDataSection) mainDataSection.style.display = '';
                 currentCenter = center;
                 debouncedUpdate();
             }
@@ -1153,6 +1160,9 @@
         }
 
         function resetApp() {
+            const mainDataSection = document.getElementById('main-data-section');
+            if (mainDataSection) mainDataSection.style.display = 'none';
+
             // Clear geocoder input if supported
             try {
                 if (geocoder && typeof geocoder.clear === 'function') geocoder.clear();
