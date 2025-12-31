@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>UK LSOA map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Mapbox GL JS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.js"></script>
+
+    <!-- Mapbox Geocoder plugin -->
+    <link rel="stylesheet"
+        href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css"
+        type="text/css" />
+    <script
+        src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+
+    <!-- Turf.js for circle geometry -->
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .search-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+            padding: 15px;
+            width: 320px;
+            z-index: 1;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .search-panel .mapboxgl-ctrl-geocoder {
+            min-width: 100%;
+            max-width: 100%;
+            width: 100%;
+            box-shadow: none;
+            border: 1px solid #ddd;
+        }
+
+        .slider-container {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .slider-value {
+            font-weight: 600;
+            color: #0080ff;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #0080ff;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #0080ff;
+            cursor: pointer;
+            border: none;
+        }
+
+        .population-display {
+            padding: 5px 0;
+            border-top: 1px solid #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            color: #333;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .population-value {
+            color: #0080ff;
+            font-weight: 600;
+        }
+
+        /* IMD Section Container */
+        .imd-section {
+            border-top: 1px solid #e0e0e0;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        .imd-section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .imd-section-header input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .imd-section-header label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .imd-controls {
+            opacity: 0.4;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .imd-controls.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .imd-slider-row {
+            margin-bottom: 12px;
+        }
+
+        .imd-match-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .imd-match-value {
+            font-weight: 700;
+        }
+
+        /* NEW: LSOA list section inside IMD block */
+        .imd-list-section {
+            margin-top: 12px;
+            padding-top: 12px;
+
+        }
+
+        .imd-list-section h5 {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .imd-list {
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: white;
+            font-size: 11px;
+            line-height: 1.4;
+            word-break: break-all;
+            max-height: 100px;
+            overflow-y: auto;
+            color: #555;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+        }
+
+        .age-bands-table {
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+        }
+
+        .age-bands-table h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .age-bands-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .age-bands-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .age-bands-table td:first-child {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .age-bands-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+            color: #0080ff;
+        }
+
+        .age-bands-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .household-table {
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+        }
+
+        .household-table h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .household-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .household-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .household-table td:first-child {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .household-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+            color: #0080ff;
+        }
+
+        .household-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .employment-table {
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+        }
+
+        .employment-table h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .employment-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .employment-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .employment-table td:first-child {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .employment-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+            color: #0080ff;
+        }
+
+        .employment-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 16px;
+            font-weight: 500;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .loading-overlay.active {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .info-icon {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            background: #0080ff;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 14px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 4px;
+            cursor: help;
+            position: relative;
+        }
+
+        .info-icon .tooltip-text {
+            visibility: hidden;
+            background-color: #333;
+            color: white;
+            text-align: left;
+            padding: 8px 10px;
+            border-radius: 6px;
+            position: fixed;
+            z-index: 10000;
+            min-width: 200px;
+            max-width: 250px;
+            font-size: 11px;
+            font-weight: normal;
+            line-height: 1.4;
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: normal;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+        }
+
+        .info-icon .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+
+        .info-icon {
+            position: relative;
+        }
+
+        .info-icon:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Position tooltip dynamically with JavaScript */
+        @supports (position: fixed) {
+            .info-icon:hover .tooltip-text {
+                bottom: auto;
+                left: auto;
+                transform: translate(-50%, -100%) translateY(-10px);
+            }
+        }
+
+        .info-icon:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .info-popup {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            width: 320px;
+            max-height: 500px;
+            overflow-y: auto;
+            z-index: 10;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: none;
+        }
+
+        .info-popup.active {
+            display: block;
+        }
+
+        .info-popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #0080ff;
+        }
+
+        .info-popup-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .info-popup-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+        }
+
+        .info-popup-close:hover {
+            color: #333;
+        }
+
+        .info-popup-section {
+            margin-bottom: 15px;
+        }
+
+        .info-popup-section h4 {
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .info-popup-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+
+        .info-popup-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-popup-label {
+            color: #666;
+        }
+
+        .info-popup-value {
+            color: #333;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+
+    <div class="search-panel">
+
+        <div id="geocoder"></div>
+
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Radius</span>
+                <span class="slider-value"><span id="radius-value">5</span> miles</span>
+            </div>
+            <input type="range" min="0" max="50" value="5" id="radius-slider" />
+        </div>
+
+        <div class="population-display">
+            <div>Total Population</div>
+            <div class="population-value" id="population-total">-</div>
+        </div>
+
+        <div class="age-bands-table">
+            <h4>Age Bands</h4>
+            <table id="age-bands-table">
+                <tr>
+                    <td></td>
+                    <td style="font-weight:600; text-align:right;">Count</td>
+                    <td style="font-weight:600; text-align:right;">%</td>
+                </tr>
+                <tr>
+                    <td>Children (0–14)</td>
+                    <td id="band-children">-</td>
+                    <td id="band-children-pct">-</td>
+                </tr>
+                <tr>
+                    <td>Young adults (15–24)</td>
+                    <td id="band-young">-</td>
+                    <td id="band-young-pct">-</td>
+                </tr>
+                <tr>
+                    <td>Early professionals (25–34)</td>
+                    <td id="band-early">-</td>
+                    <td id="band-early-pct">-</td>
+                </tr>
+                <tr>
+                    <td>Family builders (35–49)</td>
+                    <td id="band-family">-</td>
+                    <td id="band-family-pct">-</td>
+                </tr>
+                <tr>
+                    <td>Mature adults (50–64)</td>
+                    <td id="band-mature">-</td>
+                    <td id="band-mature-pct">-</td>
+                </tr>
+                <tr>
+                    <td>Older (65+)</td>
+                    <td id="band-older">-</td>
+                    <td id="band-older-pct">-</td>
+                </tr>
+                <!-- IMD rank/decile rows removed -->
+            </table>
+        </div>
+
+        <div class="household-table">
+            <h4>Household Size Distribution</h4>
+            <table>
+                <tr>
+                    <td>Single-person household</td>
+                    <td id="hh-single">-</td>
+                </tr>
+                <tr>
+                    <td>Two-person household</td>
+                    <td id="hh-two">-</td>
+                </tr>
+                <tr>
+                    <td>Small family / shared</td>
+                    <td id="hh-small">-</td>
+                </tr>
+                <tr>
+                    <td>Family household</td>
+                    <td id="hh-family">-</td>
+                </tr>
+                <tr>
+                    <td>Large family / shared</td>
+                    <td id="hh-large">-</td>
+                </tr>
+                <tr>
+                    <td>Very large household</td>
+                    <td id="hh-very-large">-</td>
+                </tr>
+                <tr style="border-top: 1px solid #ddd;">
+                    <td><strong>Total Households</strong></td>
+                    <td id="hh-total">-</td>
+                </tr>
+                <tr>
+                    <td><strong>Average Household Size</strong></td>
+                    <td id="hh-avg-size">-</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="employment-table">
+            <h4>Employment Status</h4>
+            <table>
+                <tr>
+                    <td>Employed</td>
+                    <td id="emp-employed">-</td>
+                </tr>
+                <tr>
+                    <td>Unemployed</td>
+                    <td id="emp-unemployed">-</td>
+                </tr>
+                <tr>
+                    <td>Students (inactive)</td>
+                    <td id="emp-students">-</td>
+                </tr>
+                <tr>
+                    <td>Retired</td>
+                    <td id="emp-retired">-</td>
+                </tr>
+                <tr>
+                    <td>Other inactive</td>
+                    <td id="emp-other">-</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Deprivation filters -->
+        <div style="margin-top:15px; padding-top:15px; border-top:1px solid #e0e0e0;">
+            <div
+                style="display:flex; flex-direction:column; gap:8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size:13px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="show-most-deprived" style="width:18px; height:18px;" />
+                    <span>Show most deprived (bottom 10%)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="show-least-deprived" style="width:18px; height:18px;" />
+                    <span>Show least deprived (top 10%)</span>
+                </label>
+            </div>
+        </div>
+
+        <div style="margin-top:10px; display:flex; gap:8px;">
+            <button id="reset-btn"
+                style="flex:1; padding:8px 10px; background:#f5f5f5; border:1px solid #ddd; border-radius:6px; cursor:pointer;">Reset
+                map</button>
+        </div>
+
+    </div>
+
+    <div class="loading-overlay" id="loading">
+        <span class="spinner"></span>
+        Calculating population...
+    </div>
+
+    <div class="info-popup" id="info-popup">
+        <div class="info-popup-header">
+            <h3>LSOA Information</h3>
+            <button class="info-popup-close" id="info-popup-close">×</button>
+        </div>
+        <div id="info-popup-content"></div>
+    </div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZXdpNDBieTUzanMyN2J3NW1sMHUifQ.m5BpgLHVufA0nzdFvCpTVg';
+
+        const csvData = {};
+        let csvLoaded = false;
+        const employmentData = {};
+        let employmentLoaded = false;
+
+        async function loadCSVData() {
+            try {
+                const response = await fetch('population_data/lsoa_age_bands_imd_ts017_ts066.csv');
+                const csvText = await response.text();
+                const lines = csvText.trim().split('\n');
+
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = lines[i].split(',');
+                    if (cols.length >= 21) {
+                        const lsoaCode = cols[0].trim();
+                        csvData[lsoaCode] = {
+                            Total: parseInt(cols[1]) || 0,
+                            Children: parseInt(cols[2]) || 0,
+                            YoungAdults: parseInt(cols[3]) || 0,
+                            EarlyProfessionals: parseInt(cols[4]) || 0,
+                            FamilyBuilders: parseInt(cols[5]) || 0,
+                            MatureAdults: parseInt(cols[6]) || 0,
+                            Older: parseInt(cols[7]) || 0,
+                            IMDRank: parseInt(cols[8]) || 0,
+                            IMDDecile: parseInt(cols[9]) || 0,
+                            HH_0: parseInt(cols[10]) || 0,
+                            HH_1: parseInt(cols[11]) || 0,
+                            HH_2: parseInt(cols[12]) || 0,
+                            HH_3: parseInt(cols[13]) || 0,
+                            HH_4: parseInt(cols[14]) || 0,
+                            HH_5: parseInt(cols[15]) || 0,
+                            HH_6: parseInt(cols[16]) || 0,
+                            HH_7: parseInt(cols[17]) || 0,
+                            HH_8plus: parseInt(cols[18]) || 0,
+                            HH_Total: parseInt(cols[19]) || 0,
+                            HH_AvgSizeApprox: parseFloat(cols[20]) || 0
+                        };
+                    }
+                }
+                csvLoaded = true;
+                console.log('CSV loaded:', Object.keys(csvData).length, 'records');
+            } catch (err) {
+                console.error('Error loading CSV:', err);
+            }
+        }
+
+        loadCSVData();
+
+        async function loadEmploymentData() {
+            try {
+                const response = await fetch('population_data/TS066-2021-1-filtered-2025-12-18T16_13_05Z_collapsed.csv');
+                const csvText = await response.text();
+                const lines = csvText.trim().split('\n');
+
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = lines[i].split(',');
+                    if (cols.length >= 6) {
+                        const code = cols[0].trim();
+                        employmentData[code] = {
+                            Employed: parseInt(cols[1]) || 0,
+                            Unemployed: parseInt(cols[2]) || 0,
+                            StudentsInactive: parseInt(cols[3]) || 0,
+                            Retired: parseInt(cols[4]) || 0,
+                            OtherInactive: parseInt(cols[5]) || 0
+                        };
+                    }
+                }
+                employmentLoaded = true;
+                console.log('Employment CSV loaded:', Object.keys(employmentData).length, 'records');
+            } catch (err) {
+                console.error('Error loading employment CSV:', err);
+            }
+        }
+
+        loadEmploymentData();
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: { lng: -2.774533172216252, lat: 54.12181638598531 },
+            zoom: 7
+        });
+
+        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+        let currentCenter = null;
+        let currentRadius = 5;
+        let currentCircle = null;
+        let selectedLSOAs = [];
+        let clickedLSOA = null;
+        let showMostDeprived = false;
+        let showLeastDeprived = false;
+        const AREA_THRESHOLD = 0.10;
+
+        const geocoder = new MapboxGeocoder({
+            accessToken: mapboxgl.accessToken,
+            mapboxgl: mapboxgl,
+            marker: false,
+            countries: 'gb',
+            placeholder: 'Search UK address…',
+            types: 'address,place,locality,neighborhood,postcode'
+        });
+
+        document.getElementById('geocoder').appendChild(geocoder.onAdd(map));
+
+        geocoder.on('result', (e) => {
+            const center = e.result.center;
+            if (center && center.length === 2) {
+                currentCenter = center;
+                debouncedUpdate();
+            }
+        });
+
+        const slider = document.getElementById('radius-slider');
+        const radiusValue = document.getElementById('radius-value');
+        const populationTotal = document.getElementById('population-total');
+        const loading = document.getElementById('loading');
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        const debouncedUpdate = debounce(() => {
+            if (!currentCenter) return;
+
+            loading.classList.add('active');
+
+            setTimeout(() => {
+                updateCircleGeometry();
+
+                if (!currentCircle) {
+                    selectFeaturesInCircle();
+                    loading.classList.remove('active');
+                    return;
+                }
+
+                const bbox = turf.bbox(currentCircle);
+                map.fitBounds(
+                    [
+                        [bbox[0], bbox[1]],
+                        [bbox[2], bbox[3]]
+                    ],
+                    { padding: 30 }
+                );
+
+                map.once('idle', () => {
+                    selectFeaturesInCircle();
+                    loading.classList.remove('active');
+                });
+            }, 50);
+        }, 300);
+
+        slider.addEventListener('input', (e) => {
+            currentRadius = parseInt(e.target.value);
+            radiusValue.textContent = currentRadius;
+            debouncedUpdate();
+        });
+
+        const resetBtn = document.getElementById('reset-btn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', resetApp);
+        }
+
+        const mostDeprivedCheckbox = document.getElementById('show-most-deprived');
+        const leastDeprivedCheckbox = document.getElementById('show-least-deprived');
+
+        if (mostDeprivedCheckbox) {
+            mostDeprivedCheckbox.addEventListener('change', (e) => {
+                showMostDeprived = e.target.checked;
+                updateDeprivationHighlights();
+            });
+        }
+
+        if (leastDeprivedCheckbox) {
+            leastDeprivedCheckbox.addEventListener('change', (e) => {
+                showLeastDeprived = e.target.checked;
+                updateDeprivationHighlights();
+            });
+        }
+
+        function updateCircleGeometry() {
+            if (!currentCenter || currentRadius === 0) {
+                if (map.getLayer('radius-outline')) {
+                    map.removeLayer('radius-outline');
+                }
+                if (map.getSource('radius')) {
+                    map.removeSource('radius');
+                }
+                currentCircle = null;
+                selectedLSOAs = [];
+                updateSelection();
+                return;
+            }
+
+            currentCircle = turf.circle(currentCenter, currentRadius, {
+                steps: 64,
+                units: 'miles'
+            });
+
+            if (map.getSource('radius')) {
+                map.getSource('radius').setData(currentCircle);
+            } else {
+                map.addSource('radius', {
+                    type: 'geojson',
+                    data: currentCircle
+                });
+
+                map.addLayer({
+                    id: 'radius-outline',
+                    type: 'line',
+                    source: 'radius',
+                    paint: {
+                        'line-color': 'red',
+                        'line-width': 5,
+                    }
+                });
+            }
+        }
+
+        function selectFeaturesInCircle() {
+            if (!currentCircle || !map.getSource('population-lsoa')) {
+                selectedLSOAs = [];
+                updateSelection();
+                return;
+            }
+
+            const features = map.querySourceFeatures('population-lsoa', {
+                sourceLayer: 'clean_enriched_LSOA-5ty98a'
+            });
+
+            selectedLSOAs = [];
+            const ageBandTotals = {
+                Total: 0,
+                Children: 0,
+                YoungAdults: 0,
+                EarlyProfessionals: 0,
+                FamilyBuilders: 0,
+                MatureAdults: 0,
+                Older: 0,
+                IMDRankSum: 0,
+                IMDDecileSum: 0,
+                IMDCount: 0,
+                HH_1: 0,
+                HH_2: 0,
+                HH_3: 0,
+                HH_4: 0,
+                HH_5: 0,
+                HH_6: 0,
+                HH_Total: 0,
+                HH_AvgSizeSum: 0,
+                HH_Count: 0,
+                Employed: 0,
+                Unemployed: 0,
+                StudentsInactive: 0,
+                Retired: 0,
+                OtherInactive: 0
+            };
+            const processedCodes = new Set();
+
+            features.forEach(feature => {
+                if (!feature.geometry || !feature.properties) return;
+
+                const lsoaCode = feature.properties.LSOA21CD;
+                if (!lsoaCode || processedCodes.has(lsoaCode)) return;
+
+                try {
+                    const intersection = turf.intersect(
+                        turf.featureCollection([feature, currentCircle])
+                    );
+
+                    if (!intersection) return;
+
+                    const polygonArea = turf.area(feature);
+                    const intersectionArea = turf.area(intersection);
+                    const percentageInside = intersectionArea / polygonArea;
+
+                    if (percentageInside >= AREA_THRESHOLD) {
+                        selectedLSOAs.push(lsoaCode);
+                        processedCodes.add(lsoaCode);
+
+                        const data = csvData[lsoaCode];
+                        if (data) {
+                            ageBandTotals.Total += data.Total;
+                            ageBandTotals.Children += data.Children;
+                            ageBandTotals.YoungAdults += data.YoungAdults;
+                            ageBandTotals.EarlyProfessionals += data.EarlyProfessionals;
+                            ageBandTotals.FamilyBuilders += data.FamilyBuilders;
+                            ageBandTotals.MatureAdults += data.MatureAdults;
+                            ageBandTotals.Older += data.Older;
+
+                            if (data.IMDRank > 0) {
+                                ageBandTotals.IMDRankSum += data.IMDRank;
+                                ageBandTotals.IMDCount += 1;
+                            }
+                            if (data.IMDDecile > 0) {
+                                ageBandTotals.IMDDecileSum += data.IMDDecile;
+                            }
+
+                            // Aggregate household data
+                            ageBandTotals.HH_1 += data.HH_1 || 0;
+                            ageBandTotals.HH_2 += data.HH_2 || 0;
+                            ageBandTotals.HH_3 += data.HH_3 || 0;
+                            ageBandTotals.HH_4 += data.HH_4 || 0;
+                            ageBandTotals.HH_5 += data.HH_5 || 0;
+                            ageBandTotals.HH_6 += data.HH_6 || 0;
+                            ageBandTotals.HH_Total += data.HH_Total || 0;
+                            if (data.HH_AvgSizeApprox > 0) {
+                                ageBandTotals.HH_AvgSizeSum += data.HH_AvgSizeApprox;
+                                ageBandTotals.HH_Count += 1;
+                            }
+                        }
+
+                        // Aggregate employment data
+                        const empData = employmentData[lsoaCode];
+                        if (empData) {
+                            ageBandTotals.Employed += empData.Employed || 0;
+                            ageBandTotals.Unemployed += empData.Unemployed || 0;
+                            ageBandTotals.StudentsInactive += empData.StudentsInactive || 0;
+                            ageBandTotals.Retired += empData.Retired || 0;
+                            ageBandTotals.OtherInactive += empData.OtherInactive || 0;
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Geometry error for LSOA:', lsoaCode, err);
+                }
+            });
+
+            populationTotal.textContent = ageBandTotals.Total.toLocaleString();
+            document.getElementById('band-children').textContent = ageBandTotals.Children.toLocaleString();
+            document.getElementById('band-young').textContent = ageBandTotals.YoungAdults.toLocaleString();
+            document.getElementById('band-early').textContent = ageBandTotals.EarlyProfessionals.toLocaleString();
+            document.getElementById('band-family').textContent = ageBandTotals.FamilyBuilders.toLocaleString();
+            document.getElementById('band-mature').textContent = ageBandTotals.MatureAdults.toLocaleString();
+            document.getElementById('band-older').textContent = ageBandTotals.Older.toLocaleString();
+
+            // Helper to format percentage
+            function formatPct(part, total) {
+                if (!total || total === 0) return '-';
+                return ((part / total) * 100).toFixed(1) + '%';
+            }
+
+            // Set percentage columns
+            document.getElementById('band-children-pct').textContent = formatPct(ageBandTotals.Children, ageBandTotals.Total);
+            document.getElementById('band-young-pct').textContent = formatPct(ageBandTotals.YoungAdults, ageBandTotals.Total);
+            document.getElementById('band-early-pct').textContent = formatPct(ageBandTotals.EarlyProfessionals, ageBandTotals.Total);
+            document.getElementById('band-family-pct').textContent = formatPct(ageBandTotals.FamilyBuilders, ageBandTotals.Total);
+            document.getElementById('band-mature-pct').textContent = formatPct(ageBandTotals.MatureAdults, ageBandTotals.Total);
+            document.getElementById('band-older-pct').textContent = formatPct(ageBandTotals.Older, ageBandTotals.Total);
+
+            // Update household data
+            document.getElementById('hh-single').textContent = ageBandTotals.HH_1.toLocaleString();
+            document.getElementById('hh-two').textContent = ageBandTotals.HH_2.toLocaleString();
+            document.getElementById('hh-small').textContent = ageBandTotals.HH_3.toLocaleString();
+            document.getElementById('hh-family').textContent = ageBandTotals.HH_4.toLocaleString();
+            document.getElementById('hh-large').textContent = ageBandTotals.HH_5.toLocaleString();
+            document.getElementById('hh-very-large').textContent = ageBandTotals.HH_6.toLocaleString();
+            document.getElementById('hh-total').textContent = ageBandTotals.HH_Total.toLocaleString();
+
+            // Calculate average household size
+            const avgHHSize = ageBandTotals.HH_Count > 0
+                ? (ageBandTotals.HH_AvgSizeSum / ageBandTotals.HH_Count).toFixed(3)
+                : '-';
+            document.getElementById('hh-avg-size').textContent = avgHHSize;
+
+            // Update employment data
+            document.getElementById('emp-employed').textContent = ageBandTotals.Employed.toLocaleString();
+            document.getElementById('emp-unemployed').textContent = ageBandTotals.Unemployed.toLocaleString();
+            document.getElementById('emp-students').textContent = ageBandTotals.StudentsInactive.toLocaleString();
+            document.getElementById('emp-retired').textContent = ageBandTotals.Retired.toLocaleString();
+            document.getElementById('emp-other').textContent = ageBandTotals.OtherInactive.toLocaleString();
+
+            // if (ageBandTotals.IMDCount > 0) {
+            //     const avgRank = Math.round(ageBandTotals.IMDRankSum / ageBandTotals.IMDCount);
+            //     const avgDecile = (ageBandTotals.IMDDecileSum / ageBandTotals.IMDCount).toFixed(1);
+            //     document.getElementById('band-imd-rank').textContent = avgRank.toLocaleString();
+            //     document.getElementById('band-imd-decile').textContent = avgDecile;
+            //     document.getElementById('band-imd-rank-pct').textContent = formatPct(avgRank, 1); // not meaningful, keep for layout
+            //     document.getElementById('band-imd-decile-pct').textContent = formatPct(parseFloat(avgDecile), 1);
+            // } else {
+            //     document.getElementById('band-imd-rank').textContent = '-';
+            //     document.getElementById('band-imd-decile').textContent = '-';
+            //     document.getElementById('band-imd-rank-pct').textContent = '-';
+            //     document.getElementById('band-imd-decile-pct').textContent = '-';
+            // }
+
+            updateSelection();
+            updateDeprivationHighlights();
+        }
+
+        function updateDeprivationHighlights() {
+            if (!map.getSource('population-lsoa')) return;
+
+            // Simple logic: no radius = show globally, with radius = filter within radius
+            if (selectedLSOAs.length === 0) {
+                // No radius - build list from all CSV data
+                const mostDeprivedLSOAs = [];
+                const leastDeprivedLSOAs = [];
+
+                if (showMostDeprived || showLeastDeprived) {
+                    Object.keys(csvData).forEach(code => {
+                        const row = csvData[code];
+                        if (!row || !row.IMDDecile) return;
+
+                        if (showMostDeprived && row.IMDDecile <= 1) {
+                            mostDeprivedLSOAs.push(code);
+                        }
+                        if (showLeastDeprived && row.IMDDecile >= 9) {
+                            leastDeprivedLSOAs.push(code);
+                        }
+                    });
+                }
+
+                if (map.getLayer('population-lsoa-most-deprived')) {
+                    map.setFilter('population-lsoa-most-deprived', [
+                        'in',
+                        ['get', 'LSOA21CD'],
+                        ['literal', mostDeprivedLSOAs]
+                    ]);
+                }
+                if (map.getLayer('population-lsoa-least-deprived')) {
+                    map.setFilter('population-lsoa-least-deprived', [
+                        'in',
+                        ['get', 'LSOA21CD'],
+                        ['literal', leastDeprivedLSOAs]
+                    ]);
+                }
+            } else {
+                // Radius active - filter within selected LSOAs
+                const mostDeprivedLSOAs = [];
+                const leastDeprivedLSOAs = [];
+
+                selectedLSOAs.forEach(code => {
+                    const row = csvData[code];
+                    if (!row || !row.IMDDecile) return;
+
+                    if (showMostDeprived && row.IMDDecile <= 1) {
+                        mostDeprivedLSOAs.push(code);
+                    }
+                    if (showLeastDeprived && row.IMDDecile >= 9) {
+                        leastDeprivedLSOAs.push(code);
+                    }
+                });
+
+                if (map.getLayer('population-lsoa-most-deprived')) {
+                    map.setFilter('population-lsoa-most-deprived', [
+                        'in',
+                        ['get', 'LSOA21CD'],
+                        ['literal', mostDeprivedLSOAs]
+                    ]);
+                }
+                if (map.getLayer('population-lsoa-least-deprived')) {
+                    map.setFilter('population-lsoa-least-deprived', [
+                        'in',
+                        ['get', 'LSOA21CD'],
+                        ['literal', leastDeprivedLSOAs]
+                    ]);
+                }
+            }
+        }
+
+        function resetApp() {
+            // Clear geocoder input if supported
+            try {
+                if (geocoder && typeof geocoder.clear === 'function') geocoder.clear();
+            } catch (e) {
+                console.warn('Geocoder clear failed', e);
+            }
+
+            // Reset circle and its source/layer
+            currentCenter = null;
+            currentRadius = 5;
+            slider.value = currentRadius;
+            radiusValue.textContent = currentRadius;
+
+            if (map.getLayer('radius-outline')) {
+                map.removeLayer('radius-outline');
+            }
+            if (map.getSource('radius')) {
+                map.removeSource('radius');
+            }
+            currentCircle = null;
+
+            // Clear selections and UI values
+            selectedLSOAs = [];
+            updateSelection();
+
+            // Close info popup and clear clicked LSOA
+            clickedLSOA = null;
+            const infoPopup = document.getElementById('info-popup');
+            if (infoPopup) {
+                infoPopup.classList.remove('active');
+            }
+
+            // Clear the selected polygon outline
+            if (map.getLayer('population-lsoa-selected-outline')) {
+                map.setFilter('population-lsoa-selected-outline', ['==', ['get', 'LSOA21CD'], '']);
+            }
+
+            populationTotal.textContent = '-';
+            document.getElementById('band-children').textContent = '-';
+            document.getElementById('band-young').textContent = '-';
+            document.getElementById('band-early').textContent = '-';
+            document.getElementById('band-family').textContent = '-';
+            document.getElementById('band-mature').textContent = '-';
+            document.getElementById('band-older').textContent = '-';
+            // reset percentage columns
+            document.getElementById('band-children-pct').textContent = '-';
+            document.getElementById('band-young-pct').textContent = '-';
+            document.getElementById('band-early-pct').textContent = '-';
+            document.getElementById('band-family-pct').textContent = '-';
+            document.getElementById('band-mature-pct').textContent = '-';
+            document.getElementById('band-older-pct').textContent = '-';
+
+            // Reset household data
+            document.getElementById('hh-single').textContent = '-';
+            document.getElementById('hh-two').textContent = '-';
+            document.getElementById('hh-small').textContent = '-';
+            document.getElementById('hh-family').textContent = '-';
+            document.getElementById('hh-large').textContent = '-';
+            document.getElementById('hh-very-large').textContent = '-';
+            document.getElementById('hh-total').textContent = '-';
+            document.getElementById('hh-avg-size').textContent = '-';
+
+            // Reset employment data
+            document.getElementById('emp-employed').textContent = '-';
+            document.getElementById('emp-unemployed').textContent = '-';
+            document.getElementById('emp-students').textContent = '-';
+            document.getElementById('emp-retired').textContent = '-';
+            document.getElementById('emp-other').textContent = '-';
+
+            // Reset deprivation filters
+            showMostDeprived = false;
+            showLeastDeprived = false;
+            if (mostDeprivedCheckbox) mostDeprivedCheckbox.checked = false;
+            if (leastDeprivedCheckbox) leastDeprivedCheckbox.checked = false;
+            updateDeprivationHighlights();
+
+            // Recenter map to UK default
+            map.easeTo({ center: { lng: -2.774533172216252, lat: 54.12181638598531 }, zoom: 7 });
+        }
+
+        function updateSelection() {
+            if (map.getLayer('population-lsoa-fill')) {
+                map.setPaintProperty('population-lsoa-fill', 'fill-color', [
+                    'case',
+                    ['in', ['get', 'LSOA21CD'], ['literal', selectedLSOAs]],
+                    '#0080ff',
+                    'transparent'
+                ]);
+
+                map.setPaintProperty('population-lsoa-fill', 'fill-opacity', [
+                    'case',
+                    ['in', ['get', 'LSOA21CD'], ['literal', selectedLSOAs]],
+                    0.7,
+                    0
+                ]);
+            }
+        }
+
+        map.on('load', () => {
+            map.addSource('population-lsoa', {
+                type: 'vector',
+                url: 'mapbox://propertyadam.ccvo5o03'
+            });
+
+            map.addLayer({
+                id: 'population-lsoa-fill',
+                type: 'fill',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'fill-color': 'transparent',
+                    'fill-opacity': 0
+                }
+            });
+
+            map.addLayer({
+                id: 'population-lsoa-most-deprived',
+                type: 'fill',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'fill-color': '#ff0000',
+                    'fill-opacity': 0.6
+                },
+                filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
+            });
+
+            map.addLayer({
+                id: 'population-lsoa-least-deprived',
+                type: 'fill',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'fill-color': '#00ff00',
+                    'fill-opacity': 0.6
+                },
+                filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
+            });
+
+            map.addLayer({
+                id: 'population-lsoa-outline',
+                type: 'line',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'line-color': '#000000',
+                    'line-width': 1,
+                    'line-opacity': 0.3
+                }
+            });
+
+            map.addLayer({
+                id: 'population-lsoa-selected-outline',
+                type: 'line',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'line-color': '#ff6600',
+                    'line-width': 4
+                },
+                filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
+            });
+
+            // Add click handler for polygons
+            map.on('click', 'population-lsoa-fill', (e) => {
+                if (e.features && e.features.length > 0) {
+                    const lsoaCode = e.features[0].properties.LSOA21CD;
+                    if (lsoaCode) {
+                        clickedLSOA = lsoaCode;
+                        if (map.getLayer('population-lsoa-selected-outline')) {
+                            map.setFilter('population-lsoa-selected-outline', [
+                                '==',
+                                ['get', 'LSOA21CD'],
+                                lsoaCode
+                            ]);
+                        }
+                    }
+                    showPolygonInfo(e.features[0]);
+                }
+            });
+
+            map.on('click', 'population-lsoa-outline', (e) => {
+                if (e.features && e.features.length > 0) {
+                    const lsoaCode = e.features[0].properties.LSOA21CD;
+                    if (lsoaCode) {
+                        clickedLSOA = lsoaCode;
+                        if (map.getLayer('population-lsoa-selected-outline')) {
+                            map.setFilter('population-lsoa-selected-outline', [
+                                '==',
+                                ['get', 'LSOA21CD'],
+                                lsoaCode
+                            ]);
+                        }
+                    }
+                    showPolygonInfo(e.features[0]);
+                }
+            });
+
+            // Change cursor on hover
+            map.on('mouseenter', 'population-lsoa-outline', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            map.on('mouseleave', 'population-lsoa-outline', () => {
+                map.getCanvas().style.cursor = '';
+            });
+        });
+
+        // Info popup functionality
+        const infoPopup = document.getElementById('info-popup');
+        const infoPopupContent = document.getElementById('info-popup-content');
+        const infoPopupClose = document.getElementById('info-popup-close');
+
+        if (infoPopupClose) {
+            infoPopupClose.addEventListener('click', () => {
+                infoPopup.classList.remove('active');
+            });
+        }
+
+        function showPolygonInfo(feature) {
+
+            const excludePropsNames = ['LSOA21CD', "TotalMF"];
+            const DISPLAY_NAME_MAP = {
+                LSOA21NM: 'LSOA Name',
+            };
+            const filteredAndMappedProps =
+                Object.entries(feature.properties)
+                    .filter(([prop]) => !excludePropsNames.includes(prop))
+                    .map(([prop, value]) => {
+                        return prop === "LSOA21NM" ? ["Name", value] : [prop, value];
+                    })
+
+
+            const lsoaCode = feature.properties.LSOA21CD;
+            const csvInfo = csvData[lsoaCode];
+
+            let html = '<div class="info-popup-section">';
+            html += '<h4>Feature Properties</h4>';
+
+            // Display all feature properties
+            for (const [key, value] of filteredAndMappedProps) {
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">${key}</span>`;
+                html += `<span class="info-popup-value">${value || '-'}</span>`;
+                html += `</div>`;
+            }
+            html += '</div>';
+
+            // Display CSV data if available
+            if (csvInfo) {
+                html += '<div class="info-popup-section">';
+                html += '<h4>Population Data</h4>';
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Total Population</span>`;
+                html += `<span class="info-popup-value">${csvInfo.Total.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Children (0-14)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.Children.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Young Adults (15-24)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.YoungAdults.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Early Professionals (25-34)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.EarlyProfessionals.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Family Builders (35-49)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.FamilyBuilders.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Mature Adults (50-64)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.MatureAdults.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Older (65+)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.Older.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                if (csvInfo.IMDRank) {
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">IMD Rank<span class="info-icon">i<span class="tooltip-text">National deprivation rank from 1 (most) to 32,844 (least)</span></span></span>`;
+                    html += `<span class="info-popup-value">${csvInfo.IMDRank.toLocaleString()}</span>`;
+                    html += `</div>`;
+                }
+
+                if (csvInfo.IMDDecile) {
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">IMD Decile<span class="info-icon">i<span class="tooltip-text">Ten national deprivation bands; 1 is most deprived.</span></span></span>`;
+                    html += `<span class="info-popup-value">${csvInfo.IMDDecile}</span>`;
+                    html += `</div>`;
+                }
+
+                html += '</div>';
+
+                console.log('csvInfo', csvInfo);
+                // Household Size Data
+                if (csvInfo.HH_Total) {
+                    html += '<div class="info-popup-section">';
+                    html += '<h4>Household Size Distribution</h4>';
+
+                    if (csvInfo.HH_1) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Single-person household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_1.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_2) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Two-person household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_2.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_3) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Small family / shared household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_3.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_4) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Family household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_4.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_5) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Large family / shared household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_5.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_6) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Very large household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_6.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_7) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Very large household (7)</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_7.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_8plus) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Extremely large household (8+)</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_8plus.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label"><b>Total Households</b></span>`;
+                    html += `<span class="info-popup-value">${csvInfo.HH_Total.toLocaleString()}</span>`;
+                    html += `</div>`;
+
+                    if (csvInfo.HH_AvgSizeApprox) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Average Household Size</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_AvgSizeApprox}</span>`;
+                        html += `</div>`;
+                    }
+
+                    html += '</div>';
+                }
+
+                // Employment Data
+                const empInfo = employmentData[lsoaCode];
+                if (empInfo) {
+                    html += '<div class="info-popup-section">';
+                    html += '<h4>Employment Status</h4>';
+
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">Employed</span>`;
+                    html += `<span class="info-popup-value">${empInfo.Employed.toLocaleString()}</span>`;
+                    html += `</div>`;
+
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">Unemployed</span>`;
+                    html += `<span class="info-popup-value">${empInfo.Unemployed.toLocaleString()}</span>`;
+                    html += `</div>`;
+
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">Students (inactive)</span>`;
+                    html += `<span class="info-popup-value">${empInfo.StudentsInactive.toLocaleString()}</span>`;
+                    html += `</div>`;
+
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">Retired</span>`;
+                    html += `<span class="info-popup-value">${empInfo.Retired.toLocaleString()}</span>`;
+                    html += `</div>`;
+
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">Other inactive</span>`;
+                    html += `<span class="info-popup-value">${empInfo.OtherInactive.toLocaleString()}</span>`;
+                    html += `</div>`;
+
+                    html += '</div>';
+                }
+            } else {
+                html += '<div class="info-popup-section">';
+                html += '<p style="color: #999; font-size: 13px; margin: 0;">No CSV data available for this LSOA.</p>';
+                html += '</div>';
+            }
+
+            infoPopupContent.innerHTML = html;
+            infoPopup.classList.add('active');
+
+            // Position tooltips dynamically after content is rendered
+            setTimeout(() => {
+                const infoIcons = infoPopup.querySelectorAll('.info-icon');
+                infoIcons.forEach(icon => {
+                    icon.addEventListener('mouseenter', function (e) {
+                        const tooltip = this.querySelector('.tooltip-text');
+                        if (tooltip) {
+                            const rect = this.getBoundingClientRect();
+                            tooltip.style.left = rect.left + (rect.width / 2) + 'px';
+                            tooltip.style.top = (rect.top) + 'px';
+                        }
+                    });
+                });
+            }, 10);
+        }
+    </script>
+
+</body>
+
+</html>
