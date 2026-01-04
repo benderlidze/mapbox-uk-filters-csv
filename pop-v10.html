@@ -437,49 +437,59 @@
             opacity: 1;
         }
 
-        /* Custom noUiSlider appearance: two blue circular handles */
-        #trafficSlider .noUi-target {
-            height: 6px;
-            margin: 6px 0;
+
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 34px;
         }
 
-        #trafficSlider .noUi-base {
-            background: transparent;
-        }
-
-        #trafficSlider .noUi-connect {
-            background: rgba(0, 123, 255, 0.15);
-            height: 100%;
-            border-radius: 4px;
-        }
-
-        #trafficSlider .noUi-handle {
-            width: 20px;
-            height: 20px;
+        .slider.round:before {
             border-radius: 50%;
-            background: #007bff;
-            border: 2px solid #fff;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-            top: -7px;
-            cursor: grab;
         }
 
-        #trafficSlider .noUi-handle:active {
-            cursor: grabbing;
+        .switch-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 5px;
         }
 
-        #trafficSlider .noUi-handle:focus {
-            outline: none;
-            box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.12);
+        .switch-item>label {
+            margin-right: 10px;
         }
 
-        #trafficSlider .noUi-horizontal .noUi-handle {
-            transform: translateY(0);
+        .roundSlider {
+            height: 10px;
         }
 
-        /* hide default tooltips if present */
-        #trafficSlider .noUi-handle .noUi-tooltip {
+        .roundSlider .noUi-connect {
+            background: #004cff;
+        }
+
+        .roundSlider .noUi-handle {
+            height: 18px !important;
+            width: 18px !important;
+            top: -6px !important;
+            right: -9px !important;
+            /* half the width */
+            border-radius: 9px;
+
+            border: 2px solid white;
+            background-color: #004cff;
+        }
+
+        .noUi-horizontal {
+            height: 8px !important;
+        }
+
+        .roundSlider .noUi-handle:after,
+        .roundSlider .noUi-handle:before {
+            /* content: ""; */
             display: none;
+        }
+
+        .noUi-handle {
+            box-shadow: 0 3px 6px -3px #606060 !important;
         }
 
         /* Position tooltip dynamically with JavaScript */
@@ -598,6 +608,9 @@
         </div>
 
         <!-- Traffic Section -->
+
+
+
         <div class="slider-container">
             <div class="slider-label">
                 <span>Traffic</span>
@@ -609,7 +622,9 @@
                 <input type="text" id="trafficSlider-min"
                     style=" padding:4px;width:50px; font-size:11px; border:1px solid #ddd; border-radius:4px;"
                     readonly />
-                <div id="trafficSlider" style="flex:1; margin:0;"></div>
+
+                <div id="trafficSlider" class="roundSlider" style="width:120px;margin:0px 20px;"></div>
+
                 <input type="text" id="trafficSlider-max"
                     style=" padding:4px; font-size:11px;width:50px; border:1px solid #ddd; border-radius:4px;"
                     readonly />
