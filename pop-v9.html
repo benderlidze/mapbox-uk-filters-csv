@@ -47,6 +47,14 @@
             overflow: visible;
         }
 
+        /* Make main data section scroll when content exceeds available panel height */
+        #main-data-section {
+            box-sizing: border-box;
+            max-height: calc(90vh - 160px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         .search-panel .mapboxgl-ctrl-geocoder {
             min-width: 100%;
             max-width: 100%;
