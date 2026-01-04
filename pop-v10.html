@@ -17,8 +17,14 @@
     <script
         src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
 
-    <!-- Turf.js for circle geometry -->
-    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <link href="js/nouislider.min.css" rel="stylesheet">
+    <script src="js/nouislider.min.js"></script>
+
+
+
 
     <style>
         body {
@@ -431,6 +437,51 @@
             opacity: 1;
         }
 
+        /* Custom noUiSlider appearance: two blue circular handles */
+        #trafficSlider .noUi-target {
+            height: 6px;
+            margin: 6px 0;
+        }
+
+        #trafficSlider .noUi-base {
+            background: transparent;
+        }
+
+        #trafficSlider .noUi-connect {
+            background: rgba(0, 123, 255, 0.15);
+            height: 100%;
+            border-radius: 4px;
+        }
+
+        #trafficSlider .noUi-handle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #007bff;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            top: -7px;
+            cursor: grab;
+        }
+
+        #trafficSlider .noUi-handle:active {
+            cursor: grabbing;
+        }
+
+        #trafficSlider .noUi-handle:focus {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.12);
+        }
+
+        #trafficSlider .noUi-horizontal .noUi-handle {
+            transform: translateY(0);
+        }
+
+        /* hide default tooltips if present */
+        #trafficSlider .noUi-handle .noUi-tooltip {
+            display: none;
+        }
+
         /* Position tooltip dynamically with JavaScript */
         @supports (position: fixed) {
             .info-icon:hover .tooltip-text {
@@ -545,6 +596,26 @@
             </div>
             <input type="range" min="0" max="50" value="5" id="radius-slider" />
         </div>
+
+        <!-- Traffic Section -->
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Traffic</span>
+                <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="trafficOnOff" style="width:18px; height:18px;" />
+                </label>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+                <input type="text" id="trafficSlider-min"
+                    style=" padding:4px;width:50px; font-size:11px; border:1px solid #ddd; border-radius:4px;"
+                    readonly />
+                <div id="trafficSlider" style="flex:1; margin:0;"></div>
+                <input type="text" id="trafficSlider-max"
+                    style=" padding:4px; font-size:11px;width:50px; border:1px solid #ddd; border-radius:4px;"
+                    readonly />
+            </div>
+        </div>
+
         <div id="main-data-section" style="display: none;">
             <div class="population-display">
                 <div>Total Population</div>
@@ -884,6 +955,17 @@
             leastDeprivedCheckbox.addEventListener('change', (e) => {
                 showLeastDeprived = e.target.checked;
                 updateDeprivationHighlights();
+            });
+        }
+
+        // Traffic controls
+        const trafficOnOff = document.getElementById('trafficOnOff');
+        if (trafficOnOff) {
+            trafficOnOff.addEventListener('change', (e) => {
+                const visible = e.target.checked ? 'visible' : 'none';
+                if (map.getLayer('trafficText')) {
+                    map.setLayoutProperty('trafficText', 'visibility', visible);
+                }
             });
         }
 
@@ -1269,7 +1351,57 @@
             }
         }
 
+        // Build traffic slider using noUiSlider
+        function buildSlider(sliderName, min, max, filterFunction, integer = false) {
+            const SLIDER = document.getElementById(sliderName);
+            if (!SLIDER || typeof noUiSlider === 'undefined') return;
+            const SLIDER_MIN = document.getElementById(sliderName + "-min");
+            const SLIDER_MAX = document.getElementById(sliderName + "-max");
+            noUiSlider.create(SLIDER, {
+                start: [min, max],
+                connect: true,
+                range: {
+                    'min': min,
+                    'max': max
+                },
+            });
+            SLIDER.noUiSlider.on('change', function (d) {
+                const minVal = integer ? parseInt(d[0]) : d[0]
+                const maxVal = integer ? parseInt(d[1]) : d[1]
+                filterFunction(minVal, maxVal)
+            });
+            SLIDER.noUiSlider.on('update', function (d) {
+                const minVal = integer ? parseInt(d[0]) : d[0]
+                const maxVal = integer ? parseInt(d[1]) : d[1]
+                if (SLIDER_MIN) SLIDER_MIN.value = minVal.toLocaleString();
+                if (SLIDER_MAX) SLIDER_MAX.value = maxVal.toLocaleString();
+            });
+            if (SLIDER_MIN) {
+                SLIDER_MIN.addEventListener('change', function () {
+                    SLIDER.noUiSlider.set([this.value.replace(/,/g, ''), null]);
+                });
+            }
+            if (SLIDER_MAX) {
+                SLIDER_MAX.addEventListener('change', function () {
+                    SLIDER.noUiSlider.set([null, this.value.replace(/,/g, '')]);
+                });
+            }
+        }
+
+        function setTrafficFilter(min, max) {
+            if (map.getLayer('trafficText')) {
+                map.setFilter('trafficText', ['all', ['>', 'all_motor_vehicles', parseInt(min)], ['<', 'all_motor_vehicles', parseInt(max)]]);
+            }
+        }
+
+        // Initialize traffic slider early (before map loads)
+        setTimeout(() => {
+            buildSlider('trafficSlider', 5000, 100000, setTrafficFilter, true);
+        }, 100);
+
         map.on('load', () => {
+            // (duplicate traffic CSV-loading removed)
+
             map.addSource('population-lsoa', {
                 type: 'vector',
                 url: 'mapbox://propertyadam.ccvo5o03'
@@ -1333,6 +1465,122 @@
                 },
                 filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
             });
+
+            // Add traffic source and layer
+            map.addSource('traffic', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                }
+            });
+
+            map.loadImage('icons/car.png', (error, image) => {
+                if (error) throw error;
+
+                if (!map.hasImage('carCustom')) {
+                    map.addImage('carCustom', image);
+                }
+
+                map.addLayer({
+                    id: 'trafficText',
+                    type: 'symbol',
+                    source: 'traffic',
+                    layout: {
+                        'icon-image': 'carCustom',
+                        'icon-size': 0.07,
+                        'icon-allow-overlap': true,
+                        'text-field': ['get', 'all_motor_vehicles'],
+                        'text-size': 10,
+                        'text-transform': 'uppercase',
+                        'text-offset': ['get', 'position'],
+                        'text-allow-overlap': true,
+                        'visibility': 'none'
+                    },
+                    paint: {
+                        'text-color': '#202',
+                        'text-halo-color': '#fff',
+                        'text-halo-width': 2
+                    }
+                });
+            });
+
+
+            // Traffic click handlers
+            map.on('click', 'trafficText', (e) => {
+                const description = e.features[0].properties.road_name;
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(description)
+                    .addTo(map);
+                e.originalEvent.cancelBubble = true;
+            });
+
+            map.on('mouseenter', 'trafficText', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            map.on('mouseleave', 'trafficText', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+            // Load and display traffic data
+            d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQXpWou_hGirrxi5ZEp4EOsfKx60ih_sRFmvjL7A06iyb2FE2xsp2jKYIRaUsFd4nRpuuE7vcyjTyhc/pub?output=csv")
+                .then(data => {
+                    console.log('Traffic data loaded:', data.length);
+
+                    // Get unique traffic points with latest year
+                    const reduced = data
+                        .filter(i => +i.all_motor_vehicles > 4999)
+                        .map(i => {
+                            return { lat: +i.latitude, lon: +i.longitude, year: +i.year, all: +i.all_motor_vehicles, road_name: i.road_name }
+                        });
+
+                    const f = new Map();
+                    reduced.forEach(i => {
+                        const key = `${i.lat}-${i.lon}`;
+                        const d = f.get(key);
+                        if (!d) {
+                            f.set(key, { lat: i.lat, lon: i.lon, year: i.year, all: i.all, road_name: i.road_name })
+                        } else {
+                            if (+i.year > +d.year) {
+                                f.set(key, { lat: i.lat, lon: i.lon, year: i.year, all: i.all, road_name: i.road_name })
+                            }
+                        }
+                    });
+
+                    // Fix label positions to prevent overlap
+                    const _positions = new Map();
+                    const fixLabels = Array.from(f).map(i => {
+                        const { lat, lon, all } = i[1];
+                        const coords = `${lat.toFixed(4)}-${lon.toFixed(4)}`;
+                        let position = [1, -1];
+                        if (_positions.has(coords)) {
+                            position = [-1, 1];
+                        } else {
+                            _positions.set(coords);
+                        }
+                        return { ...i[1], position };
+                    });
+
+                    const pins = fixLabels.map(pin => {
+                        const { lat, lon, all } = pin;
+                        return {
+                            "type": "Feature",
+                            "properties": { 'all_motor_vehicles': all, ...pin },
+                            "geometry": {
+                                "type": "Point",
+                                "coordinates": [+lon, +lat]
+                            }
+                        };
+                    });
+
+                    const featureCollection = turf.featureCollection(pins);
+                    if (map.getSource('traffic')) {
+                        map.getSource('traffic').setData(featureCollection);
+                    }
+                })
+                .catch(err => console.error('Error loading traffic data:', err));
 
             // Add click handler for polygons
             map.on('click', 'population-lsoa-fill', (e) => {
