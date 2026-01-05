@@ -622,25 +622,6 @@
 
         <!-- Traffic Section -->
 
-        <div class="slider-container">
-            <div class="slider-label">
-                <span>Traffic</span>
-                <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
-                    <input type="checkbox" id="trafficOnOff" style="width:18px; height:18px;" />
-                </label>
-            </div>
-            <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-                <input type="text" id="trafficSlider-min"
-                    style=" padding:4px;width:50px; font-size:11px; border:1px solid #ddd; border-radius:4px;"
-                    readonly />
-
-                <div id="trafficSlider" class="roundSlider" style="width:120px;margin:0px 20px;"></div>
-
-                <input type="text" id="trafficSlider-max"
-                    style=" padding:4px; font-size:11px;width:50px; border:1px solid #ddd; border-radius:4px;"
-                    readonly />
-            </div>
-        </div>
 
         <div id="main-data-section" style="display: none;">
             <div class="population-display">
@@ -766,6 +747,26 @@
                         <input type="checkbox" id="show-least-deprived" style="width:18px; height:18px;" />
                         <span>Show least deprived (top 10%)</span>
                     </label>
+                </div>
+            </div>
+
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Traffic</span>
+                    <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="trafficOnOff" style="width:18px; height:18px;" />
+                    </label>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+                    <input type="text" id="trafficSlider-min"
+                        style=" padding:4px;width:50px; font-size:11px; border:1px solid #ddd; border-radius:4px;"
+                        readonly />
+
+                    <div id="trafficSlider" class="roundSlider" style="width:120px;margin:0px 20px;"></div>
+
+                    <input type="text" id="trafficSlider-max"
+                        style=" padding:4px; font-size:11px;width:50px; border:1px solid #ddd; border-radius:4px;"
+                        readonly />
                 </div>
             </div>
 
