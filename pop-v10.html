@@ -759,14 +759,12 @@
                 </div>
                 <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
                     <input type="text" id="trafficSlider-min"
-                        style=" padding:4px;width:50px; font-size:11px; border:1px solid #ddd; border-radius:4px;"
-                        readonly />
+                        style=" padding:4px;width:50px; font-size:11px; border:1px solid #ddd; border-radius:4px;" />
 
                     <div id="trafficSlider" class="roundSlider" style="width:120px;margin:0px 20px;"></div>
 
                     <input type="text" id="trafficSlider-max"
-                        style=" padding:4px; font-size:11px;width:50px; border:1px solid #ddd; border-radius:4px;"
-                        readonly />
+                        style=" padding:4px; font-size:11px;width:50px; border:1px solid #ddd; border-radius:4px;" />
                 </div>
             </div>
 
@@ -1404,13 +1402,31 @@
                 if (SLIDER_MAX) SLIDER_MAX.value = maxVal.toLocaleString();
             });
             if (SLIDER_MIN) {
-                SLIDER_MIN.addEventListener('change', function () {
-                    SLIDER.noUiSlider.set([this.value.replace(/,/g, ''), null]);
+                SLIDER_MIN.addEventListener('focusout', function () {
+                    const v = this.value.replace(/,/g, '').trim();
+                    if (v === '' || isNaN(Number(v))) return;
+                    SLIDER.noUiSlider.set([Number(v), null]);
+                });
+                SLIDER_MIN.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        const v = this.value.replace(/,/g, '').trim();
+                        if (v === '' || isNaN(Number(v))) return;
+                        SLIDER.noUiSlider.set([Number(v), null]);
+                    }
                 });
             }
             if (SLIDER_MAX) {
-                SLIDER_MAX.addEventListener('change', function () {
-                    SLIDER.noUiSlider.set([null, this.value.replace(/,/g, '')]);
+                SLIDER_MAX.addEventListener('focusout', function () {
+                    const v = this.value.replace(/,/g, '').trim();
+                    if (v === '' || isNaN(Number(v))) return;
+                    SLIDER.noUiSlider.set([null, Number(v)]);
+                });
+                SLIDER_MAX.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        const v = this.value.replace(/,/g, '').trim();
+                        if (v === '' || isNaN(Number(v))) return;
+                        SLIDER.noUiSlider.set([null, Number(v)]);
+                    }
                 });
             }
         }
