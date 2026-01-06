@@ -961,6 +961,74 @@
             debouncedUpdate();
         });
 
+        // LSOA input UI: paste comma-separated LSOA21CDs to highlight on the map
+        (function () {
+            const containerId = 'lsoa-input-container';
+            const parent = document.body;
+            if (!document.getElementById(containerId)) {
+                const div = document.createElement('div');
+                div.id = containerId;
+                div.style = 'position: absolute; bottom : 12px; left: 12px; background: rgba(255,255,255,0.95); padding:6px; border-radius:4px; display:flex; gap:6px; align-items:center; z-index:2147483647; box-shadow:0 2px 6px rgba(0,0,0,0.15);';
+                div.innerHTML = '<input id="lsoa-input" placeholder="Paste LSOA21CDs, comma separated" style="min-width:300px;padding:6px" />' +
+                    '<button id="lsoa-highlight-btn">Highlight</button>' +
+                    '<button id="lsoa-clear-btn">Clear</button>' +
+                    '<span id="lsoa-count" style="margin-left:8px;color:#555"></span>';
+                parent.insertBefore(div, parent.firstChild);
+            }
+
+            const lsoaInput = document.getElementById('lsoa-input');
+            const highlightBtn = document.getElementById('lsoa-highlight-btn');
+            const clearBtn = document.getElementById('lsoa-clear-btn');
+            const lsoaCount = document.getElementById('lsoa-count');
+
+            function normalizeInput(raw) {
+                if (!raw) return [];
+                // remove surrounding brackets/quotes and split on commas
+                const cleaned = raw.replace(/[\[\]'\"]/g, '');
+                return cleaned.split(',').map(s => s.trim()).filter(Boolean);
+            }
+
+            function applyLSOAList(raw) {
+                const arr = normalizeInput(raw);
+                selectedLSOAs = arr;
+                if (map && map.getLayer && map.getLayer('population-lsoa-selected-outline')) {
+                    try {
+                        map.setFilter('population-lsoa-selected-outline', ['in', ['get', 'LSOA21CD'], ['literal', selectedLSOAs]]);
+                    } catch (e) {
+                        console.warn('setFilter failed for selected-outline', e);
+                    }
+                }
+                if (lsoaCount) lsoaCount.textContent = arr.length ? `${arr.length} selected` : '';
+                // update UI/data
+                if (typeof updateSelection === 'function') updateSelection();
+                if (typeof updateDeprivationHighlights === 'function') updateDeprivationHighlights();
+            }
+
+            highlightBtn && highlightBtn.addEventListener('click', () => applyLSOAList(lsoaInput.value));
+            clearBtn && clearBtn.addEventListener('click', () => {
+                selectedLSOAs = [];
+                if (map && map.getLayer && map.getLayer('population-lsoa-selected-outline')) {
+                    try {
+                        map.setFilter('population-lsoa-selected-outline', ['==', ['get', 'LSOA21CD'], '']);
+                    } catch (e) {
+                        console.warn('clear filter failed', e);
+                    }
+                }
+                if (lsoaInput) lsoaInput.value = '';
+                if (lsoaCount) lsoaCount.textContent = '';
+                if (typeof updateSelection === 'function') updateSelection();
+                if (typeof updateDeprivationHighlights === 'function') updateDeprivationHighlights();
+            });
+
+            // Normalize pasted text (allow arrays like ["E01000001","E01000002"])
+            lsoaInput && lsoaInput.addEventListener('paste', () => {
+                setTimeout(() => {
+                    if (!lsoaInput) return;
+                    lsoaInput.value = lsoaInput.value.replace(/\s+/g, '').replace(/^\[|]$/g, '').replace(/['"]/g, '');
+                }, 10);
+            });
+        })();
+
         const resetBtn = document.getElementById('reset-btn');
         if (resetBtn) {
             resetBtn.addEventListener('click', resetApp);
