@@ -51,6 +51,69 @@
             max-height: 90vh;
             overflow: visible;
         }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        #lad-search {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        #lad-search:focus {
+            outline: none;
+            border-color: #4A90E2;
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .autocomplete-dropdown.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .autocomplete-item.selected {
+            background-color: #e3f2fd;
+        }
+
+        .no-results {
+            padding: 10px;
+            color: #999;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -58,6 +121,10 @@
     <div id="map"></div>
 
     <div class="search-panel">
+        <div class="search-container">
+            <input type="text" id="lad-search" placeholder="Enter county...">
+            <div id="autocomplete-dropdown" class="autocomplete-dropdown"></div>
+        </div>
 
         <!-- <div class="slider-container">
             <div class="slider-label">
@@ -71,44 +138,195 @@
 
 
     <script>
-        mapboxgl.accessToken = 'pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZXdpNDBieTUzanMyN2J3NW1sMHUifQ.m5BpgLHVufA0nzdFvCpTVg';
+        mapboxgl.accessToken =
+            "pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZXdpNDBieTUzanMyN2J3NW1sMHUifQ.m5BpgLHVufA0nzdFvCpTVg";
 
         const map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v12',
-            center: { lng: -2.774533172216252, lat: 54.12181638598531 },
-            zoom: 7
+            container: "map",
+            style: "mapbox://styles/mapbox/streets-v12",
+            center: [-2.774533172216252, 54.12181638598531],
+            zoom: 7,
         });
 
-        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        // Store LAD data globally
+        let ladData = null;
 
-        map.on('load', () => {
+        // Autocomplete elements
+        const searchInput = document.getElementById("lad-search");
+        const dropdown = document.getElementById("autocomplete-dropdown");
+        let selectedIndex = -1;
+
+        map.on("load", async () => {
             try {
-                map.addSource('lad-boundaries', {
-                    type: 'geojson',
-                    data: 'population_data/lad (1).json'
+                // Load LAD GeoJSON
+                const res = await fetch("population_data/lad (1).json");
+                ladData = await res.json();
+
+                map.addSource("lad-boundaries", {
+                    type: "geojson",
+                    data: ladData,
                 });
 
                 map.addLayer({
-                    id: 'lad-boundaries-line',
-                    type: 'line',
-                    source: 'lad-boundaries',
+                    id: "lad-boundaries-line",
+                    type: "line",
+                    source: "lad-boundaries",
                     layout: {
-                        'line-join': 'round',
-                        'line-cap': 'round'
+                        "line-join": "round",
+                        "line-cap": "round",
                     },
                     paint: {
-                        'line-color': '#000000',
-                        'line-width': 2,
-                        'line-opacity': 0.9
-                    }
+                        "line-color": "#000000",
+                        "line-width": 2,
+                        "line-opacity": 0.9,
+                    },
                 });
             } catch (e) {
-                console.warn('Failed to add LAD boundaries source/layer', e);
+                console.error("Error loading/adding LAD data:", e);
             }
 
-        }); 
+            map.addSource('population-lsoa', {
+                type: 'vector',
+                url: 'mapbox://propertyadam.ccvo5o03'
+            });
+
+            map.addLayer({
+                id: 'population-lsoa-fill',
+                type: 'fill',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'fill-color': 'transparent',
+                    'fill-opacity': 0
+                }
+            });
+
+            map.addLayer({
+                id: 'population-lsoa-outline',
+                type: 'line',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'line-color': '#000000',
+                    'line-width': 1,
+                    'line-opacity': 0.3
+                }
+            });
+
+            map.addLayer({
+                id: 'population-lsoa-selected-outline',
+                type: 'line',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'line-color': '#ff6600',
+                    'line-width': 4
+                },
+                filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
+            });
+        });
+
+        // Autocomplete functionality
+        searchInput.addEventListener("input", function () {
+            const searchTerm = this.value.trim().toLowerCase();
+
+            // Clear dropdown if less than 3 characters
+            if (searchTerm.length < 3) {
+                dropdown.classList.remove("show");
+                dropdown.innerHTML = "";
+                selectedIndex = -1;
+                return;
+            }
+
+            if (!ladData?.features) return;
+
+            const matches = ladData.features.filter((feature) => {
+                const name = feature?.properties?.LAD13NM;
+                return name && name.toLowerCase().includes(searchTerm);
+            });
+
+            if (matches.length > 0) {
+                dropdown.innerHTML = matches
+                    .map(
+                        (feature, index) =>
+                            `<div class="autocomplete-item" data-index="${index}">${feature.properties.LAD13NM}</div>`
+                    )
+                    .join("");
+                dropdown.classList.add("show");
+                selectedIndex = -1;
+
+                dropdown.querySelectorAll(".autocomplete-item").forEach((item, index) => {
+                    item.addEventListener("click", () => selectLocation(matches[index]));
+                });
+            } else {
+                dropdown.innerHTML = '<div class="no-results">No results found</div>';
+                dropdown.classList.add("show");
+                selectedIndex = -1;
+            }
+        });
+
+        // Keyboard navigation
+        searchInput.addEventListener("keydown", function (e) {
+            const items = dropdown.querySelectorAll(".autocomplete-item");
+
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                updateSelectedItem(items);
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, -1);
+                updateSelectedItem(items);
+            } else if (e.key === "Enter" && selectedIndex >= 0) {
+                e.preventDefault();
+                items[selectedIndex].click();
+            } else if (e.key === "Escape") {
+                dropdown.classList.remove("show");
+                selectedIndex = -1;
+            }
+        });
+
+        function updateSelectedItem(items) {
+            items.forEach((item, index) => {
+                if (index === selectedIndex) {
+                    item.classList.add("selected");
+                    item.scrollIntoView({ block: "nearest" });
+                } else {
+                    item.classList.remove("selected");
+                }
+            });
+        }
+
+        function selectLocation(feature) {
+            searchInput.value = feature.properties.LAD13NM;
+            dropdown.classList.remove("show");
+            selectedIndex = -1;
+
+            // turf.bbox returns [minX, minY, maxX, maxY] [web:16]
+            const [minX, minY, maxX, maxY] = turf.bbox(feature);
+
+            // map.fitBounds expects [[minLng,minLat],[maxLng,maxLat]] [web:12]
+            map.fitBounds(
+                [
+                    [minX, minY],
+                    [maxX, maxY],
+                ],
+                {
+                    padding: { top: 50, bottom: 50, left: 50, right: 50 },
+                    duration: 1000,
+                }
+            );
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener("click", function (e) {
+            if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.remove("show");
+                selectedIndex = -1;
+            }
+        });
     </script>
+
 
 </body>
 
