@@ -51,3 +51,33 @@ JOIN lsoa_data d ON p.lsoa_code = d.lsoa_code
 GROUP BY c.lsoa_code, c.centroid_bng
 ORDER BY total_retirees_in_radius DESC
 LIMIT 10;
+
+
+
+
+//FOR PLACES
+WITH candidate_centers AS (
+  SELECT
+    p.lsoa_code,
+    p.centroid_bng
+  FROM lsoa_polygons p
+  JOIN lsoa_data d ON p.lsoa_code = d.lsoa_code
+  WHERE lower(p.area_name) = lower('cornwall')
+  ORDER BY d."Retired" DESC
+  
+)
+SELECT
+  c.lsoa_code as center_lsoa,
+  ST_X(ST_Transform(c.centroid_bng, 4326)) as center_lng,
+  ST_Y(ST_Transform(c.centroid_bng, 4326)) as center_lat,
+  SUM(d."Retired") as total_retirees_in_radius,
+  COUNT(DISTINCT p.lsoa_code) as num_polygons_in_radius,
+  ARRAY_AGG(p.lsoa_code) as polygon_ids_in_radius
+FROM candidate_centers c
+JOIN lsoa_polygons p
+  ON lower(p.area_name) = lower('cornwall')
+ AND ST_DWithin(c.centroid_bng, p.centroid_bng, 8046.72)
+JOIN lsoa_data d ON p.lsoa_code = d.lsoa_code
+GROUP BY c.lsoa_code, c.centroid_bng
+ORDER BY total_retirees_in_radius DESC
+LIMIT 10;
