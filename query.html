@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>UK LSOA map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Mapbox GL JS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.js"></script>
+
+    <!-- Mapbox Geocoder plugin -->
+    <link rel="stylesheet"
+        href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css"
+        type="text/css" />
+    <script
+        src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+
+    <!-- Turf.js for circle geometry -->
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="js/nouislider.min.css" rel="stylesheet">
+    <script src="js/nouislider.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .search-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+            padding: 15px;
+            width: 320px;
+            z-index: 100000 !important;
+            max-height: 90vh;
+            overflow: visible;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+
+    <div class="search-panel">
+
+        <!-- <div class="slider-container">
+            <div class="slider-label">
+                <span>Radius</span>
+                <span class="slider-value"><span id="radius-value">5</span> miles</span>
+            </div>
+            <input type="range" min="0" max="50" value="5" id="radius-slider" />
+        </div> -->
+    </div>
+
+
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZXdpNDBieTUzanMyN2J3NW1sMHUifQ.m5BpgLHVufA0nzdFvCpTVg';
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: { lng: -2.774533172216252, lat: 54.12181638598531 },
+            zoom: 7
+        });
+
+        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+        map.on('load', () => {
+            try {
+                map.addSource('lad-boundaries', {
+                    type: 'geojson',
+                    data: 'population_data/lad (1).json'
+                });
+
+                map.addLayer({
+                    id: 'lad-boundaries-line',
+                    type: 'line',
+                    source: 'lad-boundaries',
+                    layout: {
+                        'line-join': 'round',
+                        'line-cap': 'round'
+                    },
+                    paint: {
+                        'line-color': '#000000',
+                        'line-width': 2,
+                        'line-opacity': 0.9
+                    }
+                });
+            } catch (e) {
+                console.warn('Failed to add LAD boundaries source/layer', e);
+            }
+
+        }); 
+    </script>
+
+</body>
+
+</html>
