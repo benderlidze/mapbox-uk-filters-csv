@@ -156,6 +156,9 @@
         const dropdown = document.getElementById("autocomplete-dropdown");
         let selectedIndex = -1;
 
+        // Hovered LAD feature id for feature-state highlighting
+        let hoveredLadId = null;
+
         map.on("load", async () => {
             try {
                 // Load LAD GeoJSON
@@ -165,8 +168,33 @@
                 map.addSource("lad-boundaries", {
                     type: "geojson",
                     data: ladData,
+                    // generate feature ids so feature-state can be used safely
+                    generateId: true
                 });
 
+                // Fill layer used for pointer/click/hover interactions (invisible by default)
+                map.addLayer({
+                    id: "lad-boundaries-fill",
+                    type: "fill",
+                    source: "lad-boundaries",
+                    paint: {
+                        // highlight using feature-state 'hover'
+                        'fill-color': [
+                            'case',
+                            ['boolean', ['feature-state', 'hover'], false],
+                            '#e3f2fd',
+                            'rgba(0,0,0,0)'
+                        ],
+                        'fill-opacity': [
+                            'case',
+                            ['boolean', ['feature-state', 'hover'], false],
+                            0.45,
+                            0
+                        ]
+                    }
+                });
+
+                // Line layer drawn above fill so boundaries remain visible
                 map.addLayer({
                     id: "lad-boundaries-line",
                     type: "line",
@@ -180,6 +208,53 @@
                         "line-width": 2,
                         "line-opacity": 0.9,
                     },
+                });
+
+                // Hover behavior: use feature state to highlight polygon under the cursor
+                map.on('mousemove', 'lad-boundaries-fill', (e) => {
+                    if (!e.features || !e.features.length) return;
+                    const feature = e.features[0];
+                    const fid = feature.id;
+                    // clear previous hover (only if we have a valid id)
+                    if (hoveredLadId !== null && hoveredLadId !== fid) {
+                        map.setFeatureState({ source: 'lad-boundaries', id: hoveredLadId }, { hover: false });
+                    }
+                    // set hover on the new feature only if it has an id
+                    if (fid != null) {
+                        hoveredLadId = fid;
+                        map.setFeatureState({ source: 'lad-boundaries', id: hoveredLadId }, { hover: true });
+                        map.getCanvas().style.cursor = 'pointer';
+                    } else {
+                        map.getCanvas().style.cursor = '';
+                    }
+                });
+
+                map.on('mouseleave', 'lad-boundaries-fill', () => {
+                    if (hoveredLadId !== null) {
+                        map.setFeatureState({ source: 'lad-boundaries', id: hoveredLadId }, { hover: false });
+                        hoveredLadId = null;
+                    }
+                    map.getCanvas().style.cursor = '';
+                });
+
+                // Click handler: fit bounds to clicked polygon (same behavior as search selection)
+                map.on('click', 'lad-boundaries-fill', (e) => {
+                    if (!e.features || !e.features.length) return;
+                    const feature = e.features[0];
+
+                    console.log('feature', feature);
+
+                    // Try to resolve a full feature object from the global ladData
+                    const LAD13NM = feature.properties.LAD13NM;
+                    const match = null;
+                    if (!ladData?.features) return;
+                    const matches = ladData.features.filter((feature) => {
+                        return feature?.properties?.LAD13NM === LAD13NM;
+                    });
+                    if (matches.length > 0) {
+                        selectLocation(matches[0]);
+                    }
+
                 });
             } catch (e) {
                 console.error("Error loading/adding LAD data:", e);
@@ -298,6 +373,7 @@
         }
 
         function selectLocation(feature) {
+            console.log('selectLocation', feature);
             searchInput.value = feature.properties.LAD13NM;
             dropdown.classList.remove("show");
             selectedIndex = -1;
@@ -312,7 +388,7 @@
                     [maxX, maxY],
                 ],
                 {
-                    padding: { top: 50, bottom: 50, left: 50, right: 50 },
+                    padding: { top: 10, bottom: 10, left: 10, right: 10 },
                     duration: 1000,
                 }
             );
