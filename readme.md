@@ -47,6 +47,59 @@ GROUP BY c.lsoa_code, c.centroid_bng
 ORDER BY total_retirees_in_radius DESC
 LIMIT 10;
 
+
+
+
+---------- FOR SUPABASE ONE QUERY --------------
+WITH area_list AS (
+  SELECT DISTINCT area_name
+  FROM lsoa_polygons
+  ORDER BY area_name
+  
+),
+results AS (
+  SELECT 
+    a.area_name,
+    c.lsoa_code as center_lsoa,
+    ST_X(ST_Transform(c.centroid_bng, 4326)) as center_lng,
+    ST_Y(ST_Transform(c.centroid_bng, 4326)) as center_lat,
+    SUM(d."Retired") as total_retirees_in_radius,
+    COUNT(DISTINCT p.lsoa_code) as num_polygons_in_radius,
+    ARRAY_AGG(p.lsoa_code) as polygon_ids_in_radius,
+    ROW_NUMBER() OVER (PARTITION BY a.area_name ORDER BY SUM(d."Retired") DESC) as rn
+  FROM area_list a
+  CROSS JOIN LATERAL (
+    SELECT p2.lsoa_code, p2.centroid_bng
+    FROM lsoa_polygons p2
+    JOIN lsoa_data d2 ON p2.lsoa_code = d2.lsoa_code
+    WHERE lower(p2.area_name) = lower(a.area_name)
+    ORDER BY d2."Retired" DESC
+  ) c
+  JOIN lsoa_polygons p
+    ON lower(p.area_name) = lower(a.area_name)
+    AND ST_DWithin(c.centroid_bng, p.centroid_bng, 3218.688)
+  JOIN lsoa_data d ON p.lsoa_code = d.lsoa_code
+  GROUP BY a.area_name, c.lsoa_code, c.centroid_bng
+)
+SELECT 
+  area_name,
+  center_lsoa,
+  center_lng,
+  center_lat,
+  total_retirees_in_radius,
+  num_polygons_in_radius,
+  polygon_ids_in_radius,
+  '2_miles' as radius
+FROM results
+WHERE rn = 1
+ORDER BY area_name;
+---------- FOR SUPABASE ONE QUERY --------------
+
+
+
+
+
+
 //FOR PLACES
 WITH candidate_centers AS (
 SELECT
