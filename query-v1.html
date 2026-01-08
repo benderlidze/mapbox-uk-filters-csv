@@ -529,13 +529,25 @@
             });
 
             map.addLayer({
+                id: 'population-lsoa-selected-fill',
+                type: 'fill',
+                source: 'population-lsoa',
+                'source-layer': 'clean_enriched_LSOA-5ty98a',
+                paint: {
+                    'fill-color': '#4A90E2',
+                    'fill-opacity': 0.45
+                },
+                filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
+            });
+
+            map.addLayer({
                 id: 'population-lsoa-selected-outline',
                 type: 'line',
                 source: 'population-lsoa',
                 'source-layer': 'clean_enriched_LSOA-5ty98a',
                 paint: {
-                    'line-color': '#ff6600',
-                    'line-width': 4
+                    'line-color': '#ffffff',
+                    'line-width': 1.5
                 },
                 filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
             });
@@ -658,6 +670,13 @@
             if (!areaData || !areaData.polygonIds) {
                 console.log('No polygon data found for:', areaName);
                 // Clear highlights if no data
+                if (map.getLayer('population-lsoa-selected-fill')) {
+                    map.setFilter('population-lsoa-selected-fill', [
+                        'in',
+                        ['get', 'LSOA21CD'],
+                        ['literal', []]
+                    ]);
+                }
                 if (map.getLayer('population-lsoa-selected-outline')) {
                     map.setFilter('population-lsoa-selected-outline', [
                         'in',
@@ -670,7 +689,14 @@
 
             console.log('Highlighting', areaData.polygonIds.length, 'polygons for', areaName);
 
-            // Highlight the polygon IDs
+            // Highlight the polygon IDs with fill and outline
+            if (map.getLayer('population-lsoa-selected-fill')) {
+                map.setFilter('population-lsoa-selected-fill', [
+                    'in',
+                    ['get', 'LSOA21CD'],
+                    ['literal', areaData.polygonIds]
+                ]);
+            }
             if (map.getLayer('population-lsoa-selected-outline')) {
                 map.setFilter('population-lsoa-selected-outline', [
                     'in',
@@ -708,7 +734,14 @@
                 duration: 1000
             });
 
-            // Clear polygon highlights
+            // Clear polygon highlights (both fill and outline)
+            if (map.getLayer('population-lsoa-selected-fill')) {
+                map.setFilter('population-lsoa-selected-fill', [
+                    'in',
+                    ['get', 'LSOA21CD'],
+                    ['literal', []]
+                ]);
+            }
             if (map.getLayer('population-lsoa-selected-outline')) {
                 map.setFilter('population-lsoa-selected-outline', [
                     'in',
