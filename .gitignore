@@ -1,0 +1,57 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor folders
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build / cache
+dist/
+build/
+.cache/
+.parcel-cache/
+coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+.venv/
+venv/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*.bak
+
+# Archive
+*.zip
+*.tar.gz
+*.rar
+
+# Local overrides
+.env.local
+.env.*.local
+
+# Terraform
+.terraform/
+
+# Misc
+.idea/
+
+# Ignore local mapbox tokens (if accidentally created)
+local-*.json
