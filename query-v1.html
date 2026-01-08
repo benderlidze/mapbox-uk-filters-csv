@@ -258,6 +258,10 @@
         let showLeastDeprived = false;
         let selectedRegion = null;
 
+        // Area polygons data from CSV
+        const areaPolygonsData = {};
+        let areaPolygonsLoaded = false;
+
         // Load CSV data for deprivation
         async function loadCSVData() {
             try {
@@ -301,6 +305,56 @@
         }
 
         loadCSVData();
+
+        // Load area polygons data
+        // Load area polygons data using D3
+        async function loadAreaPolygonsData() {
+            try {
+                const data = await d3.csv('population_data/Supabase Snippet Add area_name column to lsoa_polygons.csv');
+
+                let successCount = 0;
+                let errorCount = 0;
+
+                data.forEach((row, index) => {
+                    try {
+                        const areaName = row.area_name;
+                        const polygonIdsStr = row.polygon_ids_in_radius;
+
+                        if (!areaName || !polygonIdsStr) {
+                            console.warn(`⚠️ Missing data in row ${index + 1}`);
+                            errorCount++;
+                            return;
+                        }
+
+                        // D3 automatically handles CSV-escaped quotes
+                        const polygonIds = JSON.parse(polygonIdsStr);
+
+                        areaPolygonsData[areaName] = {
+                            centerLSOA: row.center_lsoa,
+                            centerLng: +row.center_lng,
+                            centerLat: +row.center_lat,
+                            totalRetirees: +row.total_retirees_in_radius || 0,
+                            numPolygons: +row.num_polygons_in_radius || 0,
+                            polygonIds: polygonIds,
+                            radius: row.radius
+                        };
+                        successCount++;
+                    } catch (err) {
+                        console.error(`❌ Error parsing row ${index + 1}:`, err.message);
+                        errorCount++;
+                    }
+                });
+
+                areaPolygonsLoaded = true;
+                console.log(`✅ Area polygons loaded: ${successCount} areas, ${errorCount} errors`);
+                console.log('📋 Sample areas:', Object.keys(areaPolygonsData).slice(0, 5));
+            } catch (err) {
+                console.error('❌ Error loading area polygons CSV:', err);
+            }
+        }
+
+
+        loadAreaPolygonsData();
 
         map.on("load", async () => {
             try {
@@ -541,7 +595,8 @@
 
         function selectLocation(feature) {
             console.log('selectLocation', feature);
-            searchInput.value = feature.properties.LAD13NM;
+            const areaName = feature.properties.LAD13NM;
+            searchInput.value = areaName;
             dropdown.classList.remove("show");
             selectedIndex = -1;
 
@@ -551,7 +606,7 @@
             // Show region panel and update region name
             const regionPanel = document.getElementById('region-panel');
             const regionName = document.getElementById('region-name');
-            regionName.textContent = feature.properties.LAD13NM;
+            regionName.textContent = areaName;
             regionPanel.classList.add('show');
 
             // turf.bbox returns [minX, minY, maxX, maxY] [web:16]
@@ -569,8 +624,41 @@
                 }
             );
 
+            // Highlight polygon IDs from CSV
+            highlightAreaPolygons(areaName);
+
             // Update deprivation highlights if checkboxes are checked
             updateDeprivationHighlights();
+        }
+
+        function highlightAreaPolygons(areaName) {
+            if (!map.getSource('population-lsoa')) return;
+
+            // Look up area in CSV data
+            const areaData = areaPolygonsData[areaName];
+            if (!areaData || !areaData.polygonIds) {
+                console.log('No polygon data found for:', areaName);
+                // Clear highlights if no data
+                if (map.getLayer('population-lsoa-selected-outline')) {
+                    map.setFilter('population-lsoa-selected-outline', [
+                        'in',
+                        ['get', 'LSOA21CD'],
+                        ['literal', []]
+                    ]);
+                }
+                return;
+            }
+
+            console.log('Highlighting', areaData.polygonIds.length, 'polygons for', areaName);
+
+            // Highlight the polygon IDs
+            if (map.getLayer('population-lsoa-selected-outline')) {
+                map.setFilter('population-lsoa-selected-outline', [
+                    'in',
+                    ['get', 'LSOA21CD'],
+                    ['literal', areaData.polygonIds]
+                ]);
+            }
         }
 
         // Close dropdown when clicking outside
@@ -600,6 +688,15 @@
                 zoom: 7,
                 duration: 1000
             });
+
+            // Clear polygon highlights
+            if (map.getLayer('population-lsoa-selected-outline')) {
+                map.setFilter('population-lsoa-selected-outline', [
+                    'in',
+                    ['get', 'LSOA21CD'],
+                    ['literal', []]
+                ]);
+            }
 
             // Clear deprivation highlights
             updateDeprivationHighlights();
@@ -631,37 +728,24 @@
             const leastDeprivedLSOAs = [];
 
             if (selectedRegion && (showMostDeprived || showLeastDeprived)) {
-                // Get all LSOA features within the selected region
-                const features = map.querySourceFeatures('population-lsoa', {
-                    sourceLayer: 'clean_enriched_LSOA-5ty98a'
-                });
+                // Get area name from selected region
+                const areaName = selectedRegion.properties.LAD13NM;
+                const areaData = areaPolygonsData[areaName];
 
-                // Filter LSOAs that intersect with the selected region
-                features.forEach(lsoaFeature => {
-                    if (!lsoaFeature.properties.LSOA21CD) return;
+                if (areaData && areaData.polygonIds) {
+                    // Use polygon IDs from CSV
+                    areaData.polygonIds.forEach(lsoaCode => {
+                        const row = csvData[lsoaCode];
+                        if (!row || !row.IMDDecile) return;
 
-                    const lsoaCode = lsoaFeature.properties.LSOA21CD;
-                    const row = csvData[lsoaCode];
-                    
-                    if (!row || !row.IMDDecile) return;
-
-                    // Check if LSOA is within the selected region bounds
-                    try {
-                        const lsoaPoint = turf.centroid(lsoaFeature);
-                        const isWithinRegion = turf.booleanPointInPolygon(lsoaPoint, selectedRegion);
-
-                        if (isWithinRegion) {
-                            if (showMostDeprived && row.IMDDecile <= 1) {
-                                mostDeprivedLSOAs.push(lsoaCode);
-                            }
-                            if (showLeastDeprived && row.IMDDecile >= 9) {
-                                leastDeprivedLSOAs.push(lsoaCode);
-                            }
+                        if (showMostDeprived && row.IMDDecile <= 1) {
+                            mostDeprivedLSOAs.push(lsoaCode);
                         }
-                    } catch (err) {
-                        // If geometry error, skip this feature
-                    }
-                });
+                        if (showLeastDeprived && row.IMDDecile >= 9) {
+                            leastDeprivedLSOAs.push(lsoaCode);
+                        }
+                    });
+                }
             }
 
             // Update map filters
