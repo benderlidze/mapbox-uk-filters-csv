@@ -1,0 +1,1326 @@
+[
+  {
+    "area_name": "Adur",
+    "num_lsoas": 42
+  },
+  {
+    "area_name": "Allerdale",
+    "num_lsoas": 59
+  },
+  {
+    "area_name": "Amber Valley",
+    "num_lsoas": 79
+  },
+  {
+    "area_name": "Arun",
+    "num_lsoas": 99
+  },
+  {
+    "area_name": "Ashfield",
+    "num_lsoas": 77
+  },
+  {
+    "area_name": "Ashford",
+    "num_lsoas": 81
+  },
+  {
+    "area_name": "Babergh",
+    "num_lsoas": 55
+  },
+  {
+    "area_name": "Barking and Dagenham",
+    "num_lsoas": 115
+  },
+  {
+    "area_name": "Barnet",
+    "num_lsoas": 220
+  },
+  {
+    "area_name": "Barnsley",
+    "num_lsoas": 148
+  },
+  {
+    "area_name": "Barrow-in-Furness",
+    "num_lsoas": 48
+  },
+  {
+    "area_name": "Basildon",
+    "num_lsoas": 112
+  },
+  {
+    "area_name": "Basingstoke and Deane",
+    "num_lsoas": 115
+  },
+  {
+    "area_name": "Bassetlaw",
+    "num_lsoas": 69
+  },
+  {
+    "area_name": "Bath and North East Somerset",
+    "num_lsoas": 118
+  },
+  {
+    "area_name": "Bedford",
+    "num_lsoas": 117
+  },
+  {
+    "area_name": "Bexley",
+    "num_lsoas": 148
+  },
+  {
+    "area_name": "Birmingham",
+    "num_lsoas": 659
+  },
+  {
+    "area_name": "Blaby",
+    "num_lsoas": 60
+  },
+  {
+    "area_name": "Blackburn with Darwen",
+    "num_lsoas": 91
+  },
+  {
+    "area_name": "Blackpool",
+    "num_lsoas": 94
+  },
+  {
+    "area_name": "Blaenau Gwent",
+    "num_lsoas": 46
+  },
+  {
+    "area_name": "Bolsover",
+    "num_lsoas": 50
+  },
+  {
+    "area_name": "Bolton",
+    "num_lsoas": 177
+  },
+  {
+    "area_name": "Boston",
+    "num_lsoas": 39
+  },
+  {
+    "area_name": "Bournemouth, Christchurch and Poole",
+    "num_lsoas": 240
+  },
+  {
+    "area_name": "Bracknell Forest",
+    "num_lsoas": 82
+  },
+  {
+    "area_name": "Bradford",
+    "num_lsoas": 312
+  },
+  {
+    "area_name": "Braintree",
+    "num_lsoas": 88
+  },
+  {
+    "area_name": "Breckland",
+    "num_lsoas": 80
+  },
+  {
+    "area_name": "Brent",
+    "num_lsoas": 181
+  },
+  {
+    "area_name": "Brentwood",
+    "num_lsoas": 48
+  },
+  {
+    "area_name": "Bridgend",
+    "num_lsoas": 91
+  },
+  {
+    "area_name": "Brighton and Hove",
+    "num_lsoas": 165
+  },
+  {
+    "area_name": "Bristol",
+    "num_lsoas": 268
+  },
+  {
+    "area_name": "Broadland",
+    "num_lsoas": 85
+  },
+  {
+    "area_name": "Bromley",
+    "num_lsoas": 199
+  },
+  {
+    "area_name": "Bromsgrove",
+    "num_lsoas": 60
+  },
+  {
+    "area_name": "Broxbourne",
+    "num_lsoas": 58
+  },
+  {
+    "area_name": "Broxtowe",
+    "num_lsoas": 71
+  },
+  {
+    "area_name": "Buckinghamshire",
+    "num_lsoas": 334
+  },
+  {
+    "area_name": "Burnley",
+    "num_lsoas": 60
+  },
+  {
+    "area_name": "Bury",
+    "num_lsoas": 120
+  },
+  {
+    "area_name": "Caerphilly",
+    "num_lsoas": 110
+  },
+  {
+    "area_name": "Calderdale",
+    "num_lsoas": 129
+  },
+  {
+    "area_name": "Cambridge",
+    "num_lsoas": 78
+  },
+  {
+    "area_name": "Camden",
+    "num_lsoas": 130
+  },
+  {
+    "area_name": "Cannock Chase",
+    "num_lsoas": 61
+  },
+  {
+    "area_name": "Canterbury",
+    "num_lsoas": 92
+  },
+  {
+    "area_name": "Cardiff",
+    "num_lsoas": 218
+  },
+  {
+    "area_name": "Carlisle",
+    "num_lsoas": 71
+  },
+  {
+    "area_name": "Carmarthenshire",
+    "num_lsoas": 111
+  },
+  {
+    "area_name": "Castle Point",
+    "num_lsoas": 57
+  },
+  {
+    "area_name": "Central Bedfordshire",
+    "num_lsoas": 175
+  },
+  {
+    "area_name": "Ceredigion",
+    "num_lsoas": 45
+  },
+  {
+    "area_name": "Charnwood",
+    "num_lsoas": 102
+  },
+  {
+    "area_name": "Chelmsford",
+    "num_lsoas": 113
+  },
+  {
+    "area_name": "Cheltenham",
+    "num_lsoas": 77
+  },
+  {
+    "area_name": "Cherwell",
+    "num_lsoas": 102
+  },
+  {
+    "area_name": "Cheshire East",
+    "num_lsoas": 244
+  },
+  {
+    "area_name": "Cheshire West and Chester",
+    "num_lsoas": 222
+  },
+  {
+    "area_name": "Chesterfield",
+    "num_lsoas": 69
+  },
+  {
+    "area_name": "Chichester",
+    "num_lsoas": 75
+  },
+  {
+    "area_name": "Chorley",
+    "num_lsoas": 70
+  },
+  {
+    "area_name": "City of London",
+    "num_lsoas": 6
+  },
+  {
+    "area_name": "Colchester",
+    "num_lsoas": 117
+  },
+  {
+    "area_name": "Conwy",
+    "num_lsoas": 71
+  },
+  {
+    "area_name": "Copeland",
+    "num_lsoas": 47
+  },
+  {
+    "area_name": "Cornwall",
+    "num_lsoas": 336
+  },
+  {
+    "area_name": "Cotswold",
+    "num_lsoas": 56
+  },
+  {
+    "area_name": "County Durham",
+    "num_lsoas": 330
+  },
+  {
+    "area_name": "Coventry",
+    "num_lsoas": 203
+  },
+  {
+    "area_name": "Craven",
+    "num_lsoas": 33
+  },
+  {
+    "area_name": "Crawley",
+    "num_lsoas": 67
+  },
+  {
+    "area_name": "Croydon",
+    "num_lsoas": 229
+  },
+  {
+    "area_name": "Dacorum",
+    "num_lsoas": 96
+  },
+  {
+    "area_name": "Darlington",
+    "num_lsoas": 66
+  },
+  {
+    "area_name": "Dartford",
+    "num_lsoas": 67
+  },
+  {
+    "area_name": "Denbighshire",
+    "num_lsoas": 58
+  },
+  {
+    "area_name": "Derby",
+    "num_lsoas": 152
+  },
+  {
+    "area_name": "Derbyshire Dales",
+    "num_lsoas": 43
+  },
+  {
+    "area_name": "Doncaster",
+    "num_lsoas": 199
+  },
+  {
+    "area_name": "Dorset",
+    "num_lsoas": 223
+  },
+  {
+    "area_name": "Dover",
+    "num_lsoas": 69
+  },
+  {
+    "area_name": "Dudley",
+    "num_lsoas": 203
+  },
+  {
+    "area_name": "Ealing",
+    "num_lsoas": 199
+  },
+  {
+    "area_name": "East Cambridgeshire",
+    "num_lsoas": 51
+  },
+  {
+    "area_name": "East Devon",
+    "num_lsoas": 88
+  },
+  {
+    "area_name": "East Hampshire",
+    "num_lsoas": 74
+  },
+  {
+    "area_name": "East Hertfordshire",
+    "num_lsoas": 90
+  },
+  {
+    "area_name": "East Lindsey",
+    "num_lsoas": 82
+  },
+  {
+    "area_name": "East Riding of Yorkshire",
+    "num_lsoas": 213
+  },
+  {
+    "area_name": "East Staffordshire",
+    "num_lsoas": 72
+  },
+  {
+    "area_name": "East Suffolk",
+    "num_lsoas": 145
+  },
+  {
+    "area_name": "Eastbourne",
+    "num_lsoas": 60
+  },
+  {
+    "area_name": "Eastleigh",
+    "num_lsoas": 82
+  },
+  {
+    "area_name": "Eden",
+    "num_lsoas": 36
+  },
+  {
+    "area_name": "Elmbridge",
+    "num_lsoas": 82
+  },
+  {
+    "area_name": "Enfield",
+    "num_lsoas": 183
+  },
+  {
+    "area_name": "Epping Forest",
+    "num_lsoas": 78
+  },
+  {
+    "area_name": "Epsom and Ewell",
+    "num_lsoas": 46
+  },
+  {
+    "area_name": "Erewash",
+    "num_lsoas": 73
+  },
+  {
+    "area_name": "Exeter",
+    "num_lsoas": 78
+  },
+  {
+    "area_name": "Fareham",
+    "num_lsoas": 73
+  },
+  {
+    "area_name": "Fenland",
+    "num_lsoas": 56
+  },
+  {
+    "area_name": "Flintshire",
+    "num_lsoas": 92
+  },
+  {
+    "area_name": "Folkestone and Hythe",
+    "num_lsoas": 67
+  },
+  {
+    "area_name": "Forest of Dean",
+    "num_lsoas": 50
+  },
+  {
+    "area_name": "Fylde",
+    "num_lsoas": 51
+  },
+  {
+    "area_name": "Gateshead",
+    "num_lsoas": 126
+  },
+  {
+    "area_name": "Gedling",
+    "num_lsoas": 77
+  },
+  {
+    "area_name": "Gloucester",
+    "num_lsoas": 82
+  },
+  {
+    "area_name": "Gosport",
+    "num_lsoas": 56
+  },
+  {
+    "area_name": "Gravesham",
+    "num_lsoas": 65
+  },
+  {
+    "area_name": "Great Yarmouth",
+    "num_lsoas": 60
+  },
+  {
+    "area_name": "Greenwich",
+    "num_lsoas": 164
+  },
+  {
+    "area_name": "Guildford",
+    "num_lsoas": 84
+  },
+  {
+    "area_name": "Gwynedd",
+    "num_lsoas": 71
+  },
+  {
+    "area_name": "Hackney",
+    "num_lsoas": 149
+  },
+  {
+    "area_name": "Halton",
+    "num_lsoas": 80
+  },
+  {
+    "area_name": "Hambleton",
+    "num_lsoas": 53
+  },
+  {
+    "area_name": "Hammersmith and Fulham",
+    "num_lsoas": 115
+  },
+  {
+    "area_name": "Harborough",
+    "num_lsoas": 52
+  },
+  {
+    "area_name": "Haringey",
+    "num_lsoas": 147
+  },
+  {
+    "area_name": "Harlow",
+    "num_lsoas": 58
+  },
+  {
+    "area_name": "Harrogate",
+    "num_lsoas": 105
+  },
+  {
+    "area_name": "Harrow",
+    "num_lsoas": 144
+  },
+  {
+    "area_name": "Hart",
+    "num_lsoas": 59
+  },
+  {
+    "area_name": "Hartlepool",
+    "num_lsoas": 57
+  },
+  {
+    "area_name": "Hastings",
+    "num_lsoas": 53
+  },
+  {
+    "area_name": "Havant",
+    "num_lsoas": 79
+  },
+  {
+    "area_name": "Havering",
+    "num_lsoas": 153
+  },
+  {
+    "area_name": "Herefordshire",
+    "num_lsoas": 117
+  },
+  {
+    "area_name": "Hertsmere",
+    "num_lsoas": 63
+  },
+  {
+    "area_name": "High Peak",
+    "num_lsoas": 59
+  },
+  {
+    "area_name": "Hillingdon",
+    "num_lsoas": 170
+  },
+  {
+    "area_name": "Hinckley and Bosworth",
+    "num_lsoas": 68
+  },
+  {
+    "area_name": "Horsham",
+    "num_lsoas": 89
+  },
+  {
+    "area_name": "Hounslow",
+    "num_lsoas": 150
+  },
+  {
+    "area_name": "Huntingdonshire",
+    "num_lsoas": 111
+  },
+  {
+    "area_name": "Hyndburn",
+    "num_lsoas": 53
+  },
+  {
+    "area_name": "Ipswich",
+    "num_lsoas": 85
+  },
+  {
+    "area_name": "Isle of Anglesey",
+    "num_lsoas": 41
+  },
+  {
+    "area_name": "Isle of Wight",
+    "num_lsoas": 89
+  },
+  {
+    "area_name": "Isles of Scilly",
+    "num_lsoas": 1
+  },
+  {
+    "area_name": "Islington",
+    "num_lsoas": 126
+  },
+  {
+    "area_name": "Kensington and Chelsea",
+    "num_lsoas": 101
+  },
+  {
+    "area_name": "King's Lynn and West Norfolk",
+    "num_lsoas": 92
+  },
+  {
+    "area_name": "Kingston upon Hull",
+    "num_lsoas": 168
+  },
+  {
+    "area_name": "Kingston upon Thames",
+    "num_lsoas": 99
+  },
+  {
+    "area_name": "Kirklees",
+    "num_lsoas": 260
+  },
+  {
+    "area_name": "Knowsley",
+    "num_lsoas": 100
+  },
+  {
+    "area_name": "Lambeth",
+    "num_lsoas": 181
+  },
+  {
+    "area_name": "Lancaster",
+    "num_lsoas": 88
+  },
+  {
+    "area_name": "Leeds",
+    "num_lsoas": 488
+  },
+  {
+    "area_name": "Leicester",
+    "num_lsoas": 200
+  },
+  {
+    "area_name": "Lewes",
+    "num_lsoas": 62
+  },
+  {
+    "area_name": "Lewisham",
+    "num_lsoas": 175
+  },
+  {
+    "area_name": "Lichfield",
+    "num_lsoas": 62
+  },
+  {
+    "area_name": "Lincoln",
+    "num_lsoas": 60
+  },
+  {
+    "area_name": "Liverpool",
+    "num_lsoas": 302
+  },
+  {
+    "area_name": "Luton",
+    "num_lsoas": 125
+  },
+  {
+    "area_name": "Maidstone",
+    "num_lsoas": 99
+  },
+  {
+    "area_name": "Maldon",
+    "num_lsoas": 41
+  },
+  {
+    "area_name": "Malvern Hills",
+    "num_lsoas": 45
+  },
+  {
+    "area_name": "Manchester",
+    "num_lsoas": 295
+  },
+  {
+    "area_name": "Mansfield",
+    "num_lsoas": 68
+  },
+  {
+    "area_name": "Medway",
+    "num_lsoas": 169
+  },
+  {
+    "area_name": "Melton",
+    "num_lsoas": 30
+  },
+  {
+    "area_name": "Mendip",
+    "num_lsoas": 67
+  },
+  {
+    "area_name": "Merthyr Tydfil",
+    "num_lsoas": 36
+  },
+  {
+    "area_name": "Merton",
+    "num_lsoas": 126
+  },
+  {
+    "area_name": "Mid Devon",
+    "num_lsoas": 44
+  },
+  {
+    "area_name": "Mid Suffolk",
+    "num_lsoas": 57
+  },
+  {
+    "area_name": "Mid Sussex",
+    "num_lsoas": 92
+  },
+  {
+    "area_name": "Middlesbrough",
+    "num_lsoas": 90
+  },
+  {
+    "area_name": "Milton Keynes",
+    "num_lsoas": 166
+  },
+  {
+    "area_name": "Mole Valley",
+    "num_lsoas": 54
+  },
+  {
+    "area_name": "Monmouthshire",
+    "num_lsoas": 58
+  },
+  {
+    "area_name": "Neath Port Talbot",
+    "num_lsoas": 90
+  },
+  {
+    "area_name": "New Forest",
+    "num_lsoas": 114
+  },
+  {
+    "area_name": "Newark and Sherwood",
+    "num_lsoas": 74
+  },
+  {
+    "area_name": "Newcastle upon Tyne",
+    "num_lsoas": 180
+  },
+  {
+    "area_name": "Newcastle-under-Lyme",
+    "num_lsoas": 80
+  },
+  {
+    "area_name": "Newham",
+    "num_lsoas": 185
+  },
+  {
+    "area_name": "Newport",
+    "num_lsoas": 100
+  },
+  {
+    "area_name": "North Devon",
+    "num_lsoas": 59
+  },
+  {
+    "area_name": "North East Derbyshire",
+    "num_lsoas": 64
+  },
+  {
+    "area_name": "North East Lincolnshire",
+    "num_lsoas": 107
+  },
+  {
+    "area_name": "North Hertfordshire",
+    "num_lsoas": 82
+  },
+  {
+    "area_name": "North Kesteven",
+    "num_lsoas": 66
+  },
+  {
+    "area_name": "North Lincolnshire",
+    "num_lsoas": 103
+  },
+  {
+    "area_name": "North Norfolk",
+    "num_lsoas": 62
+  },
+  {
+    "area_name": "North Northamptonshire",
+    "num_lsoas": 205
+  },
+  {
+    "area_name": "North Somerset",
+    "num_lsoas": 138
+  },
+  {
+    "area_name": "North Tyneside",
+    "num_lsoas": 133
+  },
+  {
+    "area_name": "North Warwickshire",
+    "num_lsoas": 38
+  },
+  {
+    "area_name": "North West Leicestershire",
+    "num_lsoas": 60
+  },
+  {
+    "area_name": "Northumberland",
+    "num_lsoas": 200
+  },
+  {
+    "area_name": "Norwich",
+    "num_lsoas": 85
+  },
+  {
+    "area_name": "Nottingham",
+    "num_lsoas": 179
+  },
+  {
+    "area_name": "Nuneaton and Bedworth",
+    "num_lsoas": 84
+  },
+  {
+    "area_name": "Oadby and Wigston",
+    "num_lsoas": 36
+  },
+  {
+    "area_name": "Oldham",
+    "num_lsoas": 142
+  },
+  {
+    "area_name": "Oxford",
+    "num_lsoas": 84
+  },
+  {
+    "area_name": "Pembrokeshire",
+    "num_lsoas": 71
+  },
+  {
+    "area_name": "Pendle",
+    "num_lsoas": 57
+  },
+  {
+    "area_name": "Peterborough",
+    "num_lsoas": 121
+  },
+  {
+    "area_name": "Plymouth",
+    "num_lsoas": 164
+  },
+  {
+    "area_name": "Portsmouth",
+    "num_lsoas": 125
+  },
+  {
+    "area_name": "Powys",
+    "num_lsoas": 79
+  },
+  {
+    "area_name": "Preston",
+    "num_lsoas": 87
+  },
+  {
+    "area_name": "Reading",
+    "num_lsoas": 100
+  },
+  {
+    "area_name": "Redbridge",
+    "num_lsoas": 164
+  },
+  {
+    "area_name": "Redcar and Cleveland",
+    "num_lsoas": 88
+  },
+  {
+    "area_name": "Redditch",
+    "num_lsoas": 57
+  },
+  {
+    "area_name": "Reigate and Banstead",
+    "num_lsoas": 90
+  },
+  {
+    "area_name": "Rhondda Cynon Taf",
+    "num_lsoas": 153
+  },
+  {
+    "area_name": "Ribble Valley",
+    "num_lsoas": 39
+  },
+  {
+    "area_name": "Richmond upon Thames",
+    "num_lsoas": 115
+  },
+  {
+    "area_name": "Richmondshire",
+    "num_lsoas": 34
+  },
+  {
+    "area_name": "Rochdale",
+    "num_lsoas": 135
+  },
+  {
+    "area_name": "Rochford",
+    "num_lsoas": 53
+  },
+  {
+    "area_name": "Rossendale",
+    "num_lsoas": 43
+  },
+  {
+    "area_name": "Rother",
+    "num_lsoas": 58
+  },
+  {
+    "area_name": "Rotherham",
+    "num_lsoas": 170
+  },
+  {
+    "area_name": "Rugby",
+    "num_lsoas": 67
+  },
+  {
+    "area_name": "Runnymede",
+    "num_lsoas": 52
+  },
+  {
+    "area_name": "Rushcliffe",
+    "num_lsoas": 69
+  },
+  {
+    "area_name": "Rushmoor",
+    "num_lsoas": 60
+  },
+  {
+    "area_name": "Rutland",
+    "num_lsoas": 26
+  },
+  {
+    "area_name": "Ryedale",
+    "num_lsoas": 32
+  },
+  {
+    "area_name": "Salford",
+    "num_lsoas": 161
+  },
+  {
+    "area_name": "Sandwell",
+    "num_lsoas": 190
+  },
+  {
+    "area_name": "Scarborough",
+    "num_lsoas": 68
+  },
+  {
+    "area_name": "Sedgemoor",
+    "num_lsoas": 75
+  },
+  {
+    "area_name": "Sefton",
+    "num_lsoas": 191
+  },
+  {
+    "area_name": "Selby",
+    "num_lsoas": 54
+  },
+  {
+    "area_name": "Sevenoaks",
+    "num_lsoas": 75
+  },
+  {
+    "area_name": "Sheffield",
+    "num_lsoas": 343
+  },
+  {
+    "area_name": "Shropshire",
+    "num_lsoas": 198
+  },
+  {
+    "area_name": "Slough",
+    "num_lsoas": 84
+  },
+  {
+    "area_name": "Solihull",
+    "num_lsoas": 134
+  },
+  {
+    "area_name": "Somerset West and Taunton",
+    "num_lsoas": 91
+  },
+  {
+    "area_name": "South Cambridgeshire",
+    "num_lsoas": 99
+  },
+  {
+    "area_name": "South Derbyshire",
+    "num_lsoas": 62
+  },
+  {
+    "area_name": "South Gloucestershire",
+    "num_lsoas": 175
+  },
+  {
+    "area_name": "South Hams",
+    "num_lsoas": 49
+  },
+  {
+    "area_name": "South Holland",
+    "num_lsoas": 51
+  },
+  {
+    "area_name": "South Kesteven",
+    "num_lsoas": 84
+  },
+  {
+    "area_name": "South Lakeland",
+    "num_lsoas": 58
+  },
+  {
+    "area_name": "South Norfolk",
+    "num_lsoas": 88
+  },
+  {
+    "area_name": "South Oxfordshire",
+    "num_lsoas": 93
+  },
+  {
+    "area_name": "South Ribble",
+    "num_lsoas": 70
+  },
+  {
+    "area_name": "South Somerset",
+    "num_lsoas": 106
+  },
+  {
+    "area_name": "South Staffordshire",
+    "num_lsoas": 68
+  },
+  {
+    "area_name": "South Tyneside",
+    "num_lsoas": 103
+  },
+  {
+    "area_name": "Southampton",
+    "num_lsoas": 152
+  },
+  {
+    "area_name": "Southend-on-Sea",
+    "num_lsoas": 108
+  },
+  {
+    "area_name": "Southwark",
+    "num_lsoas": 173
+  },
+  {
+    "area_name": "Spelthorne",
+    "num_lsoas": 61
+  },
+  {
+    "area_name": "St Albans",
+    "num_lsoas": 88
+  },
+  {
+    "area_name": "St. Helens",
+    "num_lsoas": 121
+  },
+  {
+    "area_name": "Stafford",
+    "num_lsoas": 81
+  },
+  {
+    "area_name": "Staffordshire Moorlands",
+    "num_lsoas": 59
+  },
+  {
+    "area_name": "Stevenage",
+    "num_lsoas": 54
+  },
+  {
+    "area_name": "Stockport",
+    "num_lsoas": 191
+  },
+  {
+    "area_name": "Stockton-on-Tees",
+    "num_lsoas": 124
+  },
+  {
+    "area_name": "Stoke-on-Trent",
+    "num_lsoas": 163
+  },
+  {
+    "area_name": "Stratford-on-Avon",
+    "num_lsoas": 77
+  },
+  {
+    "area_name": "Stroud",
+    "num_lsoas": 72
+  },
+  {
+    "area_name": "Sunderland",
+    "num_lsoas": 185
+  },
+  {
+    "area_name": "Surrey Heath",
+    "num_lsoas": 55
+  },
+  {
+    "area_name": "Sutton",
+    "num_lsoas": 123
+  },
+  {
+    "area_name": "Swale",
+    "num_lsoas": 90
+  },
+  {
+    "area_name": "Swansea",
+    "num_lsoas": 150
+  },
+  {
+    "area_name": "Swindon",
+    "num_lsoas": 140
+  },
+  {
+    "area_name": "Tameside",
+    "num_lsoas": 142
+  },
+  {
+    "area_name": "Tamworth",
+    "num_lsoas": 51
+  },
+  {
+    "area_name": "Tandridge",
+    "num_lsoas": 51
+  },
+  {
+    "area_name": "Teignbridge",
+    "num_lsoas": 86
+  },
+  {
+    "area_name": "Telford and Wrekin",
+    "num_lsoas": 115
+  },
+  {
+    "area_name": "Tendring",
+    "num_lsoas": 89
+  },
+  {
+    "area_name": "Test Valley",
+    "num_lsoas": 81
+  },
+  {
+    "area_name": "Tewkesbury",
+    "num_lsoas": 56
+  },
+  {
+    "area_name": "Thanet",
+    "num_lsoas": 86
+  },
+  {
+    "area_name": "Three Rivers",
+    "num_lsoas": 55
+  },
+  {
+    "area_name": "Thurrock",
+    "num_lsoas": 100
+  },
+  {
+    "area_name": "Tonbridge and Malling",
+    "num_lsoas": 78
+  },
+  {
+    "area_name": "Torbay",
+    "num_lsoas": 91
+  },
+  {
+    "area_name": "Torfaen",
+    "num_lsoas": 60
+  },
+  {
+    "area_name": "Torridge",
+    "num_lsoas": 38
+  },
+  {
+    "area_name": "Tower Hamlets",
+    "num_lsoas": 169
+  },
+  {
+    "area_name": "Trafford",
+    "num_lsoas": 139
+  },
+  {
+    "area_name": "Tunbridge Wells",
+    "num_lsoas": 69
+  },
+  {
+    "area_name": "Uttlesford",
+    "num_lsoas": 49
+  },
+  {
+    "area_name": "Vale of Glamorgan",
+    "num_lsoas": 82
+  },
+  {
+    "area_name": "Vale of White Horse",
+    "num_lsoas": 81
+  },
+  {
+    "area_name": "Wakefield",
+    "num_lsoas": 215
+  },
+  {
+    "area_name": "Walsall",
+    "num_lsoas": 169
+  },
+  {
+    "area_name": "Waltham Forest",
+    "num_lsoas": 146
+  },
+  {
+    "area_name": "Wandsworth",
+    "num_lsoas": 186
+  },
+  {
+    "area_name": "Warrington",
+    "num_lsoas": 132
+  },
+  {
+    "area_name": "Warwick",
+    "num_lsoas": 88
+  },
+  {
+    "area_name": "Watford",
+    "num_lsoas": 58
+  },
+  {
+    "area_name": "Waverley",
+    "num_lsoas": 82
+  },
+  {
+    "area_name": "Wealden",
+    "num_lsoas": 99
+  },
+  {
+    "area_name": "Welwyn Hatfield",
+    "num_lsoas": 69
+  },
+  {
+    "area_name": "West Berkshire",
+    "num_lsoas": 99
+  },
+  {
+    "area_name": "West Devon",
+    "num_lsoas": 32
+  },
+  {
+    "area_name": "West Lancashire",
+    "num_lsoas": 73
+  },
+  {
+    "area_name": "West Lindsey",
+    "num_lsoas": 53
+  },
+  {
+    "area_name": "West Northamptonshire",
+    "num_lsoas": 238
+  },
+  {
+    "area_name": "West Oxfordshire",
+    "num_lsoas": 68
+  },
+  {
+    "area_name": "West Suffolk",
+    "num_lsoas": 107
+  },
+  {
+    "area_name": "Westminster",
+    "num_lsoas": 123
+  },
+  {
+    "area_name": "Wigan",
+    "num_lsoas": 200
+  },
+  {
+    "area_name": "Wiltshire",
+    "num_lsoas": 307
+  },
+  {
+    "area_name": "Winchester",
+    "num_lsoas": 72
+  },
+  {
+    "area_name": "Windsor and Maidenhead",
+    "num_lsoas": 89
+  },
+  {
+    "area_name": "Wirral",
+    "num_lsoas": 209
+  },
+  {
+    "area_name": "Woking",
+    "num_lsoas": 62
+  },
+  {
+    "area_name": "Wokingham",
+    "num_lsoas": 103
+  },
+  {
+    "area_name": "Wolverhampton",
+    "num_lsoas": 161
+  },
+  {
+    "area_name": "Worcester",
+    "num_lsoas": 64
+  },
+  {
+    "area_name": "Worthing",
+    "num_lsoas": 68
+  },
+  {
+    "area_name": "Wrexham",
+    "num_lsoas": 84
+  },
+  {
+    "area_name": "Wychavon",
+    "num_lsoas": 81
+  },
+  {
+    "area_name": "Wyre",
+    "num_lsoas": 69
+  },
+  {
+    "area_name": "Wyre Forest",
+    "num_lsoas": 67
+  },
+  {
+    "area_name": "York",
+    "num_lsoas": 121
+  }
+]
