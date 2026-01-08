@@ -409,10 +409,23 @@
 
                 // Hover behavior: use feature state to highlight polygon under the cursor
                 map.on('mousemove', 'lad-boundaries-fill', (e) => {
+
                     if (!e.features || !e.features.length) return;
                     const feature = e.features[0];
                     const fid = feature.id;
-                    // clear previous hover (only if we have a valid id)
+                    const name = feature?.properties?.LAD13NM;
+
+                    // If this feature is the currently selected region, disable hover for it
+                    if (selectedRegion && selectedRegion.properties && selectedRegion.properties.LAD13NM === name) {
+                        if (hoveredLadId !== null) {
+                            map.setFeatureState({ source: 'lad-boundaries', id: hoveredLadId }, { hover: false });
+                            hoveredLadId = null;
+                        }
+                        map.getCanvas().style.cursor = '';
+                        return;
+                    }
+
+                    // clear previous hover (only if we have a valid id and it's different)
                     if (hoveredLadId !== null && hoveredLadId !== fid) {
                         map.setFeatureState({ source: 'lad-boundaries', id: hoveredLadId }, { hover: false });
                     }
@@ -443,6 +456,12 @@
 
                     // Try to resolve a full feature object from the global ladData
                     const LAD13NM = feature.properties.LAD13NM;
+
+                    // Don't re-select the same county that's already selected
+                    if (selectedRegion && selectedRegion.properties.LAD13NM === LAD13NM) {
+                        return;
+                    }
+
                     const match = null;
                     if (!ladData?.features) return;
                     const matches = ladData.features.filter((feature) => {
