@@ -20,7 +20,6 @@
     <!-- Turf.js for circle geometry -->
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 
-
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link href="js/nouislider.min.css" rel="stylesheet">
     <script src="js/nouislider.min.js"></script>
@@ -114,7 +113,6 @@
             text-align: center;
         }
 
-        /* Region panel styles */
         .region-panel {
             position: absolute;
             top: 120px;
@@ -207,46 +205,20 @@
             <input type="text" id="lad-search" placeholder="Enter county...">
             <div id="autocomplete-dropdown" class="autocomplete-dropdown"></div>
         </div>
-
-        <!-- <div class="slider-container">
-            <div class="slider-label">
-                <span>Radius</span>
-                <span class="slider-value"><span id="radius-value">5</span> miles</span>
-            </div>
-            <input type="range" min="0" max="50" value="5" id="radius-slider" />
-        </div> -->
     </div>
 
-    <!-- Region panel -->
     <div class="region-panel" id="region-panel">
         <div class="region-header">
             <div class="region-name" id="region-name"></div>
             <button class="close-button" id="close-region">×</button>
         </div>
-        <div class="deprivation-controls">
-            <label>
-                <input type="checkbox" id="show-most-deprived" />
-                <div class="color-indicator" style="background-color: #ff0000;"></div>
-                <span>Show most deprived (bottom 10%)</span>
-            </label>
-            <label>
-                <input type="checkbox" id="show-least-deprived" />
-                <div class="color-indicator" style="background-color: #00ff00;"></div>
-                <span>Show least deprived (top 10%)</span>
-            </label>
-            <label>
-                <input type="checkbox" id="show-retirees" />
-                <div class="color-indicator" style="background-color: #ff9800;"></div>
-                <span>Show retired (65+ years)</span>
-            </label>
+        <div class="deprivation-controls" id="highlight-checkboxes">
+            <!-- Checkboxes will be generated dynamically -->
         </div>
     </div>
 
-
-
     <script>
-        mapboxgl.accessToken =
-            "pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZXdpNDBieTUzanMyN2J3NW1sMHUifQ.m5BpgLHVufA0nzdFvCpTVg";
+        mapboxgl.accessToken = "pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZXdpNDBieTUzanMyN2J3NW1sMHUifQ.m5BpgLHVufA0nzdFvCpTVg";
 
         const map = new mapboxgl.Map({
             container: "map",
@@ -255,59 +227,21 @@
             zoom: 7,
         });
 
-        // Store LAD data globally
         let ladData = null;
-
-        // Autocomplete elements
         const searchInput = document.getElementById("lad-search");
         const dropdown = document.getElementById("autocomplete-dropdown");
         let selectedIndex = -1;
-
-        // Hovered LAD feature id for feature-state highlighting
         let hoveredLadId = null;
-
-        // CSV data for deprivation
         const csvData = {};
         let csvLoaded = false;
-        let showMostDeprived = false;
-        let showLeastDeprived = false;
-        let showRetirees = false;
         let selectedRegion = null;
-
-        // Configuration for highlight layers
-        const highlightLayerConfigs = [
-            {
-                id: 'most-deprived',
-                color: '#ff0000',
-                opacity: 0.6,
-                filterFn: (row) => row.IMDDecile && row.IMDDecile <= 1
-            },
-            {
-                id: 'least-deprived',
-                color: '#00ff00',
-                opacity: 0.6,
-                filterFn: (row) => row.IMDDecile && row.IMDDecile >= 9
-            },
-            {
-                id: 'retirees',
-                color: '#ff9800',
-                opacity: 0.6,
-                filterFn: (row) => row.Older && row.Total && (row.Older / row.Total) >= 0.20
-            }
-        ];
-
-        // Track which layers are active
-        const activeHighlights = {
-            'most-deprived': false,
-            'least-deprived': false,
-            'retirees': false
-        };
-
-        // Area polygons data from CSV
         const areaPolygonsData = {};
         let areaPolygonsLoaded = false;
 
-        // Load CSV data for deprivation
+        // Track registered checkboxes
+        const registeredCheckboxes = [];
+
+        // Load CSV data
         async function loadCSVData() {
             try {
                 const response = await fetch('population_data/lsoa_age_bands_imd_ts017_ts066.csv');
@@ -352,7 +286,6 @@
         loadCSVData();
 
         // Load area polygons data
-        // Load area polygons data using D3
         async function loadAreaPolygonsData() {
             try {
                 const data = await d3.csv('population_data/Supabase Snippet Add area_name column to lsoa_polygons.csv');
@@ -371,7 +304,6 @@
                             return;
                         }
 
-                        // D3 automatically handles CSV-escaped quotes
                         const polygonIds = JSON.parse(polygonIdsStr);
 
                         areaPolygonsData[areaName] = {
@@ -392,35 +324,29 @@
 
                 areaPolygonsLoaded = true;
                 console.log(`✅ Area polygons loaded: ${successCount} areas, ${errorCount} errors`);
-                console.log('📋 Sample areas:', Object.keys(areaPolygonsData).slice(0, 5));
             } catch (err) {
                 console.error('❌ Error loading area polygons CSV:', err);
             }
         }
 
-
         loadAreaPolygonsData();
 
         map.on("load", async () => {
             try {
-                // Load LAD GeoJSON
                 const res = await fetch("population_data/lad (1).json");
                 ladData = await res.json();
 
                 map.addSource("lad-boundaries", {
                     type: "geojson",
                     data: ladData,
-                    // generate feature ids so feature-state can be used safely
                     generateId: true
                 });
 
-                // Fill layer used for pointer/click/hover interactions (invisible by default)
                 map.addLayer({
                     id: "lad-boundaries-fill",
                     type: "fill",
                     source: "lad-boundaries",
                     paint: {
-                        // highlight using feature-state 'hover'
                         'fill-color': [
                             'case',
                             ['boolean', ['feature-state', 'hover'], false],
@@ -436,7 +362,6 @@
                     }
                 });
 
-                // Line layer drawn above fill so boundaries remain visible
                 map.addLayer({
                     id: "lad-boundaries-line",
                     type: "line",
@@ -452,15 +377,12 @@
                     },
                 });
 
-                // Hover behavior: use feature state to highlight polygon under the cursor
                 map.on('mousemove', 'lad-boundaries-fill', (e) => {
-
                     if (!e.features || !e.features.length) return;
                     const feature = e.features[0];
                     const fid = feature.id;
                     const name = feature?.properties?.LAD13NM;
 
-                    // If this feature is the currently selected region, disable hover for it
                     if (selectedRegion && selectedRegion.properties && selectedRegion.properties.LAD13NM === name) {
                         if (hoveredLadId !== null) {
                             map.setFeatureState({ source: 'lad-boundaries', id: hoveredLadId }, { hover: false });
@@ -470,11 +392,9 @@
                         return;
                     }
 
-                    // clear previous hover (only if we have a valid id and it's different)
                     if (hoveredLadId !== null && hoveredLadId !== fid) {
                         map.setFeatureState({ source: 'lad-boundaries', id: hoveredLadId }, { hover: false });
                     }
-                    // set hover on the new feature only if it has an id
                     if (fid != null) {
                         hoveredLadId = fid;
                         map.setFeatureState({ source: 'lad-boundaries', id: hoveredLadId }, { hover: true });
@@ -492,30 +412,23 @@
                     map.getCanvas().style.cursor = '';
                 });
 
-                // Click handler: fit bounds to clicked polygon (same behavior as search selection)
                 map.on('click', 'lad-boundaries-fill', (e) => {
                     if (!e.features || !e.features.length) return;
                     const feature = e.features[0];
-
-                    console.log('feature', feature);
-
-                    // Try to resolve a full feature object from the global ladData
                     const LAD13NM = feature.properties.LAD13NM;
 
-                    // Don't re-select the same county that's already selected
                     if (selectedRegion && selectedRegion.properties.LAD13NM === LAD13NM) {
                         return;
                     }
 
-                    const match = null;
                     if (!ladData?.features) return;
+
                     const matches = ladData.features.filter((feature) => {
                         return feature?.properties?.LAD13NM === LAD13NM;
                     });
                     if (matches.length > 0) {
                         selectLocation(matches[0]);
                     }
-
                 });
             } catch (e) {
                 console.error("Error loading/adding LAD data:", e);
@@ -537,7 +450,6 @@
                 }
             });
 
-            // Add selected fill layer first (will be behind highlights)
             map.addLayer({
                 id: 'population-lsoa-selected-fill',
                 type: 'fill',
@@ -548,21 +460,6 @@
                     'fill-opacity': 0.45
                 },
                 filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
-            });
-
-            // Create highlight layers dynamically (will appear on top of selected fill)
-            highlightLayerConfigs.forEach(config => {
-                map.addLayer({
-                    id: `population-lsoa-${config.id}`,
-                    type: 'fill',
-                    source: 'population-lsoa',
-                    'source-layer': 'clean_enriched_LSOA-5ty98a',
-                    paint: {
-                        'fill-color': config.color,
-                        'fill-opacity': config.opacity
-                    },
-                    filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
-                });
             });
 
             map.addLayer({
@@ -588,13 +485,15 @@
                 },
                 filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
             });
+
+            // Setup all checkboxes
+            setupAllCheckboxes();
         });
 
         // Autocomplete functionality
         searchInput.addEventListener("input", function () {
             const searchTerm = this.value.trim().toLowerCase();
 
-            // Clear dropdown if less than 3 characters
             if (searchTerm.length < 3) {
                 dropdown.classList.remove("show");
                 dropdown.innerHTML = "";
@@ -629,7 +528,6 @@
             }
         });
 
-        // Keyboard navigation
         searchInput.addEventListener("keydown", function (e) {
             const items = dropdown.querySelectorAll(".autocomplete-item");
 
@@ -662,25 +560,20 @@
         }
 
         function selectLocation(feature) {
-            console.log('selectLocation', feature);
             const areaName = feature.properties.LAD13NM;
             searchInput.value = areaName;
             dropdown.classList.remove("show");
             selectedIndex = -1;
 
-            // Store selected region
             selectedRegion = feature;
 
-            // Show region panel and update region name
             const regionPanel = document.getElementById('region-panel');
             const regionName = document.getElementById('region-name');
             regionName.textContent = areaName;
             regionPanel.classList.add('show');
 
-            // turf.bbox returns [minX, minY, maxX, maxY] [web:16]
             const [minX, minY, maxX, maxY] = turf.bbox(feature);
 
-            // map.fitBounds expects [[minLng,minLat],[maxLng,maxLat]] [web:12]
             map.fitBounds(
                 [
                     [minX, minY],
@@ -692,58 +585,58 @@
                 }
             );
 
-            // Highlight polygon IDs from CSV
-            highlightAreaPolygons(areaName);
-
-            // Update highlights if checkboxes are checked
-            updateHighlights();
         }
 
-        function highlightAreaPolygons(areaName) {
-            if (!map.getSource('population-lsoa')) return;
+        // function highlightAreaPolygons(areaName) {
+        //     if (!map.getSource('population-lsoa')) return;
 
-            // Look up area in CSV data
+        //     const areaData = areaPolygonsData[areaName];
+        //     if (!areaData || !areaData.polygonIds) {
+        //         console.log('No polygon data found for:', areaName);
+        //         if (map.getLayer('population-lsoa-selected-fill')) {
+        //             map.setFilter('population-lsoa-selected-fill', [
+        //                 'in',
+        //                 ['get', 'LSOA21CD'],
+        //                 ['literal', []]
+        //             ]);
+        //         }
+        //         if (map.getLayer('population-lsoa-selected-outline')) {
+        //             map.setFilter('population-lsoa-selected-outline', [
+        //                 'in',
+        //                 ['get', 'LSOA21CD'],
+        //                 ['literal', []]
+        //             ]);
+        //         }
+        //         return;
+        //     }
+
+        //     console.log('Highlighting', areaData.polygonIds.length, 'polygons for', areaName);
+
+        //     if (map.getLayer('population-lsoa-selected-fill')) {
+        //         map.setFilter('population-lsoa-selected-fill', [
+        //             'in',
+        //             ['get', 'LSOA21CD'],
+        //             ['literal', areaData.polygonIds]
+        //         ]);
+        //     }
+        //     if (map.getLayer('population-lsoa-selected-outline')) {
+        //         map.setFilter('population-lsoa-selected-outline', [
+        //             'in',
+        //             ['get', 'LSOA21CD'],
+        //             ['literal', areaData.polygonIds]
+        //         ]);
+        //     }
+        // }
+
+        // Helper function to get polygon IDs for an area
+        function getAreaPolygonIds(areaName) {
             const areaData = areaPolygonsData[areaName];
-            if (!areaData || !areaData.polygonIds) {
-                console.log('No polygon data found for:', areaName);
-                // Clear highlights if no data
-                if (map.getLayer('population-lsoa-selected-fill')) {
-                    map.setFilter('population-lsoa-selected-fill', [
-                        'in',
-                        ['get', 'LSOA21CD'],
-                        ['literal', []]
-                    ]);
-                }
-                if (map.getLayer('population-lsoa-selected-outline')) {
-                    map.setFilter('population-lsoa-selected-outline', [
-                        'in',
-                        ['get', 'LSOA21CD'],
-                        ['literal', []]
-                    ]);
-                }
-                return;
+            if (areaData && areaData.polygonIds) {
+                return areaData.polygonIds;
             }
-
-            console.log('Highlighting', areaData.polygonIds.length, 'polygons for', areaName);
-
-            // Highlight the polygon IDs with fill and outline
-            if (map.getLayer('population-lsoa-selected-fill')) {
-                map.setFilter('population-lsoa-selected-fill', [
-                    'in',
-                    ['get', 'LSOA21CD'],
-                    ['literal', areaData.polygonIds]
-                ]);
-            }
-            if (map.getLayer('population-lsoa-selected-outline')) {
-                map.setFilter('population-lsoa-selected-outline', [
-                    'in',
-                    ['get', 'LSOA21CD'],
-                    ['literal', areaData.polygonIds]
-                ]);
-            }
+            return [];
         }
 
-        // Close dropdown when clicking outside
         document.addEventListener("click", function (e) {
             if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
                 dropdown.classList.remove("show");
@@ -751,29 +644,24 @@
             }
         });
 
-        // Close button handler
         document.getElementById('close-region').addEventListener('click', function () {
             const regionPanel = document.getElementById('region-panel');
             regionPanel.classList.remove('show');
             selectedRegion = null;
             searchInput.value = '';
 
-            // Reset checkboxes
-            document.getElementById('show-most-deprived').checked = false;
-            document.getElementById('show-least-deprived').checked = false;
-            document.getElementById('show-retirees').checked = false;
-            activeHighlights['most-deprived'] = false;
-            activeHighlights['least-deprived'] = false;
-            activeHighlights['retirees'] = false;
+            // Reset all registered checkboxes
+            registeredCheckboxes.forEach(item => {
+                const checkbox = document.getElementById(item.checkboxId);
+                if (checkbox) checkbox.checked = false;
+            });
 
-            // Reset map view
             map.flyTo({
                 center: [-2.774533172216252, 54.12181638598531],
                 zoom: 7,
                 duration: 1000
             });
 
-            // Clear polygon highlights (both fill and outline)
             if (map.getLayer('population-lsoa-selected-fill')) {
                 map.setFilter('population-lsoa-selected-fill', [
                     'in',
@@ -789,74 +677,117 @@
                 ]);
             }
 
-            // Clear highlights
-            updateHighlights();
+            // Clear all highlight layers
+            registeredCheckboxes.forEach(item => {
+                if (map.getLayer(item.layerId)) {
+                    map.setFilter(item.layerId, [
+                        'in',
+                        ['get', 'LSOA21CD'],
+                        ['literal', []]
+                    ]);
+                }
+            });
         });
 
-        // Generic function to create checkbox handlers
-        function setupCheckboxHandler(checkboxId, highlightKey) {
+        // GENERIC CHECKBOX HANDLER - Accepts name, color, and function that receives areaName
+        function setupCheckboxHandler(id, name, color, getPolygonIdsFn) {
+            const checkboxId = `checkbox-${id}`;
+            const layerId = `highlight-${id}`;
+
+            // Create the layer first
+            if (!map.getLayer(layerId)) {
+                map.addLayer({
+                    id: layerId,
+                    type: 'fill',
+                    source: 'population-lsoa',
+                    'source-layer': 'clean_enriched_LSOA-5ty98a',
+                    paint: {
+                        'fill-color': color,
+                        'fill-opacity': 0.6
+                    },
+                    filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
+                });
+            }
+
+            // Create checkbox HTML
+            const container = document.getElementById('highlight-checkboxes');
+            const label = document.createElement('label');
+            label.innerHTML = `
+                <input type="checkbox" id="${checkboxId}" />
+                <div class="color-indicator" style="background-color: ${color};"></div>
+                <span>${name}</span>
+            `;
+            container.appendChild(label);
+
+            // Register this checkbox
+            registeredCheckboxes.push({ checkboxId, layerId });
+
+            // Add event listener
             const checkbox = document.getElementById(checkboxId);
             if (checkbox) {
                 checkbox.addEventListener('change', (e) => {
-                    activeHighlights[highlightKey] = e.target.checked;
-                    updateHighlights();
+                    const isActive = e.target.checked;
+                    let polygonIds = [];
+
+                    if (isActive && selectedRegion) {
+                        const areaName = selectedRegion.properties.LAD13NM;
+                        // Call the function with areaName
+                        polygonIds = getPolygonIdsFn(areaName) || [];
+                    }
+
+                    if (map.getLayer(layerId)) {
+                        map.setFilter(layerId, [
+                            'in',
+                            ['get', 'LSOA21CD'],
+                            ['literal', polygonIds]
+                        ]);
+                    }
                 });
             }
         }
 
-        // Setup all checkbox handlers
-        setupCheckboxHandler('show-most-deprived', 'most-deprived');
-        setupCheckboxHandler('show-least-deprived', 'least-deprived');
-        setupCheckboxHandler('show-retirees', 'retirees');
-
-        // Optimized function to update all highlights based on selected region
-        function updateHighlights() {
-            if (!map.getSource('population-lsoa')) return;
-
-            // Initialize arrays for each highlight type
-            const highlightLSOAs = {};
-            highlightLayerConfigs.forEach(config => {
-                highlightLSOAs[config.id] = [];
-            });
-
-            // Check if any highlights are active
-            const anyActive = Object.values(activeHighlights).some(val => val);
-
-            if (selectedRegion && anyActive) {
-                // Get area name from selected region
-                const areaName = selectedRegion.properties.LAD13NM;
-                const areaData = areaPolygonsData[areaName];
-
-                if (areaData && areaData.polygonIds) {
-                    // Use polygon IDs from CSV
-                    areaData.polygonIds.forEach(lsoaCode => {
+        // Setup all checkboxes
+        function setupAllCheckboxes() {
+            // Most deprived
+            setupCheckboxHandler(
+                'most-deprived',
+                'Show most deprived (bottom 10%)',
+                '#ff0000',
+                (areaName) => {
+                    const areaPolygonIds = getAreaPolygonIds(areaName);
+                    return areaPolygonIds.filter(lsoaCode => {
                         const row = csvData[lsoaCode];
-                        if (!row) return;
-
-                        // Check each active highlight configuration
-                        highlightLayerConfigs.forEach(config => {
-                            if (activeHighlights[config.id] && config.filterFn(row)) {
-                                highlightLSOAs[config.id].push(lsoaCode);
-                            }
-                        });
+                        return row && row.IMDDecile && row.IMDDecile <= 1;
                     });
                 }
-            }
+            );
 
-            // Update map filters for all layers
-            highlightLayerConfigs.forEach(config => {
-                const layerId = `population-lsoa-${config.id}`;
-                if (map.getLayer(layerId)) {
-                    map.setFilter(layerId, [
-                        'in',
-                        ['get', 'LSOA21CD'],
-                        ['literal', highlightLSOAs[config.id]]
-                    ]);
+            // Least deprived
+            setupCheckboxHandler(
+                'least-deprived',
+                'Show least deprived (top 10%)',
+                '#00ff00',
+                (areaName) => {
+                    const areaPolygonIds = getAreaPolygonIds(areaName);
+                    return areaPolygonIds.filter(lsoaCode => {
+                        const row = csvData[lsoaCode];
+                        return row && row.IMDDecile && row.IMDDecile >= 9;
+                    });
                 }
-            });
+            );
+
+            // Retirees - can use getAreaPolygonIds directly
+            setupCheckboxHandler(
+                'retirees',
+                'Show retired (65+ years)',
+                '#ff9800',
+                (areaName) => {
+                    const areaData = areaPolygonsData[areaName];
+                    return areaData ? areaData.polygonIds : [];
+                }
+            );
         }
     </script>
-
 
 </body>
 
