@@ -181,12 +181,20 @@
             align-items: center;
             gap: 8px;
             cursor: pointer;
+            padding: 4px 0;
         }
 
         .deprivation-controls input[type="checkbox"] {
             width: 18px;
             height: 18px;
             cursor: pointer;
+        }
+
+        .color-indicator {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
         }
     </style>
 </head>
@@ -218,11 +226,18 @@
         <div class="deprivation-controls">
             <label>
                 <input type="checkbox" id="show-most-deprived" />
+                <div class="color-indicator" style="background-color: #ff0000;"></div>
                 <span>Show most deprived (bottom 10%)</span>
             </label>
             <label>
                 <input type="checkbox" id="show-least-deprived" />
+                <div class="color-indicator" style="background-color: #00ff00;"></div>
                 <span>Show least deprived (top 10%)</span>
+            </label>
+            <label>
+                <input type="checkbox" id="show-retirees" />
+                <div class="color-indicator" style="background-color: #ff9800;"></div>
+                <span>Show retired (65+ years)</span>
             </label>
         </div>
     </div>
@@ -256,7 +271,37 @@
         let csvLoaded = false;
         let showMostDeprived = false;
         let showLeastDeprived = false;
+        let showRetirees = false;
         let selectedRegion = null;
+
+        // Configuration for highlight layers
+        const highlightLayerConfigs = [
+            {
+                id: 'most-deprived',
+                color: '#ff0000',
+                opacity: 0.6,
+                filterFn: (row) => row.IMDDecile && row.IMDDecile <= 1
+            },
+            {
+                id: 'least-deprived',
+                color: '#00ff00',
+                opacity: 0.6,
+                filterFn: (row) => row.IMDDecile && row.IMDDecile >= 9
+            },
+            {
+                id: 'retirees',
+                color: '#ff9800',
+                opacity: 0.6,
+                filterFn: (row) => row.Older && row.Total && (row.Older / row.Total) >= 0.20
+            }
+        ];
+
+        // Track which layers are active
+        const activeHighlights = {
+            'most-deprived': false,
+            'least-deprived': false,
+            'retirees': false
+        };
 
         // Area polygons data from CSV
         const areaPolygonsData = {};
@@ -492,28 +537,32 @@
                 }
             });
 
+            // Add selected fill layer first (will be behind highlights)
             map.addLayer({
-                id: 'population-lsoa-most-deprived',
+                id: 'population-lsoa-selected-fill',
                 type: 'fill',
                 source: 'population-lsoa',
                 'source-layer': 'clean_enriched_LSOA-5ty98a',
                 paint: {
-                    'fill-color': '#ff0000',
-                    'fill-opacity': 0.6
+                    'fill-color': '#4A90E2',
+                    'fill-opacity': 0.45
                 },
                 filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
             });
 
-            map.addLayer({
-                id: 'population-lsoa-least-deprived',
-                type: 'fill',
-                source: 'population-lsoa',
-                'source-layer': 'clean_enriched_LSOA-5ty98a',
-                paint: {
-                    'fill-color': '#00ff00',
-                    'fill-opacity': 0.6
-                },
-                filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
+            // Create highlight layers dynamically (will appear on top of selected fill)
+            highlightLayerConfigs.forEach(config => {
+                map.addLayer({
+                    id: `population-lsoa-${config.id}`,
+                    type: 'fill',
+                    source: 'population-lsoa',
+                    'source-layer': 'clean_enriched_LSOA-5ty98a',
+                    paint: {
+                        'fill-color': config.color,
+                        'fill-opacity': config.opacity
+                    },
+                    filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
+                });
             });
 
             map.addLayer({
@@ -526,18 +575,6 @@
                     'line-width': 1,
                     'line-opacity': 0.3
                 }
-            });
-
-            map.addLayer({
-                id: 'population-lsoa-selected-fill',
-                type: 'fill',
-                source: 'population-lsoa',
-                'source-layer': 'clean_enriched_LSOA-5ty98a',
-                paint: {
-                    'fill-color': '#4A90E2',
-                    'fill-opacity': 0.45
-                },
-                filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
             });
 
             map.addLayer({
@@ -658,8 +695,8 @@
             // Highlight polygon IDs from CSV
             highlightAreaPolygons(areaName);
 
-            // Update deprivation highlights if checkboxes are checked
-            updateDeprivationHighlights();
+            // Update highlights if checkboxes are checked
+            updateHighlights();
         }
 
         function highlightAreaPolygons(areaName) {
@@ -724,8 +761,10 @@
             // Reset checkboxes
             document.getElementById('show-most-deprived').checked = false;
             document.getElementById('show-least-deprived').checked = false;
-            showMostDeprived = false;
-            showLeastDeprived = false;
+            document.getElementById('show-retirees').checked = false;
+            activeHighlights['most-deprived'] = false;
+            activeHighlights['least-deprived'] = false;
+            activeHighlights['retirees'] = false;
 
             // Reset map view
             map.flyTo({
@@ -750,36 +789,40 @@
                 ]);
             }
 
-            // Clear deprivation highlights
-            updateDeprivationHighlights();
+            // Clear highlights
+            updateHighlights();
         });
 
-        // Deprivation checkbox handlers
-        const mostDeprivedCheckbox = document.getElementById('show-most-deprived');
-        const leastDeprivedCheckbox = document.getElementById('show-least-deprived');
-
-        if (mostDeprivedCheckbox) {
-            mostDeprivedCheckbox.addEventListener('change', (e) => {
-                showMostDeprived = e.target.checked;
-                updateDeprivationHighlights();
-            });
+        // Generic function to create checkbox handlers
+        function setupCheckboxHandler(checkboxId, highlightKey) {
+            const checkbox = document.getElementById(checkboxId);
+            if (checkbox) {
+                checkbox.addEventListener('change', (e) => {
+                    activeHighlights[highlightKey] = e.target.checked;
+                    updateHighlights();
+                });
+            }
         }
 
-        if (leastDeprivedCheckbox) {
-            leastDeprivedCheckbox.addEventListener('change', (e) => {
-                showLeastDeprived = e.target.checked;
-                updateDeprivationHighlights();
-            });
-        }
+        // Setup all checkbox handlers
+        setupCheckboxHandler('show-most-deprived', 'most-deprived');
+        setupCheckboxHandler('show-least-deprived', 'least-deprived');
+        setupCheckboxHandler('show-retirees', 'retirees');
 
-        // Function to update deprivation highlights based on selected region
-        function updateDeprivationHighlights() {
+        // Optimized function to update all highlights based on selected region
+        function updateHighlights() {
             if (!map.getSource('population-lsoa')) return;
 
-            const mostDeprivedLSOAs = [];
-            const leastDeprivedLSOAs = [];
+            // Initialize arrays for each highlight type
+            const highlightLSOAs = {};
+            highlightLayerConfigs.forEach(config => {
+                highlightLSOAs[config.id] = [];
+            });
 
-            if (selectedRegion && (showMostDeprived || showLeastDeprived)) {
+            // Check if any highlights are active
+            const anyActive = Object.values(activeHighlights).some(val => val);
+
+            if (selectedRegion && anyActive) {
                 // Get area name from selected region
                 const areaName = selectedRegion.properties.LAD13NM;
                 const areaData = areaPolygonsData[areaName];
@@ -788,33 +831,29 @@
                     // Use polygon IDs from CSV
                     areaData.polygonIds.forEach(lsoaCode => {
                         const row = csvData[lsoaCode];
-                        if (!row || !row.IMDDecile) return;
+                        if (!row) return;
 
-                        if (showMostDeprived && row.IMDDecile <= 1) {
-                            mostDeprivedLSOAs.push(lsoaCode);
-                        }
-                        if (showLeastDeprived && row.IMDDecile >= 9) {
-                            leastDeprivedLSOAs.push(lsoaCode);
-                        }
+                        // Check each active highlight configuration
+                        highlightLayerConfigs.forEach(config => {
+                            if (activeHighlights[config.id] && config.filterFn(row)) {
+                                highlightLSOAs[config.id].push(lsoaCode);
+                            }
+                        });
                     });
                 }
             }
 
-            // Update map filters
-            if (map.getLayer('population-lsoa-most-deprived')) {
-                map.setFilter('population-lsoa-most-deprived', [
-                    'in',
-                    ['get', 'LSOA21CD'],
-                    ['literal', mostDeprivedLSOAs]
-                ]);
-            }
-            if (map.getLayer('population-lsoa-least-deprived')) {
-                map.setFilter('population-lsoa-least-deprived', [
-                    'in',
-                    ['get', 'LSOA21CD'],
-                    ['literal', leastDeprivedLSOAs]
-                ]);
-            }
+            // Update map filters for all layers
+            highlightLayerConfigs.forEach(config => {
+                const layerId = `population-lsoa-${config.id}`;
+                if (map.getLayer(layerId)) {
+                    map.setFilter(layerId, [
+                        'in',
+                        ['get', 'LSOA21CD'],
+                        ['literal', highlightLSOAs[config.id]]
+                    ]);
+                }
+            });
         }
     </script>
 
