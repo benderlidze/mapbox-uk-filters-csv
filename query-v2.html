@@ -558,7 +558,7 @@
                 }
             });
         }
-
+        
         function selectLocation(feature) {
             const areaName = feature.properties.LAD13NM;
             searchInput.value = areaName;
@@ -566,6 +566,22 @@
             selectedIndex = -1;
 
             selectedRegion = feature;
+
+            // RESET ALL CHECKBOXES WHEN SELECTING NEW COUNTY
+            registeredCheckboxes.forEach(item => {
+                const checkbox = document.getElementById(item.checkboxId);
+                if (checkbox) {
+                    checkbox.checked = false;
+                }
+                // Clear the layer
+                if (map.getLayer(item.layerId)) {
+                    map.setFilter(item.layerId, [
+                        'in',
+                        ['get', 'LSOA21CD'],
+                        ['literal', []]
+                    ]);
+                }
+            });
 
             const regionPanel = document.getElementById('region-panel');
             const regionName = document.getElementById('region-name');
@@ -584,8 +600,8 @@
                     duration: 1000,
                 }
             );
-
         }
+
 
         // function highlightAreaPolygons(areaName) {
         //     if (!map.getSource('population-lsoa')) return;
