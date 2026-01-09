@@ -333,7 +333,7 @@
 
         map.on("load", async () => {
             try {
-                const res = await fetch("population_data/lad (1).json");
+                const res = await fetch("population_data/lad (2).json");
                 ladData = await res.json();
 
                 map.addSource("lad-boundaries", {
@@ -558,7 +558,7 @@
                 }
             });
         }
-        
+
         function selectLocation(feature) {
             const areaName = feature.properties.LAD13NM;
             searchInput.value = areaName;
