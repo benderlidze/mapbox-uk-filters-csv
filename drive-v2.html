@@ -627,10 +627,19 @@
         });
 
         function uploadPhotosBuildLayer(data) {
-            const names = [...new Set(data.map(store => store.company_name).sort())]
+            console.log('data', data);
 
-            names.forEach(name => {
-                map.loadImage(`logos/${name.toLowerCase()}.png`, (error, image) => {
+            const companyLogos = {};
+            data.forEach(store => {
+                if (!companyLogos[store.company_name]) {
+                    companyLogos[store.company_name] = store.image;
+                }
+            });
+
+            console.log('companyLogos', companyLogos);
+
+            Object.keys(companyLogos).forEach(name => {
+                map.loadImage(`${companyLogos[name]}`, (error, image) => {
                     if (error) {
                         map.loadImage(`logos/small/default.png`, (error, image) => {
                             console.log('name', name);
@@ -642,6 +651,23 @@
                 });
             })
         }
+
+        // function uploadPhotosBuildLayer(data) {
+        //     console.log('data', data);
+        //     const names = [...new Set(data.map(store => store.company_name).sort())]
+        //     names.forEach(name => {
+        //         map.loadImage(`logos/${name.toLowerCase()}.png`, (error, image) => {
+        //             if (error) {
+        //                 map.loadImage(`logos/small/default.png`, (error, image) => {
+        //                     console.log('name', name);
+        //                     map.addImage(name, image);
+        //                 });
+        //                 throw error;
+        //             }
+        //             map.addImage(name, image);
+        //         });
+        //     })
+        // }
 
         function buildCategoryFilters(data) {
 
