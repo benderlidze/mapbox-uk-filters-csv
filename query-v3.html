@@ -194,6 +194,92 @@
             border-radius: 3px;
             border: 1px solid #ddd;
         }
+
+
+
+        .info-popup {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            width: 320px;
+            max-height: 500px;
+            overflow-y: auto;
+            z-index: 10;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: none;
+        }
+
+        .info-popup.active {
+            display: block;
+        }
+
+        .info-popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #0080ff;
+        }
+
+        .info-popup-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .info-popup-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+        }
+
+        .info-popup-close:hover {
+            color: #333;
+        }
+
+        .info-popup-section {
+            margin-bottom: 15px;
+        }
+
+        .info-popup-section h4 {
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .info-popup-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+
+        .info-popup-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-popup-label {
+            color: #666;
+        }
+
+        .info-popup-value {
+            color: #333;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -217,6 +303,14 @@
         </div>
     </div>
 
+    <div class="info-popup" id="info-popup">
+        <div class="info-popup-header">
+            <h3>LSOA Information</h3>
+            <button class="info-popup-close" id="info-popup-close">×</button>
+        </div>
+        <div id="info-popup-content"></div>
+    </div>
+
     <script>
         mapboxgl.accessToken = "pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZXdpNDBieTUzanMyN2J3NW1sMHUifQ.m5BpgLHVufA0nzdFvCpTVg";
 
@@ -235,57 +329,72 @@
         const csvData = {};
         let csvLoaded = false;
         let selectedRegion = null;
+
+        // CSV Polygons (Backwards compatibility for Retirees)
         const areaPolygonsData = {};
         let areaPolygonsLoaded = false;
+
+        // JSON Polygons (Full Area Data)
+        const areaJsonData = {};
 
         // Track registered checkboxes
         const registeredCheckboxes = [];
 
-        // Load CSV data
+        // Load CSV data using d3.csv()
         async function loadCSVData() {
             try {
-                const response = await fetch('population_data/lsoa_age_bands_imd_ts017_ts066.csv');
-                const csvText = await response.text();
-                const lines = csvText.trim().split('\n');
+                const data = await d3.csv('population_data/lsoa_age_bands_imd_ts017_ts066.csv');
 
-                for (let i = 1; i < lines.length; i++) {
-                    const cols = lines[i].split(',');
-                    if (cols.length >= 21) {
-                        const lsoaCode = cols[0].trim();
-                        csvData[lsoaCode] = {
-                            Total: parseInt(cols[1]) || 0,
-                            Children: parseInt(cols[2]) || 0,
-                            YoungAdults: parseInt(cols[3]) || 0,
-                            EarlyProfessionals: parseInt(cols[4]) || 0,
-                            FamilyBuilders: parseInt(cols[5]) || 0,
-                            MatureAdults: parseInt(cols[6]) || 0,
-                            Older: parseInt(cols[7]) || 0,
-                            IMDRank: parseInt(cols[8]) || 0,
-                            IMDDecile: parseInt(cols[9]) || 0,
-                            HH_0: parseInt(cols[10]) || 0,
-                            HH_1: parseInt(cols[11]) || 0,
-                            HH_2: parseInt(cols[12]) || 0,
-                            HH_3: parseInt(cols[13]) || 0,
-                            HH_4: parseInt(cols[14]) || 0,
-                            HH_5: parseInt(cols[15]) || 0,
-                            HH_6: parseInt(cols[16]) || 0,
-                            HH_7: parseInt(cols[17]) || 0,
-                            HH_8plus: parseInt(cols[18]) || 0,
-                            HH_Total: parseInt(cols[19]) || 0,
-                            HH_AvgSizeApprox: parseFloat(cols[20]) || 0
-                        };
-                    }
-                }
+                data.forEach(row => {
+                    const lsoaCode = row.LSOA21CD?.trim();
+
+                    if (!lsoaCode) return;
+
+                    csvData[lsoaCode] = {
+                        // Basic Population
+                        Total: parseInt(row['Total']) || 0,
+                        Children: parseInt(row['Children']) || 0,
+
+                        // Fix: Use bracket notation for headers with spaces
+                        YoungAdults: parseInt(row['Young adults']) || 0,
+                        EarlyProfessionals: parseInt(row['Early professionals']) || 0,
+                        FamilyBuilders: parseInt(row['Family builders']) || 0,
+                        MatureAdults: parseInt(row['Mature adults']) || 0,
+                        Older: parseInt(row['Older']) || 0,
+
+                        // Fix: Map long IMD headers to your internal property names
+                        IMDRank: parseInt(row['Index of Multiple Deprivation (IMD) Rank']) || 0,
+                        IMDDecile: parseInt(row['Index of Multiple Deprivation (IMD) Decile']) || 0,
+
+                        // Households (Headers match logic, but best to be explicit or keep loop)
+                        HH_0: parseInt(row['HH_0']) || 0,
+                        HH_1: parseInt(row['HH_1']) || 0,
+                        HH_2: parseInt(row['HH_2']) || 0,
+                        HH_3: parseInt(row['HH_3']) || 0,
+                        HH_4: parseInt(row['HH_4']) || 0,
+                        HH_5: parseInt(row['HH_5']) || 0,
+                        HH_6: parseInt(row['HH_6']) || 0,
+                        HH_7: parseInt(row['HH_7']) || 0,
+                        HH_8plus: parseInt(row['HH_8plus']) || 0,
+                        HH_Total: parseInt(row['HH_Total']) || 0,
+                        HH_AvgSizeApprox: parseFloat(row['HH_AvgSizeApprox']) || 0,
+
+                        // Economic Activity (EA)
+                        EA_Active_16plus: parseInt(row['EA_Active_16plus']) || 0,
+                        EA_Inactive_16plus: parseInt(row['EA_Inactive_16plus']) || 0
+                    };
+                });
+
                 csvLoaded = true;
-                console.log('CSV loaded:', Object.keys(csvData).length, 'records');
+                console.log('✅ CSV loaded:', Object.keys(csvData).length, 'records');
             } catch (err) {
-                console.error('Error loading CSV:', err);
+                console.error('❌ Error loading CSV:', err);
             }
         }
 
         loadCSVData();
 
-        // Load area polygons data
+        // Load area polygons CSV data (Retirees source)
         async function loadAreaPolygonsData() {
             try {
                 const data = await d3.csv('population_data/Supabase Snippet Add area_name column to lsoa_polygons.csv');
@@ -330,6 +439,27 @@
         }
 
         loadAreaPolygonsData();
+
+        // 1. ADDED: Load areas.json for Full County Highlights
+        async function loadAreasJson() {
+            try {
+                const response = await fetch('population_data/areas.json');
+                const data = await response.json();
+
+                // Convert array to lookup object: { "Oxford": ["E01...", "E02..."] }
+                data.forEach(item => {
+                    if (item.area_name && item.lsoa_ids) {
+                        areaJsonData[item.area_name] = item.lsoa_ids;
+                    }
+                });
+
+                console.log('✅ Areas JSON loaded:', Object.keys(areaJsonData).length, 'areas');
+            } catch (err) {
+                console.error('❌ Error loading areas.json:', err);
+            }
+        }
+
+        loadAreasJson();
 
         map.on("load", async () => {
             try {
@@ -430,6 +560,7 @@
                         selectLocation(matches[0]);
                     }
                 });
+
             } catch (e) {
                 console.error("Error loading/adding LAD data:", e);
             }
@@ -480,10 +611,28 @@
                 source: 'population-lsoa',
                 'source-layer': 'clean_enriched_LSOA-5ty98a',
                 paint: {
-                    'line-color': '#ffffff',
+                    'line-color': 'red',
                     'line-width': 1.5
                 },
                 filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
+            });
+
+            map.on('click', 'population-lsoa-fill', (e) => {
+                if (e.features && e.features.length > 0) {
+                    const lsoaCode = e.features[0].properties.LSOA21CD;
+                    if (lsoaCode) {
+                        clickedLSOA = lsoaCode;
+                        if (map.getLayer('population-lsoa-selected-outline')) {
+                            map.setFilter('population-lsoa-selected-outline', [
+                                '==',
+                                ['get', 'LSOA21CD'],
+                                lsoaCode
+                            ]);
+                        }
+                    }
+                    console.log('e.features[0]', e.features[0]);
+                    showPolygonInfo(e.features[0]);
+                }
             });
 
             // Setup all checkboxes
@@ -559,6 +708,7 @@
             });
         }
 
+        // 2. UPDATED: Uses JSON data for full area highlight
         function selectLocation(feature) {
             const areaName = feature.properties.LAD13NM;
             searchInput.value = areaName;
@@ -567,13 +717,35 @@
 
             selectedRegion = feature;
 
-            // RESET ALL CHECKBOXES WHEN SELECTING NEW COUNTY
+            // Get ALL polygon IDs for this area (Whole County) from JSON
+            const allPolygonIds = areaJsonData[areaName] || [];
+
+            console.log(`Highlighting ${allPolygonIds.length} polygons for ${areaName} (Full County)`);
+
+            // Highlight fill
+            if (map.getLayer('population-lsoa-selected-fill')) {
+                map.setFilter('population-lsoa-selected-fill', [
+                    'in',
+                    ['get', 'LSOA21CD'],
+                    ['literal', allPolygonIds]
+                ]);
+            }
+
+            // Highlight outline
+            if (map.getLayer('population-lsoa-selected-outline')) {
+                map.setFilter('population-lsoa-selected-outline', [
+                    'in',
+                    ['get', 'LSOA21CD'],
+                    ['literal', allPolygonIds]
+                ]);
+            }
+
+            // RESET ALL CHECKBOXES
             registeredCheckboxes.forEach(item => {
                 const checkbox = document.getElementById(item.checkboxId);
                 if (checkbox) {
                     checkbox.checked = false;
                 }
-                // Clear the layer
                 if (map.getLayer(item.layerId)) {
                     map.setFilter(item.layerId, [
                         'in',
@@ -600,57 +772,6 @@
                     duration: 1000,
                 }
             );
-        }
-
-
-        // function highlightAreaPolygons(areaName) {
-        //     if (!map.getSource('population-lsoa')) return;
-
-        //     const areaData = areaPolygonsData[areaName];
-        //     if (!areaData || !areaData.polygonIds) {
-        //         console.log('No polygon data found for:', areaName);
-        //         if (map.getLayer('population-lsoa-selected-fill')) {
-        //             map.setFilter('population-lsoa-selected-fill', [
-        //                 'in',
-        //                 ['get', 'LSOA21CD'],
-        //                 ['literal', []]
-        //             ]);
-        //         }
-        //         if (map.getLayer('population-lsoa-selected-outline')) {
-        //             map.setFilter('population-lsoa-selected-outline', [
-        //                 'in',
-        //                 ['get', 'LSOA21CD'],
-        //                 ['literal', []]
-        //             ]);
-        //         }
-        //         return;
-        //     }
-
-        //     console.log('Highlighting', areaData.polygonIds.length, 'polygons for', areaName);
-
-        //     if (map.getLayer('population-lsoa-selected-fill')) {
-        //         map.setFilter('population-lsoa-selected-fill', [
-        //             'in',
-        //             ['get', 'LSOA21CD'],
-        //             ['literal', areaData.polygonIds]
-        //         ]);
-        //     }
-        //     if (map.getLayer('population-lsoa-selected-outline')) {
-        //         map.setFilter('population-lsoa-selected-outline', [
-        //             'in',
-        //             ['get', 'LSOA21CD'],
-        //             ['literal', areaData.polygonIds]
-        //         ]);
-        //     }
-        // }
-
-        // Helper function to get polygon IDs for an area
-        function getAreaPolygonIds(areaName) {
-            const areaData = areaPolygonsData[areaName];
-            if (areaData && areaData.polygonIds) {
-                return areaData.polygonIds;
-            }
-            return [];
         }
 
         document.addEventListener("click", function (e) {
@@ -705,7 +826,7 @@
             });
         });
 
-        // GENERIC CHECKBOX HANDLER - Accepts name, color, and function that receives areaName
+        // GENERIC CHECKBOX HANDLER
         function setupCheckboxHandler(id, name, color, getPolygonIdsFn) {
             const checkboxId = `checkbox-${id}`;
             const layerId = `highlight-${id}`;
@@ -749,6 +870,7 @@
                         const areaName = selectedRegion.properties.LAD13NM;
                         // Call the function with areaName
                         polygonIds = getPolygonIdsFn(areaName) || [];
+                        console.log(`${name} for ${areaName}:`, polygonIds.length, 'polygons');
                     }
 
                     if (map.getLayer(layerId)) {
@@ -762,47 +884,283 @@
             }
         }
 
-        // Setup all checkboxes
+        // 3. UPDATED: Differentiate data sources
         function setupAllCheckboxes() {
-            // Most deprived
+            // Most Deprived: Use JSON (Whole County)
             setupCheckboxHandler(
                 'most-deprived',
                 'Show most deprived (bottom 10%)',
                 '#ff0000',
                 (areaName) => {
-                    const areaPolygonIds = getAreaPolygonIds(areaName);
-                    console.log('Most deprived areaPolygonIds:', areaPolygonIds, areaName);
-                    return areaPolygonIds.filter(lsoaCode => {
+                    // FIX: Use JSON data
+                    const allIds = areaJsonData[areaName] || [];
+
+                    return allIds.filter(lsoaCode => {
                         const row = csvData[lsoaCode];
                         return row && row.IMDDecile && row.IMDDecile <= 1;
                     });
                 }
             );
 
-            // Least deprived
+            // Least Deprived: Use JSON (Whole County)
             setupCheckboxHandler(
                 'least-deprived',
                 'Show least deprived (top 10%)',
                 '#00ff00',
                 (areaName) => {
-                    const areaPolygonIds = getAreaPolygonIds(areaName);
-                    return areaPolygonIds.filter(lsoaCode => {
+                    // FIX: Use JSON data
+                    const allIds = areaJsonData[areaName] || [];
+
+                    return allIds.filter(lsoaCode => {
                         const row = csvData[lsoaCode];
                         return row && row.IMDDecile && row.IMDDecile >= 9;
                     });
                 }
             );
 
-            // Retirees - can use getAreaPolygonIds directly
+            // Retirees: KEEP USING THE CSV (areaPolygonsData)
             setupCheckboxHandler(
                 'retirees',
                 'Show retired (65+ years)',
                 '#ff9800',
                 (areaName) => {
+                    // This specifically uses the CSV structure (Supabase Snippet)
                     const areaData = areaPolygonsData[areaName];
                     return areaData ? areaData.polygonIds : [];
                 }
             );
+        }
+
+        // Info popup functionality
+        const infoPopup = document.getElementById('info-popup');
+        const infoPopupContent = document.getElementById('info-popup-content');
+        const infoPopupClose = document.getElementById('info-popup-close');
+
+        if (infoPopupClose) {
+            infoPopupClose.addEventListener('click', () => {
+                infoPopup.classList.remove('active');
+            });
+        }
+
+        function showPolygonInfo(feature) {
+
+            //const excludePropsNames = ['LSOA21CD', "TotalMF"];
+            const excludePropsNames = ["TotalMF"];
+            const DISPLAY_NAME_MAP = {
+                LSOA21NM: 'LSOA Name',
+            };
+            const filteredAndMappedProps =
+                Object.entries(feature.properties)
+                    .filter(([prop]) => !excludePropsNames.includes(prop))
+                    .map(([prop, value]) => {
+                        return prop === "LSOA21NM" ? ["Name", value] : [prop, value];
+                    })
+
+
+            const lsoaCode = feature.properties.LSOA21CD;
+            const csvInfo = csvData[lsoaCode];
+
+            let html = '<div class="info-popup-section">';
+            html += '<h4>Feature Properties</h4>';
+
+            // Display all feature properties
+            for (const [key, value] of filteredAndMappedProps) {
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">${key}</span>`;
+                html += `<span class="info-popup-value">${value || '-'}</span>`;
+                html += `</div>`;
+            }
+            html += '</div>';
+
+            // Display CSV data if available
+            if (csvInfo) {
+                html += '<div class="info-popup-section">';
+                html += '<h4>Population Data</h4>';
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Total Population</span>`;
+                html += `<span class="info-popup-value">${csvInfo.Total.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Children (0-14)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.Children.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Young Adults (15-24)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.YoungAdults.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Early Professionals (25-34)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.EarlyProfessionals.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Family Builders (35-49)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.FamilyBuilders.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Mature Adults (50-64)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.MatureAdults.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                html += `<div class="info-popup-row">`;
+                html += `<span class="info-popup-label">Older (65+)</span>`;
+                html += `<span class="info-popup-value">${csvInfo.Older.toLocaleString()}</span>`;
+                html += `</div>`;
+
+                if (csvInfo.IMDRank) {
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">IMD Rank<span class="info-icon">i<span class="tooltip-text">National deprivation rank from 1 (most) to 32,844 (least)</span></span></span>`;
+                    html += `<span class="info-popup-value">${csvInfo.IMDRank.toLocaleString()}</span>`;
+                    html += `</div>`;
+                }
+
+                if (csvInfo.IMDDecile) {
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label">IMD Decile<span class="info-icon">i<span class="tooltip-text">Ten national deprivation bands; 1 is most deprived.</span></span></span>`;
+                    html += `<span class="info-popup-value">${csvInfo.IMDDecile}</span>`;
+                    html += `</div>`;
+                }
+
+                html += '</div>';
+
+                console.log('csvInfo', csvInfo);
+                // Household Size Data
+                if (csvInfo.HH_Total) {
+                    html += '<div class="info-popup-section">';
+                    html += '<h4>Household Size Distribution</h4>';
+
+                    if (csvInfo.HH_1) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Single-person household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_1.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_2) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Two-person household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_2.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_3) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Small family / shared household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_3.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_4) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Family household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_4.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_5) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Large family / shared household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_5.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_6) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Very large household</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_6.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_7) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Very large household (7)</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_7.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    if (csvInfo.HH_8plus) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Extremely large household (8+)</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_8plus.toLocaleString()}</span>`;
+                        html += `</div>`;
+                    }
+
+                    html += `<div class="info-popup-row">`;
+                    html += `<span class="info-popup-label"><b>Total Households</b></span>`;
+                    html += `<span class="info-popup-value">${csvInfo.HH_Total.toLocaleString()}</span>`;
+                    html += `</div>`;
+
+                    if (csvInfo.HH_AvgSizeApprox) {
+                        html += `<div class="info-popup-row">`;
+                        html += `<span class="info-popup-label">Average Household Size</span>`;
+                        html += `<span class="info-popup-value">${csvInfo.HH_AvgSizeApprox}</span>`;
+                        html += `</div>`;
+                    }
+
+                    html += '</div>';
+                }
+
+                // // Employment Data
+                // const empInfo = employmentData[lsoaCode];
+                // if (empInfo) {
+                //     html += '<div class="info-popup-section">';
+                //     html += '<h4>Employment Status</h4>';
+
+                //     html += `<div class="info-popup-row">`;
+                //     html += `<span class="info-popup-label">Employed</span>`;
+                //     html += `<span class="info-popup-value">${empInfo.Employed.toLocaleString()}</span>`;
+                //     html += `</div>`;
+
+                //     html += `<div class="info-popup-row">`;
+                //     html += `<span class="info-popup-label">Unemployed</span>`;
+                //     html += `<span class="info-popup-value">${empInfo.Unemployed.toLocaleString()}</span>`;
+                //     html += `</div>`;
+
+                //     html += `<div class="info-popup-row">`;
+                //     html += `<span class="info-popup-label">Students (inactive)</span>`;
+                //     html += `<span class="info-popup-value">${empInfo.StudentsInactive.toLocaleString()}</span>`;
+                //     html += `</div>`;
+
+                //     html += `<div class="info-popup-row">`;
+                //     html += `<span class="info-popup-label">Retired</span>`;
+                //     html += `<span class="info-popup-value">${empInfo.Retired.toLocaleString()}</span>`;
+                //     html += `</div>`;
+
+                //     html += `<div class="info-popup-row">`;
+                //     html += `<span class="info-popup-label">Other inactive</span>`;
+                //     html += `<span class="info-popup-value">${empInfo.OtherInactive.toLocaleString()}</span>`;
+                //     html += `</div>`;
+
+                //     html += '</div>';
+                // }
+            } else {
+                html += '<div class="info-popup-section">';
+                html += '<p style="color: #999; font-size: 13px; margin: 0;">No CSV data available for this LSOA.</p>';
+                html += '</div>';
+            }
+
+            infoPopupContent.innerHTML = html;
+            infoPopup.classList.add('active');
+
+            // Position tooltips dynamically after content is rendered
+            setTimeout(() => {
+                const infoIcons = infoPopup.querySelectorAll('.info-icon');
+                infoIcons.forEach(icon => {
+                    icon.addEventListener('mouseenter', function (e) {
+                        const tooltip = this.querySelector('.tooltip-text');
+                        if (tooltip) {
+                            const rect = this.getBoundingClientRect();
+                            tooltip.style.left = rect.left + (rect.width / 2) + 'px';
+                            tooltip.style.top = (rect.top) + 'px';
+                        }
+                    });
+                });
+            }, 10);
         }
     </script>
 
