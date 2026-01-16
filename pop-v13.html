@@ -737,16 +737,9 @@
 
             <!-- Deprivation filters -->
             <div style="margin-top:15px; padding-top:15px; border-top:1px solid #e0e0e0;">
-                <div
+                <div id="highlight-checkboxes"
                     style="display:flex; flex-direction:column; gap:8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size:13px;">
-                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                        <input type="checkbox" id="show-most-deprived" style="width:18px; height:18px;" />
-                        <span>Show most deprived (bottom 10%)</span>
-                    </label>
-                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                        <input type="checkbox" id="show-least-deprived" style="width:18px; height:18px;" />
-                        <span>Show least deprived (top 10%)</span>
-                    </label>
+                    <!-- Checkboxes will be dynamically added here -->
                 </div>
             </div>
 
@@ -774,28 +767,6 @@
                     map</button>
             </div>
 
-
-
-        </div>
-    </div>
-
-    <!-- Areas loader: color LSOAs by area from areas.json -->
-    <div
-        style="position:absolute; top:20px;right:12px; border-top:1px solid #e0e0e0; padding-top:12px; background-color: white;">
-        <h4 style="margin:0 0 8px 0; font-size:13px; font-weight:600;">Color by Area</h4>
-        <div style="display:flex; gap:8px; margin-bottom:8px;">
-            <input id="areas-json-url" value="population_data/areas.json" placeholder="Path to areas.json"
-                style="flex:1; padding:6px; border:1px solid #ddd; border-radius:4px; font-size:12px;" />
-        </div>
-        <div style="display:flex; gap:8px; margin-bottom:8px;">
-            <button id="areas-load-btn"
-                style="flex:1; padding:6px 10px; background:#0080ff; color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px;">Load
-                Areas</button>
-            <button id="areas-clear-btn"
-                style="flex:1; padding:6px 10px; background:#f5f5f5; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-size:12px;">Clear</button>
-        </div>
-        <div id="areas-legend"
-            style="display:flex; flex-direction:column; gap:4px; max-height:200px; overflow-y:auto; font-size:11px;">
         </div>
     </div>
 
@@ -819,6 +790,9 @@
         let csvLoaded = false;
         const employmentData = {};
         let employmentLoaded = false;
+
+        // Track registered checkboxes
+        const registeredCheckboxes = [];
 
         async function loadCSVData() {
             try {
@@ -905,8 +879,6 @@
         let currentCircle = null;
         let selectedLSOAs = [];
         let clickedLSOA = null;
-        let showMostDeprived = false;
-        let showLeastDeprived = false;
         const AREA_THRESHOLD = 0.10;
 
         const geocoder = new MapboxGeocoder({
@@ -927,161 +899,6 @@
                 if (mainDataSection) mainDataSection.style.display = '';
                 currentCenter = center;
                 debouncedUpdate();
-            }
-        });
-
-        // Areas JSON loader: load areas.json with LSOA lists and color by area
-        async function loadAreasJson(url) {
-            if (!url) return alert('Please provide areas.json path');
-            try {
-                const res = await fetch(url);
-                if (!res.ok) throw new Error('Fetch failed: ' + res.status);
-                const areas = await res.json();
-
-                // Build LSOA -> area mapping
-                const lsoaToArea = {};
-                const areaNames = [];
-                areas.forEach(a => {
-                    const name = a.area_name || a.name || 'Unknown';
-                    if (!areaNames.includes(name)) areaNames.push(name);
-                    (a.lsoa_ids || []).forEach(code => {
-                        if (code) lsoaToArea[String(code).trim()] = name;
-                    });
-                });
-
-                // Store globally for zoom function
-                window.__areas_lsoa_map = lsoaToArea;
-
-                // Generate colors
-                const colors = generateColors(areaNames.length);
-                const areaColor = {};
-                areaNames.forEach((n, i) => areaColor[n] = colors[i]);
-
-                // Build match expression for Mapbox
-                const matchExpr = ['match', ['get', 'LSOA21CD']];
-                Object.keys(lsoaToArea).forEach(code => {
-                    matchExpr.push(code, areaColor[lsoaToArea[code]]);
-                });
-                matchExpr.push('rgba(0,0,0,0)'); // default transparent
-
-                // Add or update layer
-                const layerId = 'population-lsoa-area-fill';
-                const outlineId = 'population-lsoa-area-outline';
-
-                if (map.getLayer(layerId)) {
-                    map.setPaintProperty(layerId, 'fill-color', matchExpr);
-                } else {
-                    map.addLayer({
-                        id: layerId,
-                        type: 'fill',
-                        source: 'population-lsoa',
-                        'source-layer': 'clean_enriched_LSOA-5ty98a',
-                        paint: {
-                            'fill-color': matchExpr,
-                            'fill-opacity': 0.65
-                        }
-                    }, 'population-lsoa-outline');
-                }
-
-                if (!map.getLayer(outlineId)) {
-                    map.addLayer({
-                        id: outlineId,
-                        type: 'line',
-                        source: 'population-lsoa',
-                        'source-layer': 'clean_enriched_LSOA-5ty98a',
-                        paint: {
-                            'line-color': '#fff',
-                            'line-width': 0.5,
-                            'line-opacity': 0.3
-                        }
-                    }, 'population-lsoa-outline');
-                }
-
-                buildAreasLegend(areaNames, areaColor, lsoaToArea);
-                console.log('Areas loaded:', areaNames.length, 'areas,', Object.keys(lsoaToArea).length, 'LSOAs');
-            } catch (err) {
-                console.error('loadAreasJson error', err);
-                alert('Failed to load areas: ' + err.message);
-            }
-        }
-
-        function clearAreas() {
-            try {
-                if (map.getLayer('population-lsoa-area-fill')) map.removeLayer('population-lsoa-area-fill');
-                if (map.getLayer('population-lsoa-area-outline')) map.removeLayer('population-lsoa-area-outline');
-            } catch (e) { console.warn('clearAreas layer removal', e); }
-            const legend = document.getElementById('areas-legend');
-            if (legend) legend.innerHTML = '';
-            window.__areas_lsoa_map = null;
-        }
-
-        function generateColors(n) {
-            // Use d3 color scheme if available
-            try {
-                if (typeof d3 !== 'undefined' && d3.schemeCategory10) {
-                    const base = d3.schemeCategory10;
-                    const out = [];
-                    for (let i = 0; i < n; i++) out.push(base[i % base.length]);
-                    return out;
-                }
-            } catch (e) { }
-            // Fallback: HSL colors
-            const out = [];
-            for (let i = 0; i < n; i++) {
-                const hue = Math.round((i * 360 / n) % 360);
-                out.push(`hsl(${hue}, 70%, 50%)`);
-            }
-            return out;
-        }
-
-        function buildAreasLegend(names, areaColor, lsoaToArea) {
-            const legend = document.getElementById('areas-legend');
-            if (!legend) return;
-            legend.innerHTML = '';
-
-            // Count LSOAs per area
-            const areaCounts = {};
-            Object.values(lsoaToArea).forEach(area => {
-                areaCounts[area] = (areaCounts[area] || 0) + 1;
-            });
-
-            names.forEach(n => {
-                const row = document.createElement('div');
-                row.style.cssText = 'display:flex; align-items:center; gap:6px; padding:3px 6px; cursor:pointer; border-radius:3px; transition:background 0.2s;';
-                row.onmouseenter = () => row.style.background = '#f5f5f5';
-                row.onmouseleave = () => row.style.background = 'transparent';
-
-                const swatch = document.createElement('div');
-                swatch.style.cssText = `width:12px; height:12px; background:${areaColor[n]}; border-radius:2px; border:1px solid rgba(0,0,0,0.1); flex-shrink:0;`;
-
-                const label = document.createElement('div');
-                label.textContent = `${n} (${areaCounts[n] || 0})`;
-                label.style.cssText = 'font-size:11px; color:#333; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
-
-                row.appendChild(swatch);
-                row.appendChild(label);
-                row.addEventListener('click', () => zoomToArea(n, lsoaToArea));
-                legend.appendChild(row);
-            });
-        }
-
-        function zoomToArea(areaName, lsoaToArea) {
-            if (!map.getSource('population-lsoa')) return;
-            const features = map.querySourceFeatures('population-lsoa', { sourceLayer: 'clean_enriched_LSOA-5ty98a' });
-            const hits = features.filter(f => lsoaToArea[f.properties.LSOA21CD] === areaName);
-            if (!hits.length) return alert('No features found for ' + areaName);
-            const bbox = turf.bbox(turf.featureCollection(hits));
-            map.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 40 });
-        }
-
-        // Wire areas UI buttons
-        document.addEventListener('click', (e) => {
-            if (e.target && e.target.id === 'areas-load-btn') {
-                const url = document.getElementById('areas-json-url').value.trim();
-                loadAreasJson(url);
-            }
-            if (e.target && e.target.id === 'areas-clear-btn') {
-                clearAreas();
             }
         });
 
@@ -1178,7 +995,8 @@
                 if (lsoaCount) lsoaCount.textContent = arr.length ? `${arr.length} selected` : '';
                 // update UI/data
                 if (typeof updateSelection === 'function') updateSelection();
-                if (typeof updateDeprivationHighlights === 'function') updateDeprivationHighlights();
+                // Trigger re-evaluation of all active checkboxes
+                updateActiveCheckboxes();
             }
 
             highlightBtn && highlightBtn.addEventListener('click', () => applyLSOAList(lsoaInput.value));
@@ -1194,7 +1012,8 @@
                 if (lsoaInput) lsoaInput.value = '';
                 if (lsoaCount) lsoaCount.textContent = '';
                 if (typeof updateSelection === 'function') updateSelection();
-                if (typeof updateDeprivationHighlights === 'function') updateDeprivationHighlights();
+                // Trigger re-evaluation of all active checkboxes
+                updateActiveCheckboxes();
             });
 
             // Normalize pasted text (allow arrays like ["E01000001","E01000002"])
@@ -1211,21 +1030,189 @@
             resetBtn.addEventListener('click', resetApp);
         }
 
-        const mostDeprivedCheckbox = document.getElementById('show-most-deprived');
-        const leastDeprivedCheckbox = document.getElementById('show-least-deprived');
+        // GENERIC CHECKBOX HANDLER
+        function setupCheckboxHandler(id, name, color, getPolygonIdsFn) {
+            const checkboxId = `checkbox-${id}`;
+            const layerId = `highlight-${id}`;
 
-        if (mostDeprivedCheckbox) {
-            mostDeprivedCheckbox.addEventListener('change', (e) => {
-                showMostDeprived = e.target.checked;
-                updateDeprivationHighlights();
-            });
+            // Create the layer first
+            if (!map.getLayer(layerId)) {
+                map.addLayer({
+                    id: layerId,
+                    type: 'fill',
+                    source: 'population-lsoa',
+                    'source-layer': 'clean_enriched_LSOA-5ty98a',
+                    paint: {
+                        'fill-color': color,
+                        'fill-opacity': 0.6
+                    },
+                    filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
+                });
+            }
+
+            // Create checkbox HTML
+            const container = document.getElementById('highlight-checkboxes');
+            const label = document.createElement('label');
+            label.style.cssText = 'display:flex; align-items:center; gap:8px; cursor:pointer;';
+            label.innerHTML = `
+                <input type="checkbox" id="${checkboxId}" style="width:18px; height:18px;" />
+                <span>${name}</span>
+            `;
+            container.appendChild(label);
+
+            // Register this checkbox
+            registeredCheckboxes.push({ checkboxId, layerId });
+
+            // Add event listener
+            const checkbox = document.getElementById(checkboxId);
+            if (checkbox) {
+                checkbox.addEventListener('change', (e) => {
+                    const isActive = e.target.checked;
+                    let polygonIds = [];
+
+                    if (isActive) {
+                        // Call the function to get polygon IDs
+                        polygonIds = getPolygonIdsFn() || [];
+                        console.log(`${name}:`, polygonIds.length, 'polygons');
+                    }
+
+                    if (map.getLayer(layerId)) {
+                        map.setFilter(layerId, [
+                            'in',
+                            ['get', 'LSOA21CD'],
+                            ['literal', polygonIds]
+                        ]);
+                    }
+                });
+            }
         }
 
-        if (leastDeprivedCheckbox) {
-            leastDeprivedCheckbox.addEventListener('change', (e) => {
-                showLeastDeprived = e.target.checked;
-                updateDeprivationHighlights();
-            });
+        // Setup all checkboxes after map loads
+        function setupAllCheckboxes() {
+            // Most Deprived
+            setupCheckboxHandler(
+                'most-deprived',
+                'Show most deprived (bottom 10%)',
+                '#ff0000',
+                () => {
+                    const mostDeprivedLSOAs = [];
+
+                    if (selectedLSOAs.length === 0) {
+                        // No radius - build list from all CSV data
+                        Object.keys(csvData).forEach(code => {
+                            const row = csvData[code];
+                            if (row && row.IMDDecile && row.IMDDecile <= 1) {
+                                mostDeprivedLSOAs.push(code);
+                            }
+                        });
+                    } else {
+                        // Radius active - filter within selected LSOAs
+                        selectedLSOAs.forEach(code => {
+                            const row = csvData[code];
+                            if (row && row.IMDDecile && row.IMDDecile <= 1) {
+                                mostDeprivedLSOAs.push(code);
+                            }
+                        });
+                    }
+
+                    return mostDeprivedLSOAs;
+                }
+            );
+
+            // Least Deprived
+            setupCheckboxHandler(
+                'least-deprived',
+                'Show least deprived (top 10%)',
+                '#00ff00',
+                () => {
+                    const leastDeprivedLSOAs = [];
+
+                    if (selectedLSOAs.length === 0) {
+                        // No radius - build list from all CSV data
+                        Object.keys(csvData).forEach(code => {
+                            const row = csvData[code];
+                            if (row && row.IMDDecile && row.IMDDecile >= 9) {
+                                leastDeprivedLSOAs.push(code);
+                            }
+                        });
+                    } else {
+                        // Radius active - filter within selected LSOAs
+                        selectedLSOAs.forEach(code => {
+                            const row = csvData[code];
+                            if (row && row.IMDDecile && row.IMDDecile >= 9) {
+                                leastDeprivedLSOAs.push(code);
+                            }
+                        });
+                    }
+
+                    return leastDeprivedLSOAs;
+                }
+            );
+
+            setupCheckboxHandler(
+                'retirees-100',
+                'Show above-average retirement areas',
+                '#ff00ff',
+                () => {
+                    const retirees = [];
+
+                    console.log('selectedLSOAs', selectedLSOAs);
+
+                    if (selectedLSOAs.length === 0) {
+                        console.log('No radius selected');
+                        return [];
+                    }
+
+                    // Step 1: Calculate totals across ALL selected areas
+                    let totalRetirees = 0;
+                    let totalPopulation = 0;
+
+                    selectedLSOAs.forEach(code => {
+                        const empRow = employmentData[code];
+                        const popRow = csvData[code];
+
+                        if (empRow && popRow && empRow.Retired && popRow.Total) {
+                            totalRetirees += empRow.Retired;
+                            totalPopulation += popRow.Total;
+                        }
+                    });
+
+                    // Step 2: Calculate overall retirement percentage for the radius
+                    if (totalPopulation === 0) {
+                        console.log('No population data found');
+                        return [];
+                    }
+
+                    const overallRetirementRate = (totalRetirees / totalPopulation) * 100;
+
+                    console.log('=== Overall Statistics ===');
+                    console.log(`Total Retirees: ${totalRetirees.toLocaleString()}`);
+                    console.log(`Total Population: ${totalPopulation.toLocaleString()}`);
+                    console.log(`Overall Retirement Rate: ${overallRetirementRate.toFixed(1)}%`);
+                    console.log('=== Areas Above Average ===');
+
+                    // Step 3: Find zones ABOVE the overall average
+                    selectedLSOAs.forEach(code => {
+                        const empRow = employmentData[code];
+                        const popRow = csvData[code];
+
+                        if (empRow && popRow && empRow.Retired && popRow.Total && popRow.Total > 0) {
+                            const zoneRetirementRate = (empRow.Retired / popRow.Total) * 100;
+
+                            // Show zones that are above the overall average
+                            if (zoneRetirementRate > overallRetirementRate) {
+                                retirees.push(code);
+                                console.log(`  ${code}: ${zoneRetirementRate.toFixed(1)}% (${empRow.Retired}/${popRow.Total}) - ${(zoneRetirementRate - overallRetirementRate).toFixed(1)}% above average`);
+                            }
+                        }
+                    });
+
+                    console.log(`Showing ${retirees.length} areas above ${overallRetirementRate.toFixed(1)}% average`);
+
+                    return retirees;
+                }
+            );
+
         }
 
         // Traffic controls
@@ -1445,78 +1432,19 @@
             // }
 
             updateSelection();
-            updateDeprivationHighlights();
+            // Trigger re-evaluation of all active checkboxes
+            updateActiveCheckboxes();
         }
 
-        function updateDeprivationHighlights() {
-            if (!map.getSource('population-lsoa')) return;
-
-            // Simple logic: no radius = show globally, with radius = filter within radius
-            if (selectedLSOAs.length === 0) {
-                // No radius - build list from all CSV data
-                const mostDeprivedLSOAs = [];
-                const leastDeprivedLSOAs = [];
-
-                if (showMostDeprived || showLeastDeprived) {
-                    Object.keys(csvData).forEach(code => {
-                        const row = csvData[code];
-                        if (!row || !row.IMDDecile) return;
-
-                        if (showMostDeprived && row.IMDDecile <= 1) {
-                            mostDeprivedLSOAs.push(code);
-                        }
-                        if (showLeastDeprived && row.IMDDecile >= 9) {
-                            leastDeprivedLSOAs.push(code);
-                        }
-                    });
+        // Function to re-evaluate all active checkboxes when radius changes
+        function updateActiveCheckboxes() {
+            registeredCheckboxes.forEach(item => {
+                const checkbox = document.getElementById(item.checkboxId);
+                if (checkbox && checkbox.checked) {
+                    // Trigger change event to re-calculate polygons
+                    checkbox.dispatchEvent(new Event('change'));
                 }
-
-                if (map.getLayer('population-lsoa-most-deprived')) {
-                    map.setFilter('population-lsoa-most-deprived', [
-                        'in',
-                        ['get', 'LSOA21CD'],
-                        ['literal', mostDeprivedLSOAs]
-                    ]);
-                }
-                if (map.getLayer('population-lsoa-least-deprived')) {
-                    map.setFilter('population-lsoa-least-deprived', [
-                        'in',
-                        ['get', 'LSOA21CD'],
-                        ['literal', leastDeprivedLSOAs]
-                    ]);
-                }
-            } else {
-                // Radius active - filter within selected LSOAs
-                const mostDeprivedLSOAs = [];
-                const leastDeprivedLSOAs = [];
-
-                selectedLSOAs.forEach(code => {
-                    const row = csvData[code];
-                    if (!row || !row.IMDDecile) return;
-
-                    if (showMostDeprived && row.IMDDecile <= 1) {
-                        mostDeprivedLSOAs.push(code);
-                    }
-                    if (showLeastDeprived && row.IMDDecile >= 9) {
-                        leastDeprivedLSOAs.push(code);
-                    }
-                });
-
-                if (map.getLayer('population-lsoa-most-deprived')) {
-                    map.setFilter('population-lsoa-most-deprived', [
-                        'in',
-                        ['get', 'LSOA21CD'],
-                        ['literal', mostDeprivedLSOAs]
-                    ]);
-                }
-                if (map.getLayer('population-lsoa-least-deprived')) {
-                    map.setFilter('population-lsoa-least-deprived', [
-                        'in',
-                        ['get', 'LSOA21CD'],
-                        ['literal', leastDeprivedLSOAs]
-                    ]);
-                }
-            }
+            });
         }
 
         function resetApp() {
@@ -1592,19 +1520,21 @@
             document.getElementById('emp-retired').textContent = '-';
             document.getElementById('emp-other').textContent = '-';
 
-            // Reset deprivation filters
-            showMostDeprived = false;
-            showLeastDeprived = false;
-            if (mostDeprivedCheckbox) mostDeprivedCheckbox.checked = false;
-            if (leastDeprivedCheckbox) leastDeprivedCheckbox.checked = false;
-            updateDeprivationHighlights();
-
-            // Clear loaded areas and legend
-            try {
-                if (typeof clearAreas === 'function') clearAreas();
-            } catch (e) {
-                console.warn('clearAreas failed', e);
-            }
+            // Reset all registered checkboxes
+            registeredCheckboxes.forEach(item => {
+                const checkbox = document.getElementById(item.checkboxId);
+                if (checkbox) {
+                    checkbox.checked = false;
+                    // Clear the layer
+                    if (map.getLayer(item.layerId)) {
+                        map.setFilter(item.layerId, [
+                            'in',
+                            ['get', 'LSOA21CD'],
+                            ['literal', []]
+                        ]);
+                    }
+                }
+            });
 
             // Recenter map to UK default
             map.easeTo({ center: { lng: -2.774533172216252, lat: 54.12181638598531 }, zoom: 7 });
@@ -1713,29 +1643,7 @@
                 }
             });
 
-            map.addLayer({
-                id: 'population-lsoa-most-deprived',
-                type: 'fill',
-                source: 'population-lsoa',
-                'source-layer': 'clean_enriched_LSOA-5ty98a',
-                paint: {
-                    'fill-color': '#ff0000',
-                    'fill-opacity': 0.6
-                },
-                filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
-            });
-
-            map.addLayer({
-                id: 'population-lsoa-least-deprived',
-                type: 'fill',
-                source: 'population-lsoa',
-                'source-layer': 'clean_enriched_LSOA-5ty98a',
-                paint: {
-                    'fill-color': '#00ff00',
-                    'fill-opacity': 0.6
-                },
-                filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
-            });
+            // Layers for checkboxes will be created dynamically by setupCheckboxHandler
 
             map.addLayer({
                 id: 'population-lsoa-outline',
@@ -1920,6 +1828,9 @@
             map.on('mouseleave', 'population-lsoa-outline', () => {
                 map.getCanvas().style.cursor = '';
             });
+
+            // Setup all checkboxes after layers are created
+            setupAllCheckboxes();
         });
 
         // Info popup functionality
@@ -1935,8 +1846,7 @@
 
         function showPolygonInfo(feature) {
 
-            //const excludePropsNames = ['LSOA21CD', "TotalMF"];
-            const excludePropsNames = ["TotalMF"];
+            const excludePropsNames = ['LSOA21CD', "TotalMF"];
             const DISPLAY_NAME_MAP = {
                 LSOA21NM: 'LSOA Name',
             };
