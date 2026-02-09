@@ -797,7 +797,7 @@
             const from = turf.point([+userPosition.lng, +userPosition.lat]);
             const options = { units: 'kilometers' };
             const distances = shopData
-                .filter(pin => selectedShops.includes(pin.company_name))
+                .filter(pin => selectedShops.includes(pin.company_name) && pin.property_latitude && pin.property_longitude)
                 .map(pin => {
                     const { property_latitude, property_longitude } = pin
                     const to = turf.point([+property_longitude, +property_latitude]);
