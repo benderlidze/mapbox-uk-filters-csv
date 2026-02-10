@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Add multiple geometries from one GeoJSON source</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <script src="js/shp.js"></script>
+    <link href="css/toggle.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <link href="js/nouislider.min.css" rel="stylesheet">
+    <script src="js/nouislider.min.js"></script>
+    <style>
+        /* Modern font stack override */
+        body,
+        input,
+        button,
+        select,
+        textarea {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        }
+
+        /* Input field styling */
+        input[type="text"] {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            color: #333;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #0080ff;
+            box-shadow: 0 0 0 3px rgba(0, 128, 255, 0.1);
+        }
+
+        /* Button styling */
+        button,
+        .sm-button {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover,
+        .sm-button:hover {
+            opacity: 0.9;
+        }
+
+        /* Slider styling */
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #0080ff;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #0080ff;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Modern rounded slider styles */
+        .roundSlider {
+            height: 10px;
+        }
+
+        .roundSlider .noUi-base {
+            background: #e0e0e0;
+            border-radius: 4px;
+        }
+
+        .roundSlider .noUi-connect {
+            background: #0080ff;
+        }
+
+        .roundSlider .noUi-handle {
+            height: 18px !important;
+            width: 18px !important;
+            top: -6px !important;
+            right: -9px !important;
+            border-radius: 9px;
+            border: 2px solid white;
+            background-color: #0080ff;
+            z-index: 0 !important;
+        }
+
+        .roundSlider .noUi-base,
+        .roundSlider .noUi-connect {
+            z-index: 0 !important;
+        }
+
+        .noUi-horizontal {
+            height: 8px !important;
+        }
+
+        .roundSlider .noUi-handle:after,
+        .roundSlider .noUi-handle:before {
+            display: none;
+        }
+
+        .noUi-handle {
+            box-shadow: 0 3px 6px -3px #606060 !important;
+        }
+
+        /* Filter panel styling */
+        #filters {
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Text styling */
+        .bold {
+            font-weight: 600;
+            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .small-text {
+            font-size: 13px;
+            color: #666;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        h4 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #333;
+        }
+
+        /* Switch item styling */
+        .switch-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 5px;
+        }
+
+        .item-header {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* Autocomplete styling */
+        .autocomplete input {
+            border-radius: 6px;
+        }
+
+        /* Sectors styling */
+        .sectors {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        /* Modal styling */
+        .modal-content {
+            border-radius: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .buttons {
+            border-radius: 6px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: all 0.2s;
+        }
+
+        .buttons:hover {
+            opacity: 0.9;
+        }
+
+        /* HR styling */
+        hr {
+            border: none;
+            border-top: 1px solid #e0e0e0;
+            margin: 12px 0;
+        }
+
+        .filter-item {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 6px 10px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- The Modal -->
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <p id="results"></p>
+            <div class="buttons" id="copytoclipboard">Copy</div>
+        </div>
+    </div>
+
+    <div id="retailers-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-retailers-modal">&times;</span>
+            <h3>List of occupiers currently in our database</h3>
+            <p id="retailers">Loading...</p>
+            <div id="button-request">Request another retailer(s)</div>
+        </div>
+
+    </div>
+
+
+    <div id="filters"></div>
+
+    <div id="map"></div>
+
+    <script>
+
+        let modalText;
+        let userMarker;
+
+        const buttonRequest = document.getElementById('button-request');
+        const infoRetailers = document.getElementById('info-retailers');
+        const infoRetailersModal = document.getElementById('retailers-modal');
+        const closeRetailersModal = document.getElementById('close-retailers-modal');
+        const retailers = document.getElementById('retailers');
+
+        const copy = document.getElementById('copytoclipboard');
+        const selectedSectors = []; //no shops at load
+        const selectedShops = []; //no shops at load
+        const shopName = document.getElementById("shop");
+        const shopList = document.getElementById("shop-list");
+        const satelliteLayer = document.getElementById('satelliteLayer');
+        const input = document.getElementById("searchInput")
+        const resetSectors = document.getElementById('resetSectors');
+        const exportResults = document.getElementById('exportResults');
+
+        const modal = document.getElementById("myModal");
+        const closeModal = document.getElementById("closeModal");
+        const resultsDiv = document.getElementById("results");
+
+        const sectorBoxes = [];
+        const shopData = [];
+        const userPosition = {
+            lat: undefined,
+            lng: undefined
+        }
+
+        const increment = document.getElementById('increment');
+        const decrement = document.getElementById('decrement');
+        const storesNumber = document.getElementById('stores-number');
+
+        const filtersDiv = document.getElementById('filters');
+
+        mapboxgl.accessToken = 'pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZzhodzAwcTAzYm41cHFmMG1qYnEifQ.hyQMLL4YFjo7FfoJuD73jA'
+
+        mapboxgl.accessToken = "pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZXdpNDBieTUzanMyN2J3NW1sMHUifQ.m5BpgLHVufA0nzdFvCpTVg";
+
+        const map = new mapboxgl.Map({
+            container: "map",
+            style: "mapbox://styles/mapbox/streets-v12",
+            center: { lng: -5.38319371390287, lat: 54.328587368249714 },
+            zoom: 5,
+            projection: "mercator" // display the map as a Mercator projection
+        });
+
+        map.addControl(new mapboxgl.NavigationControl());
+
+
+
+
+
+        function updateStoreNumber() {
+            console.log('storesNumber.value', storesNumber.value);
+            if (storesNumber.value <= 1) storesNumber.value = 1;
+
+            findClosestToUser(selectedShops, storesNumber.value)
+        }
+
+
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        filtersDiv.innerHTML = `<div class="item-header">Loading retailers...</div>`
+
+        map.on('load', () => {
+
+            //d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRRCfZP7O-mr7dta_TApeE4GVpjh57jcK7r1RN2bx2RvYk3EslUZA8ay9y8-2gOu1c6-GCF26xkSLvn/pub?output=csv")
+            d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRRCfZP7O-mr7dta_TApeE4GVpjh57jcK7r1RN2bx2RvYk3EslUZA8ay9y8-2gOu1c6-GCF26xkSLvn/pub?gid=645328569&single=true&output=csv")
+                .then(data => {
+
+                    data.forEach(shop => {
+                        shopData.push({
+                            ...shop,
+                            sectors: (shop.sector && shop.sector.length > 0) ? shop.sector.split(",").map(i => i.trim()) : []
+                        })
+                    })
+                    const names = new Set(shopData.map(d => d.company_name))
+
+                    const urlParams = new URL(window.location.href).searchParams;
+                    const retailerParam = urlParams.get('retailer');
+
+                    if (retailerParam && names.has(retailerParam)) {
+                        filtersDiv.style.display = 'none';
+                        const filteredData = shopData.filter(d => d.company_name === retailerParam);
+                        uploadPhotosBuildLayer(filteredData);
+                        filterByShopNameS([retailerParam]);
+
+                        // Optional: Zoom to the stores
+                        const bounds = new mapboxgl.LngLatBounds();
+                        filteredData.forEach(d => {
+                            if (d.property_longitude && d.property_latitude) {
+                                bounds.extend([+d.property_longitude, +d.property_latitude]);
+                            }
+                        });
+                        if (!bounds.isEmpty()) {
+                            map.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+                        }
+                    } else {
+                        filtersDiv.innerHTML = `
+                            <div class="item-header" >Search by retailer name</div>
+                                ${Array.from(names).sort().map(name => `<div class="filter-item">
+                                    <a href="?retailer=${encodeURIComponent(name)}">${name}</a>
+                                </div>`).join("")}
+                        `
+                    }
+
+                    console.log('data', data);
+                })
+
+
+            map.addLayer({
+                id: 'satellite',
+                source: { "type": "raster", "url": "mapbox://mapbox.satellite", "tileSize": 256 },
+                type: "raster",
+                layout: {
+                    visibility: 'none'
+                }
+            });
+
+            map.addSource('store', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                },
+                cluster: true,
+                clusterMaxZoom: 14, // Max zoom to cluster points on
+                clusterRadius: 50 // Radius of each cluster when clustering points 
+            });
+
+            map.addLayer({
+                id: 'store-clusters',
+                type: 'circle',
+                source: 'store',
+                filter: ['has', 'point_count'],
+                paint: {
+                    'circle-color': [
+                        'step',
+                        ['get', 'point_count'],
+                        '#51bbd6',
+                        100,
+                        '#f1f075',
+                        750,
+                        '#f28cb1'
+                    ],
+                    'circle-radius': [
+                        'step',
+                        ['get', 'point_count'],
+                        20,
+                        100,
+                        30,
+                        750,
+                        40
+                    ]
+                }
+            });
+
+            map.addLayer({
+                id: 'store-cluster-count',
+                type: 'symbol',
+                source: 'store',
+                filter: ['has', 'point_count'],
+                layout: {
+                    'text-field': '{point_count_abbreviated}',
+                    'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                    'text-size': 12
+                }
+            });
+
+            map.addLayer({
+                id: 'storeLogo',
+                'type': 'symbol',
+                source: 'store',
+                filter: ['!', ['has', 'point_count']],
+                'layout': {
+                    'icon-image': ['get', 'company_name'], // reference the image
+                    'icon-size': 0.15,
+                    'icon-allow-overlap': true,
+                }
+            });
+
+
+
+            //================MEASURE LINE =====================
+            map.addSource('measure', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': []
+                },
+            });
+            map.addLayer({
+                'id': 'measure-route',
+                'type': 'line',
+                'source': 'measure',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': '#888',
+                    'line-width': 2
+                },
+                'filter': ['==', '$type', 'LineString']
+            });
+            map.addLayer({
+                id: 'measure-middle',
+                type: 'symbol',
+                source: 'measure',
+                layout: {
+                    'text-field': '{distance}',
+                    'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                    'text-size': 12,
+                    'text-rotate': ['get', 'bearing'],
+                    'text-allow-overlap': true,
+                    "text-offset": [0, 1]
+                },
+                'paint': {
+                    'text-color': '#202',
+                    "text-halo-color": "#fff",
+                    "text-halo-width": 2
+                },
+                'filter': ['==', '$type', 'Point']
+            });
+
+            //================MEASURE LINE =====================
+
+
+            map.on('click', 'storeLogo', (e) => {
+                console.log('e', e);
+                // Copy coordinates array.
+                const name = e.features[0].properties.company_name;
+                const addr = e.features[0].properties.property_address;
+                const description = `<h2>${name}</h2>${addr}`
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(description)
+                    .addTo(map);
+
+                e.originalEvent.cancelBubble = true;
+            });
+
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'storeLogo', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'storeLogo', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+
+            map.on('click', 'shapes', (e) => {
+
+                if (e.originalEvent.cancelBubble) {
+                    return;
+                }
+                console.log('e', e);
+                // Copy coordinates array.
+                const description = e.features[0].properties.bua11nm;
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(description)
+                    .addTo(map);
+            });
+            // Change the cursor to a pointer when the mouse is over the places layer.
+            map.on('mouseenter', 'shapes', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', 'shapes', () => {
+                map.getCanvas().style.cursor = '';
+            });
+
+        });
+
+        function uploadPhotosBuildLayer(data) {
+            console.log('data', data);
+
+            const companyLogos = {};
+            data.forEach(store => {
+                if (!companyLogos[store.company_name]) {
+                    companyLogos[store.company_name] = store.image;
+                }
+            });
+
+            console.log('companyLogos', companyLogos);
+
+            Object.keys(companyLogos).forEach(name => {
+                map.loadImage(`${companyLogos[name]}`, (error, image) => {
+                    if (error) {
+                        map.loadImage(`logos/small/default.png`, (error, image) => {
+                            console.log('name', name);
+                            map.addImage(name, image);
+                        });
+                        throw error;
+                    }
+                    map.addImage(name, image);
+                });
+            })
+        }
+
+        // function uploadPhotosBuildLayer(data) {
+        //     console.log('data', data);
+        //     const names = [...new Set(data.map(store => store.company_name).sort())]
+        //     names.forEach(name => {
+        //         map.loadImage(`logos/${name.toLowerCase()}.png`, (error, image) => {
+        //             if (error) {
+        //                 map.loadImage(`logos/small/default.png`, (error, image) => {
+        //                     console.log('name', name);
+        //                     map.addImage(name, image);
+        //                 });
+        //                 throw error;
+        //             }
+        //             map.addImage(name, image);
+        //         });
+        //     })
+        // }
+
+
+        // function buildCategoryFilters(data) {
+
+        //     const sectorsArr = data.map(store => store.sector.split(",").map(i => i.trim())).flat()
+        //     const sector = [...new Set(sectorsArr)]
+        //     sector.forEach(name => {
+
+        //         const checkbox = buildCheckBox(name, false, e => {
+        //             console.log('name', e);
+        //             const checked = e.target.checked
+        //             const value = e.target.id
+        //             if (checked) {
+        //                 selectedSectors.push(value)
+        //             } else {
+        //                 var index = selectedSectors.indexOf(value);
+        //                 if (index !== -1) {
+        //                     selectedSectors.splice(index, 1);
+        //                 }
+        //             }
+
+        //             const shopNames = shopData.filter(shop => {
+        //                 return selectedSectors.every(elem => shop.sectors.includes(elem))
+        //             }).map(shop => shop.company_name)
+
+        //             selectedShops.length = 0
+        //             selectedShops.push(...shopNames)
+        //             filterByShopNameS(selectedShops)
+        //         })
+        //         sectorsDiv.appendChild(checkbox)
+        //     })
+        // }
+
+        function findClosestToUser(selectedShops, shopsNumber = 1) {
+
+            console.log('selectedShops', selectedShops);
+            if (!userPosition.lat) return;
+            const unique = new Map();
+            const from = turf.point([+userPosition.lng, +userPosition.lat]);
+            const options = { units: 'kilometers' };
+            const distances = shopData
+                .filter(pin => selectedShops.includes(pin.company_name) && pin.property_latitude && pin.property_longitude)
+                .map(pin => {
+                    const { property_latitude, property_longitude } = pin
+                    const to = turf.point([+property_longitude, +property_latitude]);
+                    const distance = turf.distance(from, to, options);
+
+                    const geometry = {
+                        "type": "Feature", "properties": { ...pin, distance },
+                        "geometry": {
+                            "type": "Point", "coordinates": [+property_longitude, +property_latitude]
+                        }
+                    }
+                    return { distance, name: pin.company_name, addr: pin.property_address, geometry }
+                })
+                .sort((a, b) => {
+                    return a.distance - b.distance
+                })
+                .map(pin => {
+                    if (!unique.has(pin.name)) {
+                        unique.set(pin.name, [pin])
+                    } else {
+                        const arr = unique.get(pin.name)
+                        arr.push(pin)
+                    }
+                })
+
+            // PRINT results to modal 
+            //const res = []
+            let table = `<tr>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Name</th>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Distance</th>
+                            <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Address</th>
+                        </tr>`;
+            let lineNumber = 1;
+            unique.forEach(el => {
+
+                for (let index = 0; index < shopsNumber; index++) {
+                    const r = el[index];
+                    lineNumber++
+                    const style = (lineNumber % 2 === 0) ? 'style="background-color: #dddddd;" ' : ""
+                    const text = ` `
+                    table += `<tr ${style}>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${r.name}</td> 
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${r.distance.toFixed(1)}miles </td>
+                            <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${r.addr}</td>
+                        </tr>`
+                }
+
+            })
+
+            //resultsDiv.innerHTML = res.join("<br>");
+            const code = document.getElementById("search").value
+            modalText = `
+            <h3>Retailer distance from ${code}</h3>
+            <table style="border-collapse: collapse; width: 100%;">
+                    ${table}
+                </table>`
+            resultsDiv.innerHTML = modalText
+
+            const measureCollection = { type: 'FeatureCollection', features: [] };
+            const pins = Array.from(unique).map(data => {
+
+                const geometries = []
+                for (let index = 0; index < shopsNumber; index++) {
+                    console.log('element', data[1][index]);
+                    const element = data[1][index];
+                    const m = drawMeasureLine(from.geometry.coordinates, element.geometry.geometry.coordinates)
+                    measureCollection.features.push(...m)
+                    geometries.push(element.geometry)
+                }
+                return geometries
+
+            })
+
+            console.log('pins', pins);
+            const resData = pins.length === 0 ? [[]] : pins.length > 1 ? [pins.flat()] : [...pins]
+            console.log('resData', resData);
+
+
+            const featureCollection = turf.featureCollection(...resData)
+            map.getSource("store").setData(featureCollection)
+            map.getSource('measure').setData(measureCollection)
+
+        }
+
+        function drawMeasureLine(fromP, toP) {
+
+            const from = turf.point(fromP);
+            const to = turf.point(toP);
+            const options = { units: 'miles' };
+            const distance = turf.distance(from, to, options);
+
+            const line = turf.lineString([fromP, toP]);
+            const lineBearing = turf.bearing(fromP, toP);
+
+            const midpoint = turf.midpoint(from, to);
+            midpoint.properties = {
+                distance: distance.toFixed(2),
+                bearing: lineBearing
+            }
+
+            const collection = turf.featureCollection([
+                line,
+                midpoint
+            ]);
+
+            console.log('collection', collection);
+            return [line, midpoint]
+            //map.getSource('measure').setData(collection)
+        }
+
+        function buildCheckBox(name, checked, eventFunction) {
+
+            const div = document.createElement("div")
+            const checkbox = document.createElement('input');
+            checkbox.type = "checkbox";
+            checkbox.name = "name";
+            checkbox.value = name;
+            checkbox.id = name;
+            checkbox.addEventListener("input", eventFunction)
+            checkbox.checked = checked
+            var label = document.createElement('label')
+            label.htmlFor = name;
+            label.appendChild(document.createTextNode(name));
+
+            div.appendChild(checkbox);
+            div.appendChild(label);
+
+            return div
+        }
+
+
+        function filterByShopNameS(shopNameArray) {
+
+            console.log('shopNameArray', shopNameArray);
+            const pins = shopData
+                .filter(pin => shopNameArray.includes(pin.company_name))
+                .map(pin => {
+                    const { property_latitude, property_longitude } = pin
+                    return {
+                        "type": "Feature", "properties": { ...pin, },
+                        "geometry": {
+                            "type": "Point", "coordinates": [+property_longitude, +property_latitude]
+                        }
+                    }
+                })
+            const featureCollection = turf.featureCollection(pins)
+            map.getSource("store").setData(featureCollection)
+        }
+
+
+
+
+
+        function autocomplete(inp, data, callback) {
+            var currentFocus;
+            /*execute a function when someone writes in the text field:*/
+
+            console.log('data', data);
+            inp.addEventListener("input", function (e) {
+                var a, b, i, val = this.value;
+                /*close any already open lists of autocompleted values*/
+                closeAllLists();
+                if (!val) { return false; }
+                currentFocus = -1;
+                /*create a DIV element that will contain the items (values):*/
+                a = document.createElement("DIV");
+                a.setAttribute("id", this.id + "autocomplete-list");
+                a.setAttribute("class", "autocomplete-items");
+                /*append the DIV element as a child of the autocomplete container:*/
+                this.parentNode.appendChild(a);
+
+                const arr = [...new Set(data.map(i => i.company_name))].map((i, key) => {
+                    return {
+                        index: key,
+                        text: `${i}`
+                    }
+                })
+
+                let counter = 0;
+
+                /*for each item in the array...*/
+                for (i = 0; i < arr.length; i++) {
+
+                    /*check if the item starts with the same letters as the text field value:*/
+
+                    const search = arr[i].text.toUpperCase().search(val.toUpperCase())
+                    if (search > -1) {
+                        /*create a DIV element for each matching element:*/
+                        b = document.createElement("DIV");
+                        /*make the matching letters bold:*/
+
+                        const text = arr[i].text.substr(0, search) + '<b>' + arr[i].text.substr(search, val.length) + '</b>' + arr[i].text.substr((search + val.length), arr[i].text.length)
+
+                        b.innerHTML = text
+                        /*insert a input field that will hold the current array item's value:*/
+                        b.innerHTML += "<input type='hidden' id=" + arr[i].index + " value='" + arr[i].text + "'>";
+                        /*execute a function when someone clicks on the item value (DIV element):*/
+                        b.addEventListener("click", function (e) {
+                            /*insert the value for the autocomplete text field:*/
+                            inp.value = this.getElementsByTagName("input")[0].value.replaceAll('<br>', ' ');
+                            const index = this.getElementsByTagName("input")[0].id;
+                            // /*close the list of autocompleted values,
+                            // (or any other open lists of autocompleted values:*/
+                            // closeAllLists();
+                            // const point = data[index]
+                            // selectPoint(point)
+                            if (typeof callback === 'function') {
+                                callback(inp.value)
+                            }
+                        });
+                        if (counter > 20) return; // display first 20 results
+                        a.appendChild(b);
+                        counter++;
+                    }
+                }
+            });
+            /*execute a function presses a key on the keyboard:*/
+            inp.addEventListener("keydown", function (e) {
+                var x = document.getElementById(this.id + "autocomplete-list");
+                if (x) x = x.getElementsByTagName("div");
+                if (e.keyCode == 40) {
+                    /*If the arrow DOWN key is pressed,
+                    increase the currentFocus variable:*/
+                    currentFocus++;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 38) { //up
+                    /*If the arrow UP key is pressed,
+                    decrease the currentFocus variable:*/
+                    currentFocus--;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 13) {
+                    /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                    e.preventDefault();
+                    if (currentFocus > -1) {
+                        /*and simulate a click on the "active" item:*/
+                        if (x) x[currentFocus].click();
+                    }
+                }
+            });
+            function addActive(x) {
+                /*a function to classify an item as "active":*/
+                if (!x) return false;
+                /*start by removing the "active" class on all items:*/
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                /*add class "autocomplete-active":*/
+                x[currentFocus].classList.add("autocomplete-active");
+            }
+            function removeActive(x) {
+                /*a function to remove the "active" class from all autocomplete items:*/
+                for (var i = 0; i < x.length; i++) {
+                    x[i].classList.remove("autocomplete-active");
+                }
+            }
+            function closeAllLists(elmnt) {
+                /*close all autocomplete lists in the document,
+                            except the one passed as an argument:*/
+                var x = document.getElementsByClassName("autocomplete-items");
+                for (var i = 0; i < x.length; i++) {
+                    if (elmnt != x[i] && elmnt != inp) {
+                        x[i].parentNode.removeChild(x[i]);
+                    }
+                }
+            }
+            /*execute a function when someone clicks in the document:*/
+            document.addEventListener("click", function (e) {
+                closeAllLists(e.target);
+            });
+        }
+
+    </script>
+
+</body>
+
+</html>
