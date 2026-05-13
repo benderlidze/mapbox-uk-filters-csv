@@ -81,11 +81,46 @@
 
         mapboxgl.accessToken = 'pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZXdpNDBieTUzanMyN2J3NW1sMHUifQ.m5BpgLHVufA0nzdFvCpTVg';
 
+        const DEFAULT_VIEW = {
+            lat: 54.12181638598531,
+            lng: -2.774533172216252,
+            zoom: 6
+        };
+
+        const parseQueryNumber = (value) => {
+            if (value === null || value === undefined) return null;
+            const normalized = String(value).trim().replace(',', '.');
+            if (!normalized) return null;
+            const parsed = Number(normalized);
+            return Number.isFinite(parsed) ? parsed : null;
+        };
+
+        const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+        const queryLat = parseQueryNumber(urlParams.get('lat'));
+        const queryLng = parseQueryNumber(urlParams.get('lng'));
+        const queryZoom = parseQueryNumber(urlParams.get('zoom'));
+
+        const hasValidCenter = queryLat !== null && queryLng !== null;
+        const initialCenter = hasValidCenter
+            ? {
+                lat: clamp(queryLat, -90, 90),
+                lng: clamp(queryLng, -180, 180)
+            }
+            : {
+                lat: DEFAULT_VIEW.lat,
+                lng: DEFAULT_VIEW.lng
+            };
+
+        const initialZoom = queryZoom !== null
+            ? clamp(queryZoom, 0, 22)
+            : DEFAULT_VIEW.zoom;
+
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/propertyadam/cmifz2fvw000a01r1hu4m6drw',
-            center: { lng: -2.774533172216252, lat: 54.12181638598531 },
-            zoom: 7
+            center: { lng: initialCenter.lng, lat: initialCenter.lat },
+            zoom: initialZoom
         });
 
         const getFirstValue = (obj, keys) => {
@@ -268,7 +303,7 @@
                 filter: ['!', ['has', 'point_count']],
                 paint: {
                     'circle-color': 'red',
-                    'circle-radius': 4,
+                    'circle-radius': ['step', ['zoom'], 4, 15, 8],
                     'circle-stroke-width': 1,
                     'circle-stroke-color': '#fff'
                 }
