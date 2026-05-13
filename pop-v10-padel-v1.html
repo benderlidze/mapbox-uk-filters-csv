@@ -886,6 +886,144 @@
         let showMostDeprived = false;
         let showLeastDeprived = false;
         const AREA_THRESHOLD = 0.10;
+        const PADEL_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT_akY4ZjU3mOq1mPhdVDh5d4dzXHmi5O8qgIf9BE8dwhP7O8Fn2D47zvkxhcNcFEnUoXTmQTybMXxS/pub?output=csv";
+        class PadelPinsLayer {
+            constructor(mapInstance, csvUrl, getCircle) {
+                this.map = mapInstance;
+                this.csvUrl = csvUrl;
+                this.getCircle = getCircle;
+                this.sourceId = 'padel-pins';
+                this.layerId = 'padel-pins';
+                this.pins = [];
+            }
+
+            init() {
+                if (!this.map.getSource(this.sourceId)) {
+                    this.map.addSource(this.sourceId, {
+                        type: 'geojson',
+                        data: this.emptyFeatureCollection()
+                    });
+                }
+
+                if (!this.map.getLayer(this.layerId)) {
+                    this.map.addLayer({
+                        id: this.layerId,
+                        type: 'circle',
+                        source: this.sourceId,
+                        paint: {
+                            'circle-color': '#e53935',
+                            'circle-radius': 5,
+                            'circle-stroke-width': 1,
+                            'circle-stroke-color': '#ffffff'
+                        }
+                    });
+                }
+
+                this.bindEvents();
+                this.load();
+            }
+
+            bindEvents() {
+                this.map.on('click', this.layerId, (e) => {
+                    const props = e.features[0].properties || {};
+                    const link = props.venueUrl
+                        ? `<a href="${props.venueUrl}" target="_blank" rel="noopener noreferrer">${props.slug || 'View venue'}</a>`
+                        : '';
+
+                    new mapboxgl.Popup()
+                        .setLngLat(e.lngLat)
+                        .setHTML(`<strong>${props.name || 'Venue'}</strong><br>${link}`)
+                        .addTo(this.map);
+
+                    e.originalEvent.cancelBubble = true;
+                });
+
+                this.map.on('mouseenter', this.layerId, () => {
+                    this.map.getCanvas().style.cursor = 'pointer';
+                });
+
+                this.map.on('mouseleave', this.layerId, () => {
+                    this.map.getCanvas().style.cursor = '';
+                });
+            }
+
+            load() {
+                d3.csv(this.csvUrl)
+                    .then(rows => {
+                        this.pins = rows.map(row => this.normalizeRow(row)).filter(Boolean);
+                        this.update();
+                    })
+                    .catch(err => console.error('Error loading padel CSV:', err));
+            }
+
+            update() {
+                const source = this.map.getSource(this.sourceId);
+                if (!source) return;
+
+                const circle = this.getCircle();
+                const visiblePins = this.pins.filter(pin => {
+                    if (!circle) return false;
+                    return turf.booleanPointInPolygon(
+                        turf.point([pin.lng, pin.lat]),
+                        circle
+                    );
+                });
+
+                source.setData({
+                    type: 'FeatureCollection',
+                    features: visiblePins.map(pin => this.toFeature(pin))
+                });
+            }
+
+            normalizeRow(row) {
+                const lat = this.toNumber(this.getFirstValue(row, ['address_lat', 'lat']));
+                const lng = this.toNumber(this.getFirstValue(row, ['address_lon', 'address_lng', 'lng']));
+                if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+                const name = this.getFirstValue(row, ['tenant_name', 'name', 'tenant_uid', 'slug']) || 'Venue';
+                const slug = this.getFirstValue(row, ['slug']);
+
+                return {
+                    name,
+                    slug,
+                    venueUrl: slug ? `https://padeldata.co.uk/venues/${slug}` : '',
+                    lat,
+                    lng
+                };
+            }
+
+            getFirstValue(obj, keys) {
+                for (const key of keys) {
+                    const value = obj[key];
+                    if (value !== undefined && value !== null && String(value).trim() !== '') {
+                        return String(value).trim();
+                    }
+                }
+                return '';
+            }
+
+            toNumber(value) {
+                const parsed = Number(String(value ?? '').replace(',', '.'));
+                return Number.isFinite(parsed) ? parsed : null;
+            }
+
+            toFeature(pin) {
+                return {
+                    type: 'Feature',
+                    properties: pin,
+                    geometry: {
+                        type: 'Point',
+                        coordinates: [pin.lng, pin.lat]
+                    }
+                };
+            }
+
+            emptyFeatureCollection() {
+                return { type: 'FeatureCollection', features: [] };
+            }
+        }
+
+        const padelPinsLayer = new PadelPinsLayer(map, PADEL_CSV_URL, () => currentCircle);
 
         const geocoder = new MapboxGeocoder({
             accessToken: mapboxgl.accessToken,
@@ -906,6 +1044,11 @@
                 currentCenter = center;
                 debouncedUpdate();
             }
+        });
+
+        geocoder.on('clear', () => {
+            currentCenter = null;
+            updateCircleGeometry();
         });
 
         const slider = document.getElementById('radius-slider');
@@ -1005,6 +1148,7 @@
                 currentCircle = null;
                 selectedLSOAs = [];
                 updateSelection();
+                padelPinsLayer.update();
                 return;
             }
 
@@ -1031,6 +1175,8 @@
                     }
                 });
             }
+
+            padelPinsLayer.update();
         }
 
         function selectFeaturesInCircle() {
@@ -1298,6 +1444,7 @@
                 map.removeSource('radius');
             }
             currentCircle = null;
+            padelPinsLayer.update();
 
             // Clear selections and UI values
             selectedLSOAs = [];
@@ -1508,6 +1655,7 @@
                 },
                 filter: ['in', ['get', 'LSOA21CD'], ['literal', []]]
             });
+            padelPinsLayer.init();
 
             // Add traffic source and layer
             map.addSource('traffic', {
