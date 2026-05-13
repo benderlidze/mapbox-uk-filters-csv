@@ -88,6 +88,99 @@
             zoom: 7
         });
 
+        const getFirstValue = (obj, keys) => {
+            for (const key of keys) {
+                if (obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== '') {
+                    return String(obj[key]).trim();
+                }
+            }
+            return '';
+        };
+
+        const toNumber = (value) => {
+            const parsed = Number(String(value ?? '').replace(',', '.'));
+            return Number.isFinite(parsed) ? parsed : null;
+        };
+
+        const toSearchValue = (value) => String(value ?? '').trim().toLowerCase();
+
+        const buildAddress = (row) => {
+            const parts = [
+                getFirstValue(row, ['address_street']),
+                getFirstValue(row, ['address_city']),
+                getFirstValue(row, ['address_postal_code']),
+                getFirstValue(row, ['address_sub_administrative_area']),
+                getFirstValue(row, ['address_administrative_area'])
+            ].filter(Boolean);
+            return parts.join(', ');
+        };
+
+        const buildDescription = (row) => {
+            const items = [];
+            const courts = getFirstValue(row, ['total_padel_courts', 'double_courts']);
+            const weekdayPeak = getFirstValue(row, ['weekday_peak_price']);
+            const weekdayOffpeak = getFirstValue(row, ['weekday_offpeak_price']);
+            const weekend = getFirstValue(row, ['weekend_price']);
+            const bookingType = getFirstValue(row, ['booking_type']);
+
+            if (courts) items.push(`Courts: ${courts}`);
+            if (weekdayOffpeak) items.push(`Weekday off-peak: ${weekdayOffpeak}`);
+            if (weekdayPeak) items.push(`Weekday peak: ${weekdayPeak}`);
+            if (weekend) items.push(`Weekend: ${weekend}`);
+            if (bookingType) items.push(`Booking: ${bookingType}`);
+
+            return items.join(' | ');
+        };
+
+        const normalizeRow = (row) => {
+            const lat = toNumber(getFirstValue(row, ['address_lat', 'lat']));
+            const lng = toNumber(getFirstValue(row, ['address_lon', 'address_lng', 'lng']));
+            const city = getFirstValue(row, ['address_city', 'city', 'address']);
+            const address = getFirstValue(row, ['address', 'Address']) || buildAddress(row) || city;
+            const name = getFirstValue(row, ['tenant_name', 'name', 'tenant_uid', 'slug']);
+            const slug = getFirstValue(row, ['slug']);
+            const venueUrl = slug ? `https://padeldata.co.uk/venues/${slug}` : '';
+            const website = getFirstValue(row, ['website_url', 'Website (fixed)', 'Planning permisson link', 'Flyer link new']);
+            const description = getFirstValue(row, ['details_page_description', 'description', 'Notes on lease']) || buildDescription(row);
+
+            return {
+                ...row,
+                name,
+                slug,
+                city,
+                address,
+                lat,
+                lng,
+                venueUrl,
+                website,
+                description,
+                searchTown: city || address
+            };
+        };
+
+        const toFeature = (pin) => {
+            if (!Number.isFinite(pin.lng) || !Number.isFinite(pin.lat)) return null;
+            return {
+                "type": "Feature",
+                "properties": { ...pin },
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [pin.lng, pin.lat]
+                }
+            };
+        };
+
+        const buildFeatureCollection = (pins) => {
+            const features = pins.map(toFeature).filter(Boolean);
+            return turf.featureCollection(features);
+        };
+
+        const setMapData = (pins) => {
+            const featureCollection = buildFeatureCollection(pins);
+            map.getSource("traffic").setData(featureCollection);
+            return featureCollection;
+        };
+
         // --------------------- MODAL -----------------
         copy.addEventListener("click", () => {
             try {
@@ -185,34 +278,23 @@
             d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vT_akY4ZjU3mOq1mPhdVDh5d4dzXHmi5O8qgIf9BE8dwhP7O8Fn2D47zvkxhcNcFEnUoXTmQTybMXxS/pub?output=csv")
                 .then(json => {
                     const data = json
+                        .map(normalizeRow)
+                        .filter(pin => Number.isFinite(pin.lat) && Number.isFinite(pin.lng));
                     console.log('Store', data);
 
                     shopData.push(...data);
 
-                    autocomplete(input, [...new Set(data.map(i => i.address.toLowerCase()))].map((i, key) => ({
+                    autocomplete(input, [...new Set(data.map(i => toSearchValue(i.searchTown)).filter(Boolean))].map((i, key) => ({
                         index: key,
                         text: `${i}`
                     })), setShops);
 
-                    autocomplete(inputRetailer, [...new Set(data.map(i => i.name.toLowerCase()))].map((i, key) => ({
+                    autocomplete(inputRetailer, [...new Set(data.map(i => toSearchValue(i.name)).filter(Boolean))].map((i, key) => ({
                         index: key,
                         text: `${i}`
                     })), setByRetailerName);
 
-                    const pins = data.map(pin => {
-
-                        return {
-                            "type": "Feature",
-                            "properties": { ...pin },
-                            "geometry": {
-                                "type": "Point",
-                                "coordinates": [+pin.address_lng, +pin.address_lat]
-                            }
-                        };
-                    });
-
-                    const featureCollection = turf.featureCollection(pins);
-                    map.getSource("traffic").setData(featureCollection);
+                    const featureCollection = setMapData(data);
                     console.log('featureCollection', featureCollection);
                 });
 
@@ -226,7 +308,7 @@
                 clusterSource.getClusterLeaves(clusterId, point_count, 0, function (err, features) {
                     printBrands(features);
 
-                    const cities = [...new Set(features.map(i => i.properties.address))].join("<br>");
+                    const cities = [...new Set(features.map(i => i.properties.city || i.properties.address).filter(Boolean))].join("<br>");
                     new mapboxgl.Popup()
                         .setLngLat(e.lngLat)
                         .setHTML(cities)
@@ -242,7 +324,12 @@
             });
 
             map.on('click', 'traffic', (e) => {
-                const description = e.features[0].properties.address;
+                const properties = e.features[0].properties;
+                const description = `
+                    <strong>${properties.name || 'Location'}</strong><br>
+                    ${properties.address || properties.city || ''}<br>
+                    ${properties.venueUrl ? `<a href="${properties.venueUrl}" target="_blank" rel="noopener noreferrer">View Venue</a>` : ''}
+                `;
                 new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
                     .setHTML(description)
@@ -261,21 +348,7 @@
         const clearInput = () => {
             input.value = '';
             inputRetailer.value = '';
-
-            const pins = shopData.map(pin => {
-                const { lat, lng } = pin;
-                return {
-                    "type": "Feature",
-                    "properties": { ...pin },
-                    "geometry": {
-                        "type": "Point",
-                        "coordinates": [+lng, +lat]
-                    }
-                };
-            });
-
-            const featureCollection = turf.featureCollection(pins);
-            map.getSource("traffic").setData(featureCollection);
+            setMapData(shopData);
             shopList.innerHTML = '';
             exportResults.style.display = 'none';
         };
@@ -285,19 +358,12 @@
 
         const setShops = (name) => {
             const pins = shopData
-                .filter(pin => pin.address.toLowerCase() === name)
-                .map(pin => ({
-                    "type": "Feature",
-                    "properties": { ...pin },
-                    "geometry": {
-                        "type": "Point",
-                        "coordinates": [+pin.lng, +pin.lat]
-                    }
-                }));
+                .filter(pin => toSearchValue(pin.searchTown) === toSearchValue(name));
 
-            const featureCollection = turf.featureCollection(pins);
-            map.getSource("traffic").setData(featureCollection);
-            printBrands(pins);
+            if (!pins.length) return;
+
+            const featureCollection = setMapData(pins);
+            printBrands(pins.map(toFeature).filter(Boolean));
 
             const center = turf.center(featureCollection);
             map.setCenter(center.geometry.coordinates);
@@ -305,19 +371,12 @@
 
         const setByRetailerName = (name) => {
             const pins = shopData
-                .filter(pin => pin.name.toLowerCase() === name.toLowerCase())
-                .map(pin => ({
-                    "type": "Feature",
-                    "properties": { ...pin },
-                    "geometry": {
-                        "type": "Point",
-                        "coordinates": [+pin.lng, +pin.lat]
-                    }
-                }));
+                .filter(pin => toSearchValue(pin.name) === toSearchValue(name));
 
-            const featureCollection = turf.featureCollection(pins);
-            map.getSource("traffic").setData(featureCollection);
-            printBrands(pins);
+            if (!pins.length) return;
+
+            const featureCollection = setMapData(pins);
+            printBrands(pins.map(toFeature).filter(Boolean));
 
             const center = turf.center(featureCollection);
             map.setCenter(center.geometry.coordinates);
@@ -326,37 +385,38 @@
         const printBrands = (list) => {
             const results = [];
             list.forEach(pin => {
-                const { name, description } = pin.properties;
-                const website = pin.properties['Flyer link new'];
+                const { name, description, address, website, venueUrl } = pin.properties;
                 results.push(`
                     <div class="list-item">
                         <div class="list-item-header">
                             <h3 class="list-item-name">${name}</h3>
                         </div>
+                        ${address ? `<p class="list-item-description">${address}</p>` : ''}
                         ${description ? `<p class="list-item-description">${description}</p>` : ''}
-                        <div class="list-item-footer">
-                            <a href="${website}" class="web-link" target="_blank">📄 View Flyer</a>
-                        </div>
+                        ${venueUrl ? `<div class="list-item-footer"><a href="${venueUrl}" class="web-link" target="_blank" rel="noopener noreferrer">View Venue</a></div>` : ''}
+                        ${website ? `<div class="list-item-footer"><a href="${website}" class="web-link" target="_blank">View Website</a></div>` : ''}
                     </div>
                 `);
             });
 
             shopList.innerHTML = results.join("");
 
-            const cities = [...new Set(list.map(i => i.properties.address.trim()))].join(", ");
+            const cities = [...new Set(list.map(i => i.properties.city || i.properties.address).filter(Boolean))].join(", ");
             let table = `<tr>
                 <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Name</th>
-                <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Description</th>
+                <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">City</th>
+                <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Address</th>
             </tr>`;
 
             let index = 1;
             list.forEach(pin => {
-                const { name, description } = pin.properties;
+                const { name, city, address } = pin.properties;
                 index++;
                 const style = (index % 2 === 0) ? 'style="background-color: #dddddd;"' : "";
                 table += `<tr ${style}>
                     <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${name}</td>
-                    <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${description}</td>
+                    <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${city || ''}</td>
+                    <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${address || ''}</td>
                 </tr>`;
             });
 
@@ -451,3 +511,4 @@
 </body>
 
 </html>
+
