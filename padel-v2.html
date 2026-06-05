@@ -14,6 +14,100 @@
     <script src="js/shp.js"></script>
     <link href="css/toggle.css" rel="stylesheet">
     <link href="css/main.css" rel="stylesheet">
+    <style>
+        #admin-panel {
+            display: none;
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        #admin-panel h2 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            line-height: 1.2;
+        }
+
+        #admin-columns {
+            max-height: 90px;
+            overflow: auto;
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #d7d7d7;
+            border-radius: 4px;
+            background: #f8f8f8;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .admin-filter-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 6px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ececec;
+        }
+
+        .admin-filter-row select,
+        .admin-filter-row input,
+        #admin-slugs-output,
+        #admin-link-output {
+            box-sizing: border-box;
+            width: 100%;
+            border: 1px solid #cfcfcf;
+            border-radius: 4px;
+            padding: 7px;
+            font-size: 12px;
+        }
+
+        .admin-filter-actions,
+        .admin-output-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .admin-button {
+            border: 1px solid #bdbdbd;
+            border-radius: 4px;
+            background: #ffffff;
+            padding: 7px 9px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .admin-button.primary {
+            border-color: #111111;
+            background: #111111;
+            color: #ffffff;
+        }
+
+        #admin-summary {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .admin-output-label {
+            display: block;
+            margin: 8px 0 4px 0;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        #admin-slugs-output,
+        #admin-link-output {
+            min-height: 80px;
+            resize: vertical;
+            font-family: Consolas, monospace;
+        }
+
+        #admin-link-output {
+            min-height: 56px;
+        }
+    </style>
 </head>
 
 <body>
@@ -44,6 +138,25 @@
                     placeholder="Search by retailer name">
             </div>
         </div>
+        <div id="admin-panel">
+            <h2>CSV filters</h2>
+            <div id="admin-columns"></div>
+            <div id="admin-filter-rows"></div>
+            <div class="admin-filter-actions">
+                <button type="button" class="admin-button" id="admin-add-filter">Add filter</button>
+                <button type="button" class="admin-button" id="admin-clear-filters">Clear</button>
+                <button type="button" class="admin-button primary" id="admin-apply-filters">Apply</button>
+            </div>
+            <p id="admin-summary"></p>
+            <label class="admin-output-label" for="admin-slugs-output">Slug list</label>
+            <textarea id="admin-slugs-output" readonly></textarea>
+            <label class="admin-output-label" for="admin-link-output">Map link</label>
+            <textarea id="admin-link-output" readonly></textarea>
+            <div class="admin-output-actions">
+                <button type="button" class="admin-button primary" id="admin-copy-link">Copy link</button>
+                <button type="button" class="admin-button" id="admin-copy-slugs">Copy slugs</button>
+            </div>
+        </div>
         <div class="item-header" style="display: none;">
             <span id="exportResults">Export results</span>
         </div>
@@ -59,7 +172,8 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const filterURL = urlParams.get('filter');
-        if (filterURL && filterURL !== "") {
+        const isAdmin = ['1', 'true', 'yes'].includes(String(urlParams.get('admin') || '').trim().toLowerCase());
+        if (filterURL && filterURL !== "" && !isAdmin) {
             filtersDiv.style.display = 'none';
         }
 
@@ -70,6 +184,7 @@
         const clearRetailer = document.getElementById("clear-retailer");
         const shopList = document.getElementById("prop-list");
         const shopData = [];
+        let csvColumns = [];
 
         const copy = document.getElementById('copytoclipboard');
         const exportResults = document.getElementById('exportResults');
@@ -78,6 +193,27 @@
         const modal = document.getElementById("myModal");
         const closeModal = document.getElementById("closeModal");
         const resultsDiv = document.getElementById("results");
+        const adminPanel = document.getElementById("admin-panel");
+        const adminColumns = document.getElementById("admin-columns");
+        const adminFilterRows = document.getElementById("admin-filter-rows");
+        const adminAddFilter = document.getElementById("admin-add-filter");
+        const adminClearFilters = document.getElementById("admin-clear-filters");
+        const adminApplyFilters = document.getElementById("admin-apply-filters");
+        const adminSummary = document.getElementById("admin-summary");
+        const adminSlugsOutput = document.getElementById("admin-slugs-output");
+        const adminLinkOutput = document.getElementById("admin-link-output");
+        const adminCopyLink = document.getElementById("admin-copy-link");
+        const adminCopySlugs = document.getElementById("admin-copy-slugs");
+
+        const SLUG_COLUMN = 'slug';
+        const normalizeSlugValue = (value) => String(value ?? '').trim().toLowerCase();
+        const urlSlugList = String(urlParams.get('id') || urlParams.get('ids') || '');
+        const urlSlugSet = new Set(urlSlugList
+            .split(',')
+            .map(normalizeSlugValue)
+            .filter(Boolean));
+
+        const hasUrlSlugs = urlSlugSet.size > 0;
 
         mapboxgl.accessToken = 'pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZXdpNDBieTUzanMyN2J3NW1sMHUifQ.m5BpgLHVufA0nzdFvCpTVg';
 
@@ -139,6 +275,20 @@
 
         const toSearchValue = (value) => String(value ?? '').trim().toLowerCase();
 
+        const escapeHtml = (value) => String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+
+        const getPinSlug = (pin) => getFirstValue(pin, [SLUG_COLUMN]);
+
+        const filterPinsByUrlSlugs = (pins) => {
+            if (!hasUrlSlugs) return pins;
+            return pins.filter(pin => urlSlugSet.has(normalizeSlugValue(getPinSlug(pin))));
+        };
+
         const buildAddress = (row) => {
             const parts = [
                 getFirstValue(row, ['address_street']),
@@ -180,6 +330,7 @@
 
             return {
                 ...row,
+                uuid: slug,
                 name,
                 slug,
                 city,
@@ -214,6 +365,193 @@
             const featureCollection = buildFeatureCollection(pins);
             map.getSource("traffic").setData(featureCollection);
             return featureCollection;
+        };
+
+        const focusPins = (pins) => {
+            const features = pins.map(toFeature).filter(Boolean);
+            if (!features.length) return;
+
+            if (features.length === 1) {
+                map.flyTo({
+                    center: features[0].geometry.coordinates,
+                    zoom: Math.max(map.getZoom(), 12)
+                });
+                return;
+            }
+
+            const bounds = features.reduce((mapBounds, feature) => {
+                return mapBounds.extend(feature.geometry.coordinates);
+            }, new mapboxgl.LngLatBounds(features[0].geometry.coordinates, features[0].geometry.coordinates));
+
+            map.fitBounds(bounds, {
+                padding: 60,
+                maxZoom: 13
+            });
+        };
+
+        const renderPins = (pins, options = {}) => {
+            const featureCollection = setMapData(pins);
+
+            if (options.updateList) {
+                const features = pins.map(toFeature).filter(Boolean);
+                if (features.length) {
+                    printBrands(features);
+                } else {
+                    shopList.innerHTML = '';
+                    resultsDiv.innerHTML = '';
+                    exportResults.style.display = 'none';
+                }
+            }
+
+            updateAdminOutput(pins);
+
+            if (options.focus) {
+                focusPins(pins);
+            }
+
+            return featureCollection;
+        };
+
+        const getAdminFilterValues = () => {
+            return [...adminFilterRows.querySelectorAll('.admin-filter-row')]
+                .map(row => {
+                    const column = row.querySelector('.admin-column-select').value;
+                    const operator = row.querySelector('.admin-operator-select').value;
+                    const value = row.querySelector('.admin-filter-value').value;
+                    return { column, operator, value };
+                })
+                .filter(filter => filter.column && (filter.operator === 'empty' || filter.operator === 'not-empty' || String(filter.value).trim() !== ''));
+        };
+
+        const matchesAdminFilter = (pin, filter) => {
+            const rawValue = pin[filter.column];
+            const value = toSearchValue(rawValue);
+            const filterValue = toSearchValue(filter.value);
+
+            if (filter.operator === 'equals') return value === filterValue;
+            if (filter.operator === 'not-equals') return value !== filterValue;
+            if (filter.operator === 'empty') return value === '';
+            if (filter.operator === 'not-empty') return value !== '';
+            return value.includes(filterValue);
+        };
+
+        const getAdminFilteredPins = () => {
+            const filters = getAdminFilterValues();
+            if (!filters.length) return shopData;
+            return shopData.filter(pin => filters.every(filter => matchesAdminFilter(pin, filter)));
+        };
+
+        const applyAdminFilters = () => {
+            const hasFilters = getAdminFilterValues().length > 0;
+            const pins = getAdminFilteredPins();
+            input.value = '';
+            inputRetailer.value = '';
+            renderPins(pins, { updateList: hasFilters, focus: true });
+            if (!hasFilters) {
+                shopList.innerHTML = '';
+                exportResults.style.display = 'none';
+            }
+        };
+
+        const updateAdminOutput = (pins) => {
+            if (!isAdmin || !adminSlugsOutput || !adminLinkOutput) return;
+
+            const slugs = pins
+                .map(getPinSlug)
+                .filter(Boolean);
+            const uniqueSlugs = [...new Set(slugs)];
+            const pageName = window.location.pathname.split('/').pop() || 'padel-v2.html';
+
+            adminSlugsOutput.value = uniqueSlugs.join(',');
+            adminLinkOutput.value = `${pageName}?id=${encodeURIComponent(uniqueSlugs.join(','))}`;
+            adminSummary.textContent = `${pins.length} matching rows. ${uniqueSlugs.length} slugs from "${SLUG_COLUMN}".`;
+        };
+
+        const createAdminFilterRow = (selectedColumn = '') => {
+            const row = document.createElement('div');
+            row.className = 'admin-filter-row';
+
+            const columnSelect = document.createElement('select');
+            columnSelect.className = 'admin-column-select';
+            csvColumns.forEach(column => {
+                const option = document.createElement('option');
+                option.value = column;
+                option.textContent = column;
+                columnSelect.appendChild(option);
+            });
+            if (selectedColumn) columnSelect.value = selectedColumn;
+
+            const operatorSelect = document.createElement('select');
+            operatorSelect.className = 'admin-operator-select';
+            [
+                ['contains', 'contains'],
+                ['equals', 'equals'],
+                ['not-equals', 'does not equal'],
+                ['not-empty', 'is not empty'],
+                ['empty', 'is empty']
+            ].forEach(([value, text]) => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = text;
+                operatorSelect.appendChild(option);
+            });
+
+            const valueInput = document.createElement('input');
+            valueInput.className = 'admin-filter-value';
+            valueInput.type = 'text';
+            valueInput.placeholder = 'Value';
+            valueInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') applyAdminFilters();
+            });
+
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.className = 'admin-button';
+            removeButton.textContent = 'Remove filter';
+            removeButton.addEventListener('click', () => {
+                row.remove();
+                applyAdminFilters();
+            });
+
+            row.appendChild(columnSelect);
+            row.appendChild(operatorSelect);
+            row.appendChild(valueInput);
+            row.appendChild(removeButton);
+            adminFilterRows.appendChild(row);
+        };
+
+        const setupAdminPanel = (pins, columns) => {
+            if (!isAdmin || !adminPanel) return;
+
+            const defaultAdminColumn = columns.includes(SLUG_COLUMN) ? SLUG_COLUMN : columns[0] || '';
+
+            adminPanel.style.display = 'block';
+            adminColumns.innerHTML = columns.map(column => escapeHtml(column)).join('<br>');
+            adminFilterRows.innerHTML = '';
+            createAdminFilterRow(defaultAdminColumn);
+            updateAdminOutput(pins);
+
+            adminAddFilter.addEventListener('click', () => createAdminFilterRow(defaultAdminColumn));
+            adminApplyFilters.addEventListener('click', applyAdminFilters);
+            adminClearFilters.addEventListener('click', () => {
+                adminFilterRows.innerHTML = '';
+                createAdminFilterRow(defaultAdminColumn);
+                renderPins(shopData, { focus: true });
+                shopList.innerHTML = '';
+                exportResults.style.display = 'none';
+            });
+            adminCopyLink.addEventListener('click', () => {
+                adminLinkOutput.select();
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(adminLinkOutput.value).catch(() => { });
+                }
+            });
+            adminCopySlugs.addEventListener('click', () => {
+                adminSlugsOutput.select();
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(adminSlugsOutput.value).catch(() => { });
+                }
+            });
         };
 
         // --------------------- MODAL -----------------
@@ -312,9 +650,12 @@
             // ✅ Load CSV data AFTER source is added
             d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vT_akY4ZjU3mOq1mPhdVDh5d4dzXHmi5O8qgIf9BE8dwhP7O8Fn2D47zvkxhcNcFEnUoXTmQTybMXxS/pub?output=csv")
                 .then(json => {
-                    const data = json
+                    csvColumns = json.columns || Object.keys(json[0] || {});
+
+                    const normalizedData = json
                         .map(normalizeRow)
                         .filter(pin => Number.isFinite(pin.lat) && Number.isFinite(pin.lng));
+                    const data = filterPinsByUrlSlugs(normalizedData);
                     console.log('Store', data);
 
                     shopData.push(...data);
@@ -329,7 +670,12 @@
                         text: `${i}`
                     })), setByRetailerName);
 
-                    const featureCollection = setMapData(data);
+                    setupAdminPanel(data, csvColumns);
+
+                    const featureCollection = renderPins(data, {
+                        updateList: hasUrlSlugs,
+                        focus: hasUrlSlugs
+                    });
                     console.log('featureCollection', featureCollection);
                 });
 
@@ -343,7 +689,9 @@
                 clusterSource.getClusterLeaves(clusterId, point_count, 0, function (err, features) {
                     printBrands(features);
 
-                    const cities = [...new Set(features.map(i => i.properties.city || i.properties.address).filter(Boolean))].join("<br>");
+                    const cities = [...new Set(features.map(i => i.properties.city || i.properties.address).filter(Boolean))]
+                        .map(escapeHtml)
+                        .join("<br>");
                     new mapboxgl.Popup()
                         .setLngLat(e.lngLat)
                         .setHTML(cities)
@@ -360,10 +708,12 @@
 
             map.on('click', 'traffic', (e) => {
                 const properties = e.features[0].properties;
+                const slug = getPinSlug(properties);
                 const description = `
-                    <strong>${properties.name || 'Location'}</strong><br>
-                    ${properties.address || properties.city || ''}<br>
-                    ${properties.venueUrl ? `<a href="${properties.venueUrl}" target="_blank" rel="noopener noreferrer">View Venue</a>` : ''}
+                    <strong>${escapeHtml(properties.name || 'Location')}</strong><br>
+                    ${slug ? `Slug: ${escapeHtml(slug)}<br>` : ''}
+                    ${escapeHtml(properties.address || properties.city || '')}<br>
+                    ${properties.venueUrl ? `<a href="${escapeHtml(properties.venueUrl)}" target="_blank" rel="noopener noreferrer">View Venue</a>` : ''}
                 `;
                 new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
@@ -383,7 +733,7 @@
         const clearInput = () => {
             input.value = '';
             inputRetailer.value = '';
-            setMapData(shopData);
+            renderPins(isAdmin ? getAdminFilteredPins() : shopData);
             shopList.innerHTML = '';
             exportResults.style.display = 'none';
         };
@@ -392,44 +742,40 @@
         clearRetailer.addEventListener("click", clearInput);
 
         const setShops = (name) => {
-            const pins = shopData
+            const sourcePins = isAdmin ? getAdminFilteredPins() : shopData;
+            const pins = sourcePins
                 .filter(pin => toSearchValue(pin.searchTown) === toSearchValue(name));
 
             if (!pins.length) return;
 
-            const featureCollection = setMapData(pins);
-            printBrands(pins.map(toFeature).filter(Boolean));
-
-            const center = turf.center(featureCollection);
-            map.setCenter(center.geometry.coordinates);
+            renderPins(pins, { updateList: true, focus: true });
         };
 
         const setByRetailerName = (name) => {
-            const pins = shopData
+            const sourcePins = isAdmin ? getAdminFilteredPins() : shopData;
+            const pins = sourcePins
                 .filter(pin => toSearchValue(pin.name) === toSearchValue(name));
 
             if (!pins.length) return;
 
-            const featureCollection = setMapData(pins);
-            printBrands(pins.map(toFeature).filter(Boolean));
-
-            const center = turf.center(featureCollection);
-            map.setCenter(center.geometry.coordinates);
+            renderPins(pins, { updateList: true, focus: true });
         };
 
         const printBrands = (list) => {
             const results = [];
             list.forEach(pin => {
                 const { name, description, address, website, venueUrl } = pin.properties;
+                const slug = getPinSlug(pin.properties);
                 results.push(`
                     <div class="list-item">
                         <div class="list-item-header">
-                            <h3 class="list-item-name">${name}</h3>
+                            <h3 class="list-item-name">${escapeHtml(name)}</h3>
                         </div>
-                        ${address ? `<p class="list-item-description">${address}</p>` : ''}
-                        ${description ? `<p class="list-item-description">${description}</p>` : ''}
-                        ${venueUrl ? `<div class="list-item-footer"><a href="${venueUrl}" class="web-link" target="_blank" rel="noopener noreferrer">View Venue</a></div>` : ''}
-                        ${website ? `<div class="list-item-footer"><a href="${website}" class="web-link" target="_blank">View Website</a></div>` : ''}
+                        ${slug ? `<p class="list-item-description">Slug: ${escapeHtml(slug)}</p>` : ''}
+                        ${address ? `<p class="list-item-description">${escapeHtml(address)}</p>` : ''}
+                        ${description ? `<p class="list-item-description">${escapeHtml(description)}</p>` : ''}
+                        ${venueUrl ? `<div class="list-item-footer"><a href="${escapeHtml(venueUrl)}" class="web-link" target="_blank" rel="noopener noreferrer">View Venue</a></div>` : ''}
+                        ${website ? `<div class="list-item-footer"><a href="${escapeHtml(website)}" class="web-link" target="_blank">View Website</a></div>` : ''}
                     </div>
                 `);
             });
@@ -438,6 +784,7 @@
 
             const cities = [...new Set(list.map(i => i.properties.city || i.properties.address).filter(Boolean))].join(", ");
             let table = `<tr>
+                <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Slug</th>
                 <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Name</th>
                 <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">City</th>
                 <th style="border: 1px solid #dddddd;text-align: left;padding: 8px;">Address</th>
@@ -446,17 +793,19 @@
             let index = 1;
             list.forEach(pin => {
                 const { name, city, address } = pin.properties;
+                const slug = getPinSlug(pin.properties);
                 index++;
                 const style = (index % 2 === 0) ? 'style="background-color: #dddddd;"' : "";
                 table += `<tr ${style}>
-                    <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${name}</td>
-                    <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${city || ''}</td>
-                    <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${address || ''}</td>
+                    <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${escapeHtml(slug)}</td>
+                    <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${escapeHtml(name)}</td>
+                    <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${escapeHtml(city || '')}</td>
+                    <td style="border: 1px solid #dddddd;text-align: left;padding: 8px;">${escapeHtml(address || '')}</td>
                 </tr>`;
             });
 
             modalText = `
-                <h3>Requirements for ${cities}</h3>
+                <h3>Requirements for ${escapeHtml(cities)}</h3>
                 <table style="border-collapse: collapse; width: 100%;">
                     ${table}
                 </table>`;
