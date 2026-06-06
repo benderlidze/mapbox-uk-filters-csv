@@ -28,18 +28,6 @@
             line-height: 1.2;
         }
 
-        #admin-columns {
-            max-height: 90px;
-            overflow: auto;
-            margin-bottom: 10px;
-            padding: 8px;
-            border: 1px solid #d7d7d7;
-            border-radius: 4px;
-            background: #f8f8f8;
-            font-size: 12px;
-            line-height: 1.45;
-        }
-
         .admin-filter-row {
             display: grid;
             grid-template-columns: 1fr;
@@ -139,11 +127,9 @@
             </div>
         </div>
         <div id="admin-panel">
-            <h2>CSV filters</h2>
-            <div id="admin-columns"></div>
+            <h2>Parent company filter</h2>
             <div id="admin-filter-rows"></div>
             <div class="admin-filter-actions">
-                <button type="button" class="admin-button" id="admin-add-filter">Add filter</button>
                 <button type="button" class="admin-button" id="admin-clear-filters">Clear</button>
                 <button type="button" class="admin-button primary" id="admin-apply-filters">Apply</button>
             </div>
@@ -184,7 +170,6 @@
         const clearRetailer = document.getElementById("clear-retailer");
         const shopList = document.getElementById("prop-list");
         const shopData = [];
-        let csvColumns = [];
 
         const copy = document.getElementById('copytoclipboard');
         const exportResults = document.getElementById('exportResults');
@@ -194,9 +179,7 @@
         const closeModal = document.getElementById("closeModal");
         const resultsDiv = document.getElementById("results");
         const adminPanel = document.getElementById("admin-panel");
-        const adminColumns = document.getElementById("admin-columns");
         const adminFilterRows = document.getElementById("admin-filter-rows");
-        const adminAddFilter = document.getElementById("admin-add-filter");
         const adminClearFilters = document.getElementById("admin-clear-filters");
         const adminApplyFilters = document.getElementById("admin-apply-filters");
         const adminSummary = document.getElementById("admin-summary");
@@ -206,6 +189,7 @@
         const adminCopySlugs = document.getElementById("admin-copy-slugs");
 
         const SLUG_COLUMN = 'slug';
+        const PARENT_COMPANY_COLUMN = 'parent_company';
         const normalizeSlugValue = (value) => String(value ?? '').trim().toLowerCase();
         const urlSlugList = String(urlParams.get('id') || urlParams.get('ids') || '');
         const urlSlugSet = new Set(urlSlugList
@@ -413,14 +397,10 @@
         };
 
         const getAdminFilterValues = () => {
-            return [...adminFilterRows.querySelectorAll('.admin-filter-row')]
-                .map(row => {
-                    const column = row.querySelector('.admin-column-select').value;
-                    const operator = row.querySelector('.admin-operator-select').value;
-                    const value = row.querySelector('.admin-filter-value').value;
-                    return { column, operator, value };
-                })
-                .filter(filter => filter.column && (filter.operator === 'empty' || filter.operator === 'not-empty' || String(filter.value).trim() !== ''));
+            const valueInput = adminFilterRows.querySelector('.admin-filter-value');
+            const value = valueInput ? valueInput.value : '';
+            if (String(value).trim() === '') return [];
+            return [{ column: PARENT_COMPANY_COLUMN, operator: 'equals', value }];
         };
 
         const matchesAdminFilter = (pin, filter) => {
@@ -429,10 +409,7 @@
             const filterValue = toSearchValue(filter.value);
 
             if (filter.operator === 'equals') return value === filterValue;
-            if (filter.operator === 'not-equals') return value !== filterValue;
-            if (filter.operator === 'empty') return value === '';
-            if (filter.operator === 'not-empty') return value !== '';
-            return value.includes(filterValue);
+            return false;
         };
 
         const getAdminFilteredPins = () => {
@@ -467,75 +444,57 @@
             adminSummary.textContent = `${pins.length} matching rows. ${uniqueSlugs.length} slugs from "${SLUG_COLUMN}".`;
         };
 
-        const createAdminFilterRow = (selectedColumn = '') => {
+        const getUniqueParentCompanies = (pins) => {
+            const companies = pins
+                .map(pin => getFirstValue(pin, [PARENT_COMPANY_COLUMN]))
+                .filter(Boolean);
+            return [...new Set(companies)].sort((a, b) => a.localeCompare(b));
+        };
+
+        const createAdminFilterRow = (pins) => {
             const row = document.createElement('div');
             row.className = 'admin-filter-row';
 
-            const columnSelect = document.createElement('select');
-            columnSelect.className = 'admin-column-select';
-            csvColumns.forEach(column => {
+            const valueLabel = document.createElement('label');
+            valueLabel.className = 'admin-output-label';
+            valueLabel.htmlFor = 'admin-parent-company-value';
+            valueLabel.textContent = 'Parent company';
+
+            const valueSelect = document.createElement('select');
+            valueSelect.id = 'admin-parent-company-value';
+            valueSelect.className = 'admin-filter-value';
+
+            const emptyOption = document.createElement('option');
+            emptyOption.value = '';
+            emptyOption.textContent = 'Select parent_company';
+            valueSelect.appendChild(emptyOption);
+
+            getUniqueParentCompanies(pins).forEach(company => {
                 const option = document.createElement('option');
-                option.value = column;
-                option.textContent = column;
-                columnSelect.appendChild(option);
-            });
-            if (selectedColumn) columnSelect.value = selectedColumn;
-
-            const operatorSelect = document.createElement('select');
-            operatorSelect.className = 'admin-operator-select';
-            [
-                ['contains', 'contains'],
-                ['equals', 'equals'],
-                ['not-equals', 'does not equal'],
-                ['not-empty', 'is not empty'],
-                ['empty', 'is empty']
-            ].forEach(([value, text]) => {
-                const option = document.createElement('option');
-                option.value = value;
-                option.textContent = text;
-                operatorSelect.appendChild(option);
+                option.value = company;
+                option.textContent = company;
+                valueSelect.appendChild(option);
             });
 
-            const valueInput = document.createElement('input');
-            valueInput.className = 'admin-filter-value';
-            valueInput.type = 'text';
-            valueInput.placeholder = 'Value';
-            valueInput.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') applyAdminFilters();
-            });
+            valueSelect.addEventListener('change', applyAdminFilters);
 
-            const removeButton = document.createElement('button');
-            removeButton.type = 'button';
-            removeButton.className = 'admin-button';
-            removeButton.textContent = 'Remove filter';
-            removeButton.addEventListener('click', () => {
-                row.remove();
-                applyAdminFilters();
-            });
-
-            row.appendChild(columnSelect);
-            row.appendChild(operatorSelect);
-            row.appendChild(valueInput);
-            row.appendChild(removeButton);
+            row.appendChild(valueLabel);
+            row.appendChild(valueSelect);
             adminFilterRows.appendChild(row);
         };
 
-        const setupAdminPanel = (pins, columns) => {
+        const setupAdminPanel = (pins) => {
             if (!isAdmin || !adminPanel) return;
 
-            const defaultAdminColumn = columns.includes(SLUG_COLUMN) ? SLUG_COLUMN : columns[0] || '';
-
             adminPanel.style.display = 'block';
-            adminColumns.innerHTML = columns.map(column => escapeHtml(column)).join('<br>');
             adminFilterRows.innerHTML = '';
-            createAdminFilterRow(defaultAdminColumn);
+            createAdminFilterRow(pins);
             updateAdminOutput(pins);
 
-            adminAddFilter.addEventListener('click', () => createAdminFilterRow(defaultAdminColumn));
             adminApplyFilters.addEventListener('click', applyAdminFilters);
             adminClearFilters.addEventListener('click', () => {
                 adminFilterRows.innerHTML = '';
-                createAdminFilterRow(defaultAdminColumn);
+                createAdminFilterRow(shopData);
                 renderPins(shopData, { focus: true });
                 shopList.innerHTML = '';
                 exportResults.style.display = 'none';
@@ -650,8 +609,6 @@
             // ✅ Load CSV data AFTER source is added
             d3.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vT_akY4ZjU3mOq1mPhdVDh5d4dzXHmi5O8qgIf9BE8dwhP7O8Fn2D47zvkxhcNcFEnUoXTmQTybMXxS/pub?output=csv")
                 .then(json => {
-                    csvColumns = json.columns || Object.keys(json[0] || {});
-
                     const normalizedData = json
                         .map(normalizeRow)
                         .filter(pin => Number.isFinite(pin.lat) && Number.isFinite(pin.lng));
@@ -670,7 +627,7 @@
                         text: `${i}`
                     })), setByRetailerName);
 
-                    setupAdminPanel(data, csvColumns);
+                    setupAdminPanel(data);
 
                     const featureCollection = renderPins(data, {
                         updateList: hasUrlSlugs,
