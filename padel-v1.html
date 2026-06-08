@@ -81,6 +81,9 @@
 
         mapboxgl.accessToken = 'pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZXdpNDBieTUzanMyN2J3NW1sMHUifQ.m5BpgLHVufA0nzdFvCpTVg';
 
+        const TENNIS_PIN_IMAGE_ID = 'tennis-pin';
+        const TENNIS_PIN_IMAGE_PATH = 'icons/tennis_pin_transparent_small.png';
+
         const DEFAULT_VIEW = {
             lat: 54.12181638598531,
             lng: -2.774533172216252,
@@ -296,17 +299,28 @@
                 }
             });
 
-            map.addLayer({
-                id: 'traffic',
-                type: 'circle',
-                source: 'traffic',
-                filter: ['!', ['has', 'point_count']],
-                paint: {
-                    'circle-color': 'red',
-                    'circle-radius': ['step', ['zoom'], 4, 15, 8],
-                    'circle-stroke-width': 1,
-                    'circle-stroke-color': '#fff'
+            map.loadImage(TENNIS_PIN_IMAGE_PATH, (error, image) => {
+                if (error) {
+                    console.error(`Failed to load ${TENNIS_PIN_IMAGE_PATH}`, error);
+                    return;
                 }
+
+                if (!map.hasImage(TENNIS_PIN_IMAGE_ID)) {
+                    map.addImage(TENNIS_PIN_IMAGE_ID, image);
+                }
+
+                map.addLayer({
+                    id: 'traffic',
+                    type: 'symbol',
+                    source: 'traffic',
+                    filter: ['!', ['has', 'point_count']],
+                    layout: {
+                        'icon-image': TENNIS_PIN_IMAGE_ID,
+                        'icon-size': ['interpolate', ['linear'], ['zoom'], 5, 0.175, 12, 0.25, 16, 0.375],
+                        'icon-anchor': 'bottom',
+                        'icon-allow-overlap': true
+                    }
+                });
             });
 
             // ✅ Load CSV data AFTER source is added
