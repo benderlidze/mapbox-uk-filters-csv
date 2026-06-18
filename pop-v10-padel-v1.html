@@ -887,6 +887,8 @@
         let showLeastDeprived = false;
         const AREA_THRESHOLD = 0.10;
         const PADEL_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT_akY4ZjU3mOq1mPhdVDh5d4dzXHmi5O8qgIf9BE8dwhP7O8Fn2D47zvkxhcNcFEnUoXTmQTybMXxS/pub?output=csv";
+        const TENNIS_PIN_IMAGE_ID = 'tennis-pin';
+        const TENNIS_PIN_IMAGE_PATH = 'icons/tennis_pin_transparent_small.png';
         class PadelPinsLayer {
             constructor(mapInstance, csvUrl, getCircle) {
                 this.map = mapInstance;
@@ -905,22 +907,43 @@
                     });
                 }
 
-                if (!this.map.getLayer(this.layerId)) {
-                    this.map.addLayer({
-                        id: this.layerId,
-                        type: 'circle',
-                        source: this.sourceId,
-                        paint: {
-                            'circle-color': '#e53935',
-                            'circle-radius': 5,
-                            'circle-stroke-width': 1,
-                            'circle-stroke-color': '#ffffff'
-                        }
-                    });
+                if (this.map.hasImage(TENNIS_PIN_IMAGE_ID)) {
+                    this.addPinLayer();
+                    this.bindEvents();
+                    this.load();
+                    return;
                 }
 
-                this.bindEvents();
-                this.load();
+                this.map.loadImage(TENNIS_PIN_IMAGE_PATH, (error, image) => {
+                    if (error) {
+                        console.error(`Failed to load ${TENNIS_PIN_IMAGE_PATH}`, error);
+                        return;
+                    }
+
+                    if (!this.map.hasImage(TENNIS_PIN_IMAGE_ID)) {
+                        this.map.addImage(TENNIS_PIN_IMAGE_ID, image);
+                    }
+
+                    this.addPinLayer();
+                    this.bindEvents();
+                    this.load();
+                });
+            }
+
+            addPinLayer() {
+                if (this.map.getLayer(this.layerId)) return;
+
+                this.map.addLayer({
+                    id: this.layerId,
+                    type: 'symbol',
+                    source: this.sourceId,
+                    layout: {
+                        'icon-image': TENNIS_PIN_IMAGE_ID,
+                        'icon-size': ['interpolate', ['linear'], ['zoom'], 5, 0.175, 12, 0.25, 16, 0.375],
+                        'icon-anchor': 'bottom',
+                        'icon-allow-overlap': true
+                    }
+                });
             }
 
             bindEvents() {
