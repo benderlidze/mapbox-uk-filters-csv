@@ -139,6 +139,50 @@
             font-weight: 600;
         }
 
+        .padel-info-section {
+            padding-top: 12px;
+            border-top: 1px solid #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 12px;
+            color: #333;
+        }
+
+        .padel-info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .padel-info-header h4 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .padel-info-list {
+            max-height: 240px;
+            overflow-y: auto;
+            background: #fff;
+        }
+
+        .padel-info-empty {
+            padding: 10px;
+            color: #777;
+            line-height: 1.4;
+        }
+
+        .padel-info-item {
+            padding: 4px 0px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .padel-info-item:last-child {
+            border-bottom: none;
+        }
+
+
         /* IMD Section Container */
         .imd-section {
             border-top: 1px solid #e0e0e0;
@@ -629,6 +673,16 @@
                 <div class="population-value" id="population-total">-</div>
             </div>
 
+            <div class="padel-info-section">
+                <div class="padel-info-header">
+                    <h4>Padel Info Markers</h4>
+                    <span class="padel-info-count" id="padel-info-count">0</span>
+                </div>
+                <div class="padel-info-list" id="padel-info-list">
+                    <div class="padel-info-empty">Search an address to show nearby padel markers.</div>
+                </div>
+            </div>
+
             <div class="age-bands-table">
                 <h4>Age Bands</h4>
                 <table id="age-bands-table">
@@ -889,6 +943,48 @@
         const PADEL_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT_akY4ZjU3mOq1mPhdVDh5d4dzXHmi5O8qgIf9BE8dwhP7O8Fn2D47zvkxhcNcFEnUoXTmQTybMXxS/pub?output=csv";
         const TENNIS_PIN_IMAGE_ID = 'tennis-pin';
         const TENNIS_PIN_IMAGE_PATH = 'icons/tennis_pin_transparent_small.png';
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[char]));
+        }
+
+        function renderPadelInfoList(pins) {
+            const count = document.getElementById('padel-info-count');
+            const list = document.getElementById('padel-info-list');
+            if (!list) return;
+
+            if (count) {
+                count.textContent = pins.length.toLocaleString();
+            }
+
+            if (!pins.length) {
+                const message = currentCircle
+                    ? 'No padel markers found in the selected radius.'
+                    : 'Search an address to show nearby padel markers.';
+                list.innerHTML = `<div class="padel-info-empty">${message}</div>`;
+                return;
+            }
+
+            list.innerHTML = pins.map((pin) => {
+                const name = escapeHtml(pin.name || 'Venue');
+                const title = pin.venueUrl
+                    ? `<a href="${escapeHtml(pin.venueUrl)}" target="_blank" rel="noopener noreferrer">${name}</a>`
+                    : name;
+
+                return `
+                    <div class="padel-info-item">
+                        <div class="padel-info-title">${title}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         class PadelPinsLayer {
             constructor(mapInstance, csvUrl, getCircle) {
                 this.map = mapInstance;
@@ -981,7 +1077,10 @@
 
             update() {
                 const source = this.map.getSource(this.sourceId);
-                if (!source) return;
+                if (!source) {
+                    renderPadelInfoList([]);
+                    return;
+                }
 
                 const circle = this.getCircle();
                 const visiblePins = this.pins.filter(pin => {
@@ -996,6 +1095,7 @@
                     type: 'FeatureCollection',
                     features: visiblePins.map(pin => this.toFeature(pin))
                 });
+                renderPadelInfoList(visiblePins);
             }
 
             normalizeRow(row) {
@@ -1005,13 +1105,19 @@
 
                 const name = this.getFirstValue(row, ['tenant_name', 'name', 'tenant_uid', 'slug']) || 'Venue';
                 const slug = this.getFirstValue(row, ['slug']);
+                const venueUrl = slug ? `https://padeldata.co.uk/venues/${slug}` : '';
+                const rawData = { ...row };
+                if (venueUrl) {
+                    rawData.venueUrl = venueUrl;
+                }
 
                 return {
                     name,
                     slug,
-                    venueUrl: slug ? `https://padeldata.co.uk/venues/${slug}` : '',
+                    venueUrl,
                     lat,
-                    lng
+                    lng,
+                    rawData
                 };
             }
 
@@ -1033,7 +1139,13 @@
             toFeature(pin) {
                 return {
                     type: 'Feature',
-                    properties: pin,
+                    properties: {
+                        name: pin.name,
+                        slug: pin.slug,
+                        venueUrl: pin.venueUrl,
+                        lat: pin.lat,
+                        lng: pin.lng
+                    },
                     geometry: {
                         type: 'Point',
                         coordinates: [pin.lng, pin.lat]
