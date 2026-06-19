@@ -675,7 +675,7 @@
 
             <div class="padel-info-section">
                 <div class="padel-info-header">
-                    <h4>Padel Info Markers</h4>
+                    <h4>Padel Venues within selected radius</h4>
                     <span class="padel-info-count" id="padel-info-count">0</span>
                 </div>
                 <div class="padel-info-list" id="padel-info-list">
@@ -685,7 +685,7 @@
 
             <div class="padel-info-section">
                 <div class="padel-info-header">
-                    <h4>Planning Padel</h4>
+                    <h4>Planning applications within selected radius</h4>
                     <span class="padel-info-count" id="planning-padel-count">0</span>
                 </div>
                 <div class="padel-info-list" id="planning-padel-list">
@@ -2095,6 +2095,7 @@
                 .catch(err => console.error('Error loading traffic data:', err));
 
             // Add click handler for polygons
+            /*
             map.on('click', 'population-lsoa-fill', (e) => {
                 if (e.features && e.features.length > 0) {
                     const lsoaCode = e.features[0].properties.LSOA21CD;
@@ -2137,6 +2138,7 @@
             map.on('mouseleave', 'population-lsoa-outline', () => {
                 map.getCanvas().style.cursor = '';
             });
+            */
         });
 
         // Info popup functionality
