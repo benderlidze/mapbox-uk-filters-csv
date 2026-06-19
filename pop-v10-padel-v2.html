@@ -182,6 +182,16 @@
             border-bottom: none;
         }
 
+        .padel-info-title a {
+            color: #0080ff;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .padel-info-title a:hover {
+            text-decoration: underline;
+        }
+
 
         /* IMD Section Container */
         .imd-section {
@@ -1017,7 +1027,12 @@
             }
 
             list.innerHTML = pins.map((pin) => {
-                const title = escapeHtml(pin.address || pin.reference || 'Planning application');
+                const titleText = escapeHtml(pin.address || pin.reference || 'Planning application');
+                const url = pin.applicationUrl || pin.documentsUrl;
+                const title = url
+                    ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${titleText}</a>`
+                    : titleText;
+
                 return `
                     <div class="padel-info-item">
                         <div class="padel-info-title">${title}</div>
@@ -1256,10 +1271,18 @@
             bindEvents() {
                 this.map.on('click', this.layerId, (e) => {
                     const props = e.features[0].properties || {};
+                    const title = escapeHtml(props.address || props.reference || 'Planning application');
+                    const linkUrl = props.applicationUrl || props.documentsUrl;
+                    const link = linkUrl
+                        ? `<br><a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer">View application</a>`
+                        : '';
+                    const description = props.description
+                        ? `<br>${escapeHtml(props.description)}`
+                        : '';
 
                     new mapboxgl.Popup()
                         .setLngLat(e.lngLat)
-                        .setHTML(escapeHtml(props.description || ''))
+                        .setHTML(`<strong>${title}</strong>${description}${link}`)
                         .addTo(this.map);
 
                     e.originalEvent.cancelBubble = true;
