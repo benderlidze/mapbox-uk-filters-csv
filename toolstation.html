@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>UK Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.css" rel="stylesheet" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #map {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #status {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      z-index: 2;
+      padding: 10px 12px;
+      color: #1f2933;
+      background: #ffffff;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+      font: 14px/1.35 Arial, sans-serif;
+    }
+
+    .mapboxgl-popup-content {
+      padding: 12px 14px;
+      font: 14px/1.4 Arial, sans-serif;
+    }
+
+    .mapboxgl-popup-content strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #0053a6;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <div id="status">Loading Toolstation locations...</div>
+
+  <script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoicHJvcGVydHlhZGFtIiwiYSI6ImNsNHBuZXdpNDBieTUzanMyN2J3NW1sMHUifQ.m5BpgLHVufA0nzdFvCpTVg';
+
+    const csvPath = 'data/toolstation.csv';
+    const iconPath = 'icons/ts_logo.png';
+
+    const statusEl = document.getElementById('status');
+
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: {
+        lng: -2.774533172216252,
+        lat: 54.12181638598531
+      },
+      zoom: 7
+    });
+
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function makeGeoJSON(rows) {
+      const features = rows
+        .map((row) => {
+          const latitude = Number(row.latitude);
+          const longitude = Number(row.longitude);
+          const address = row.address;
+
+          if (!address || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            return null;
+          }
+
+          return {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [longitude, latitude]
+            },
+            properties: {
+              title: 'Toolstation',
+              address
+            }
+          };
+        })
+        .filter(Boolean);
+
+      return {
+        type: 'FeatureCollection',
+        features
+      };
+    }
+
+    function fitMapToFeatures(features) {
+      const bounds = new mapboxgl.LngLatBounds();
+
+      features.forEach((feature) => {
+        bounds.extend(feature.geometry.coordinates);
+      });
+
+      map.fitBounds(bounds, {
+        padding: 48,
+        maxZoom: 12
+      });
+    }
+
+    function loadMapImage(name, url) {
+      return new Promise((resolve, reject) => {
+        if (map.hasImage(name)) {
+          resolve();
+          return;
+        }
+
+        map.loadImage(url, (error, image) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          map.addImage(name, image);
+          resolve();
+        });
+      });
+    }
+
+    function showPopup(feature) {
+      const coordinates = feature.geometry.coordinates.slice();
+      const address = feature.properties.address;
+
+      new mapboxgl.Popup({
+        offset: 18
+      })
+        .setLngLat(coordinates)
+        .setHTML(`
+          <strong>Toolstation</strong>
+          ${escapeHtml(address)}
+        `)
+        .addTo(map);
+    }
+
+    map.on('load', async () => {
+      try {
+        const rows = await d3.csv(csvPath);
+        const geojson = makeGeoJSON(rows);
+
+        if (!geojson.features.length) {
+          statusEl.textContent = 'No valid Toolstation locations found.';
+          return;
+        }
+
+        await loadMapImage('toolstation-icon', iconPath);
+
+        map.addSource('toolstation-locations', {
+          type: 'geojson',
+          data: geojson
+        });
+
+
+
+        map.addLayer({
+          id: 'toolstation-icons',
+          type: 'symbol',
+          source: 'toolstation-locations',
+          layout: {
+            'icon-image': 'toolstation-icon',
+
+            /*
+              Your PNG is 434x434.
+              0.08 = about 35px
+              0.10 = about 43px
+              0.12 = about 52px
+              0.15 = about 65px
+            */
+            'icon-size': 0.10,
+
+            /*
+              Correct for rounded icons:
+              the coordinate is placed in the exact center of the image.
+            */
+            'icon-anchor': 'center',
+
+            /*
+              No manual shift.
+              If the PNG itself has transparent padding, crop the PNG.
+            */
+            'icon-offset': [0, 0],
+
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true
+          }
+        });
+
+        map.on('click', 'toolstation-icons', (event) => {
+          showPopup(event.features[0]);
+        });
+
+        map.on('click', 'toolstation-circles', (event) => {
+          showPopup(event.features[0]);
+        });
+
+        map.on('mouseenter', 'toolstation-icons', () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+
+        map.on('mouseleave', 'toolstation-icons', () => {
+          map.getCanvas().style.cursor = '';
+        });
+
+        map.on('mouseenter', 'toolstation-circles', () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+
+        map.on('mouseleave', 'toolstation-circles', () => {
+          map.getCanvas().style.cursor = '';
+        });
+
+        fitMapToFeatures(geojson.features);
+
+        statusEl.style.display = 'none';
+        
+      } catch (error) {
+        console.error(error);
+        statusEl.textContent = `Could not load ${csvPath} or ${iconPath}. Serve this page over HTTP.`;
+      }
+    });
+  </script>
+</body>
+
+</html>
