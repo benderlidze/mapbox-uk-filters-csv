@@ -157,7 +157,6 @@
       })
         .setLngLat(coordinates)
         .setHTML(`
-          <strong>Toolstation</strong>
           ${escapeHtml(address)}
         `)
         .addTo(map);
@@ -242,7 +241,7 @@
         fitMapToFeatures(geojson.features);
 
         statusEl.style.display = 'none';
-        
+
       } catch (error) {
         console.error(error);
         statusEl.textContent = `Could not load ${csvPath} or ${iconPath}. Serve this page over HTTP.`;
